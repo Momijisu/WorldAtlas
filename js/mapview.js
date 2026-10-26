@@ -1,11 +1,27 @@
-// Pan/zoom image viewer with pins. Works with mouse, wheel, touch and pinch.
-// Pins are stored in image-relative coordinates (0..1) so they stay put at any size.
-export function mountMap(container, { src, pins, onPinClick, onBackgroundTap }) {
-  container.innerHTML = `<div class="map-stage"><img draggable="false" alt=""><div class="map-pins"></div></div>`;
+// Pan/zoom image viewer with pins and polygon regions. Works with mouse, wheel,
+// touch and pinch. Everything is stored in image-relative coordinates (0..1) so
+// it stays put at any size. Pins and labels counter-scale to keep a constant
+// on-screen size while zooming.
+import { icon } from './icons.js';
+import { esc } from './util.js';
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing }) {
+  container.innerHTML = `<div class="map-stage">
+      <img draggable="false" alt="">
+      <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
+      <div class="map-labels"></div>
+      <div class="map-pins"></div>
+    </div>`;
   const stage = container.querySelector('.map-stage');
   const img = stage.querySelector('img');
+  const svg = stage.querySelector('svg');
+  const labelLayer = stage.querySelector('.map-labels');
   const pinLayer = stage.querySelector('.map-pins');
   let s = 1, x = 0, y = 0, w = 1, h = 1;
+  let items = { pins: [], regions: [], hidden: new Set() };
+  let draft = null;
 
   const apply = () => {
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
@@ -13,57 +29,116 @@ export function mountMap(container, { src, pins, onPinClick, onBackgroundTap }) 
   };
   const fit = () => {
     const r = container.getBoundingClientRect();
+    if (!r.width || !r.height) return;
     s = Math.min(r.width / w, r.height / h);
     x = (r.width - w * s) / 2;
     y = (r.height - h * s) / 2;
     apply();
   };
   const zoomAt = (cx, cy, factor) => {
-    const ns = Math.max(0.05, Math.min(s * factor, 12));
+    const ns = Math.max(0.03, Math.min(s * factor, 16));
     x = cx - (cx - x) * (ns / s);
     y = cy - (cy - y) * (ns / s);
     s = ns;
     apply();
   };
 
-  function drawPins(list) {
+  const visible = (it) => !items.hidden.has(it.layer || '');
+
+  function centroid(points) {
+    let a = 0, cx = 0, cy = 0;
+    for (let i = 0; i < points.length; i++) {
+      const [x0, y0] = points[i];
+      const [x1, y1] = points[(i + 1) % points.length];
+      const f = x0 * y1 - x1 * y0;
+      a += f; cx += (x0 + x1) * f; cy += (y0 + y1) * f;
+    }
+    if (Math.abs(a) < 1e-9) {
+      const n = points.length || 1;
+      return [points.reduce((t, p) => t + p[0], 0) / n, points.reduce((t, p) => t + p[1], 0) / n];
+    }
+    return [cx / (3 * a), cy / (3 * a)];
+  }
+
+  function draw() {
+    // regions
+    svg.innerHTML = '';
+    labelLayer.innerHTML = '';
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    for (const r of items.regions) {
+      if (!visible(r) || !r.points || r.points.length < 3) continue;
+      const poly = document.createElementNS(SVG, 'polygon');
+      poly.setAttribute('points', r.points.map(([px, py]) => `${px * w},${py * h}`).join(' '));
+      poly.setAttribute('class', 'region');
+      poly.dataset.region = r.id;
+      poly.style.setProperty('--rc', r.color || '#c4a46a');
+      svg.appendChild(poly);
+      if (r.label) {
+        const [cx, cy] = centroid(r.points);
+        const el = document.createElement('div');
+        el.className = 'region-label';
+        el.style.left = cx * 100 + '%';
+        el.style.top = cy * 100 + '%';
+        el.textContent = r.label;
+        labelLayer.appendChild(el);
+      }
+    }
+    if (draft?.length) {
+      const pl = document.createElementNS(SVG, draft.length > 2 ? 'polygon' : 'polyline');
+      pl.setAttribute('points', draft.map(([px, py]) => `${px * w},${py * h}`).join(' '));
+      pl.setAttribute('class', 'region-draft');
+      svg.appendChild(pl);
+    }
+    // pins + draft vertices
     pinLayer.innerHTML = '';
-    for (const p of list) {
+    for (const p of items.pins) {
+      if (!visible(p)) continue;
       const el = document.createElement('button');
+      el.type = 'button';
       el.className = 'pin';
+      el.dataset.pin = p.id;
       el.style.left = p.x * 100 + '%';
       el.style.top = p.y * 100 + '%';
-      el.style.setProperty('--pin', p.color || '#e0b252');
-      el.innerHTML = `<span class="pin-dot"></span>${p.label ? `<span class="pin-label"></span>` : ''}`;
-      if (p.label) el.querySelector('.pin-label').textContent = p.label;
-      el.addEventListener('pointerdown', (e) => e.stopPropagation());
-      el.addEventListener('click', (e) => { e.stopPropagation(); onPinClick?.(p, el); });
+      el.style.setProperty('--pin', p.color || '#c4553b');
+      el.innerHTML = `<span class="pin-badge">${icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
+      el.setAttribute('aria-label', p.label || 'Pin');
+      el.addEventListener('pointerdown', (e) => { if (!isDrawing?.()) e.stopPropagation(); });
+      el.addEventListener('click', (e) => { if (isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });
       pinLayer.appendChild(el);
+    }
+    for (const [px, py] of draft || []) {
+      const d = document.createElement('span');
+      d.className = 'draft-dot';
+      d.style.left = px * 100 + '%';
+      d.style.top = py * 100 + '%';
+      pinLayer.appendChild(d);
     }
   }
 
   img.onload = () => {
     w = img.naturalWidth; h = img.naturalHeight;
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
+    draw();
     fit();
   };
   img.src = src;
-  drawPins(pins);
 
   // Pointer handling: one pointer pans, two pinch-zoom; a tap that barely moves is a click.
   const pts = new Map();
-  let start = null, moved = false, pinch = null;
-  container.addEventListener('pointerdown', (e) => {
+  let start = null, moved = false, pinch = null, downTarget = null;
+  const onDown = (e) => {
+    if (e.button > 0) return;
+    if (pts.size === 0) downTarget = e.target;
     container.setPointerCapture(e.pointerId);
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) { start = { px: e.clientX, py: e.clientY, x, y }; moved = false; }
     if (pts.size === 2) {
       const [a, b] = [...pts.values()];
-      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), s };
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s };
       moved = true;
     }
-  });
-  container.addEventListener('pointermove', (e) => {
+  };
+  const onMove = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const r = container.getBoundingClientRect();
@@ -74,11 +149,10 @@ export function mountMap(container, { src, pins, onPinClick, onBackgroundTap }) 
     } else if (pts.size === 1 && start) {
       const dx = e.clientX - start.px, dy = e.clientY - start.py;
       if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
-      x = start.x + dx; y = start.y + dy;
-      apply();
+      if (moved) { x = start.x + dx; y = start.y + dy; apply(); }
     }
-  });
-  const end = (e) => {
+  };
+  const onEnd = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
@@ -87,32 +161,67 @@ export function mountMap(container, { src, pins, onPinClick, onBackgroundTap }) 
       if (!moved && e.type === 'pointerup') {
         const r = container.getBoundingClientRect();
         const ix = (e.clientX - r.left - x) / s / w, iy = (e.clientY - r.top - y) / s / h;
-        if (ix >= 0 && ix <= 1 && iy >= 0 && iy <= 1) onBackgroundTap?.({ x: ix, y: iy });
+        const regionEl = downTarget?.closest?.('[data-region]');
+        if (regionEl && !isDrawing?.()) {
+          const reg = items.regions.find((g) => g.id === regionEl.dataset.region);
+          if (reg) onRegionClick?.(reg, { x: ix, y: iy });
+        } else if (ix >= 0 && ix <= 1 && iy >= 0 && iy <= 1) {
+          onBackgroundTap?.({ x: ix, y: iy });
+        }
       }
       start = null;
+      downTarget = null;
     }
   };
-  container.addEventListener('pointerup', end);
-  container.addEventListener('pointercancel', end);
-  container.addEventListener('wheel', (e) => {
+  const onWheel = (e) => {
     e.preventDefault();
     const r = container.getBoundingClientRect();
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
-  }, { passive: false });
+  };
+  container.addEventListener('pointerdown', onDown);
+  container.addEventListener('pointermove', onMove);
+  container.addEventListener('pointerup', onEnd);
+  container.addEventListener('pointercancel', onEnd);
+  container.addEventListener('wheel', onWheel, { passive: false });
 
-  const ro = new ResizeObserver(() => { if (w > 1) fit(); });
+  let lastSize = '';
+  const ro = new ResizeObserver(() => {
+    const r = container.getBoundingClientRect();
+    const key = Math.round(r.width) + 'x' + Math.round(r.height);
+    if (w > 1 && key !== lastSize) { lastSize = key; fit(); }
+  });
   ro.observe(container);
 
   return {
-    setPins: drawPins,
+    setItems({ pins = items.pins, regions = items.regions, hidden = items.hidden } = {}) {
+      items = { pins, regions, hidden: new Set(hidden) };
+      if (w > 1) draw();
+    },
+    setDraft(points) { draft = points ? [...points] : null; if (w > 1) draw(); },
     fit,
     zoom: (f) => { const r = container.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, f); },
-    focus: (p) => {
+    // Centre on a point ({x,y}) or a region (points array), zooming in if needed.
+    focus(target) {
       const r = container.getBoundingClientRect();
-      s = Math.max(s, Math.min(r.width / w, r.height / h) * 2.5);
-      x = r.width / 2 - p.x * w * s; y = r.height / 2 - p.y * h * s;
+      const base = Math.min(r.width / w, r.height / h);
+      let cx, cy, ns;
+      if (Array.isArray(target)) {
+        const xs = target.map((p) => p[0]), ys = target.map((p) => p[1]);
+        const bw = (Math.max(...xs) - Math.min(...xs)) * w || 1, bh = (Math.max(...ys) - Math.min(...ys)) * h || 1;
+        ns = Math.min(r.width / bw, r.height / bh) * 0.7;
+        [cx, cy] = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2];
+      } else {
+        ns = Math.max(s, base * 2.5);
+        [cx, cy] = [target.x, target.y];
+      }
+      s = Math.max(base, Math.min(ns, 16));
+      x = r.width / 2 - cx * w * s;
+      y = r.height / 2 - cy * h * s;
       apply();
     },
-    destroy: () => ro.disconnect(),
+    destroy() {
+      ro.disconnect();
+      container.removeEventListener('wheel', onWheel);
+    },
   };
 }

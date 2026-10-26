@@ -2,15 +2,23 @@
 
 A personal worldbuilding wiki, inspired by World Anvil, that runs on your phone and your PC and syncs through **your own OneDrive**.
 
-- **Articles from templates**: Characters, Locations, Organizations, Species, Items, Events, Religions, Cultures, Lore, plus a generic Article. Each one has an infobox with template fields, and you can add your own fields.
-- **Wiki links**: type `[[` in the editor to link another article. Links to articles that don't exist yet show in red, and tapping one creates that article. Renaming an article updates every link to it.
-- **"Mentioned in" backlinks**, parent/sub-articles with breadcrumbs, tags, and full-text search.
-- **Interactive maps**: upload any map image, then pan and pinch-zoom it and drop colour-coded pins that link to articles.
-- **Timeline**: give any article a year and it appears on the world's timeline, with an era suffix such as "AE".
-- **GM notes**: a secrets section on each article that stays collapsed while you read.
-- **Markdown** formatting with a toolbar and preview. You can switch between dark and light (parchment) themes.
-- **Works offline and installs as an app** (it's a Progressive Web App). Everything saves on the device first and syncs when you're online.
-- **Backup**: export everything, images included, to one JSON file, and import it again later.
+- **Articles from templates**: Characters, Locations, Organizations, Species, Items, Events, Religions, Cultures, Lore, plus a generic Article. Each has an infobox with template fields, and you can add your own fields.
+- **Header image and portrait**: a wide header image fades in behind the article title, and a separate portrait sits in the infobox.
+- **Wiki links**: type `[[` to link another article. Links to articles that don't exist yet show in red, and tapping one creates that article. Renaming an article updates every link to it. Each article lists the articles that mention it.
+- **Relationships**: typed links between articles (parent of, spouse of, ally of, rival of, member of, rules, and more). The other article shows the inverse automatically.
+- **Family trees**: three generations up and down, with spouses and siblings, built from relationships.
+- **Relationship web**: an interactive force-directed graph with filters, focus on one article, and optional wiki-link edges.
+- **Custom calendars**: your own months and lengths, weekdays, eras (optionally counting from 1) and moons with phases. Articles take full dates, which are shown in your calendar's format.
+- **Calendar view**: month and year views of dated events, with moon phases. Tap a day to record an event on it.
+- **Timeline**: a chronicle grouped by era, plus a zoomable span chart for lifespans, reigns and wars, with filters by type and tag.
+- **Maps**: pins with icons and colours, drawn regions, layers you can show and hide, nested maps (a pin can open another map), and place search.
+- **Revision history**: every save keeps a version (the last 40 per article). Compare versions line by line, restore any of them, and recover deleted articles.
+- **GM notes**: a secrets section that stays collapsed while you read.
+- **Two themes**: Nocturne (dark) and Vellum (light parchment).
+- **Works offline and installs as an app.** Everything saves on the device first and syncs to OneDrive when you're online.
+- **Backup**: export everything, images and history included, to one JSON file, and import it again later.
+
+**Roadmap:** read-only shareable export (a "player view" with GM notes removed).
 
 There's no server and no build step. It's plain HTML, CSS and JavaScript, so any static host works.
 
@@ -57,7 +65,7 @@ To test locally, also add `http://localhost:8000/` as an SPA redirect URI and ru
 ## How syncing works
 
 - Each device keeps a full copy in its browser storage (IndexedDB), so the app is fast and works offline.
-- In OneDrive, `Apps/WorldAtlas/atlas.json` holds all the text (worlds, articles, maps and pins), and `Apps/WorldAtlas/images/` holds the pictures.
+- In OneDrive, `Apps/WorldAtlas/atlas.json` holds all the text (worlds, articles, maps), `history.json` holds article versions, and `images/` holds the pictures.
 - Sync runs a couple of seconds after each edit, when the app comes back to the foreground, when the network returns, and every 2 minutes while the app is open. The cloud icon in the top bar shows the status; tap it to sync now.
 - **Conflicts are merged per article.** If you edit *different* articles on your phone and PC, both edits survive. If you edit the *same* article on both before they sync, the most recent save wins. Deletions sync too.
 - Microsoft limits browser-app sign-ins to 24 hours. The app renews the sign-in automatically when you open it. If that ever fails, the badge shows **Reconnect** and one tap fixes it. Your changes stay safe on the device in the meantime.
@@ -66,16 +74,24 @@ To test locally, also add `http://localhost:8000/` as an SPA redirect URI and ru
 
 ```
 index.html            app shell
-css/app.css           styles (dark + light themes)
-js/app.js             UI: routing and all views
-js/store.js           in-memory data and IndexedDB writes, article templates
+css/app.css           design system (tokens, type, components, both themes)
+css/features.css      timeline, calendar, history, article header
+css/maps.css          map viewer
+css/graph.css         family tree and relationship web
+js/app.js             boot, routing, top bar, sidebar
+js/views/*.js         one module per screen
+js/store.js           data in memory and IndexedDB, templates, version history
 js/sync.js            OneDrive two-way sync
 js/auth.js            Microsoft sign-in (OAuth 2.0 auth-code + PKCE, no library)
-js/mapview.js         pan/zoom map viewer with pins
+js/calendar.js        custom calendar maths and date formatting
+js/relations.js       relationship types and inverses, family links
+js/mapview.js         pan/zoom map viewer with pins and regions
 js/markdown.js        Markdown + [[wiki link]] rendering
+js/icons.js           icon set (Phosphor, MIT)
 js/config.js          your Azure client ID
 sw.js                 service worker (offline cache)
-vendor/               marked (Markdown) and DOMPurify (sanitising), MIT/Apache licensed
+fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (SIL OFL)
+vendor/               marked (Markdown), DOMPurify (sanitising)
 ```
 
-When you change the list of files, bump `VERSION` in `sw.js`. Edits to existing files are picked up automatically on the next launch after the one that downloads them.
+When you add or remove files, update the list in `sw.js` and bump its `VERSION`. Edits to existing files are picked up automatically on the next launch after the one that downloads them.

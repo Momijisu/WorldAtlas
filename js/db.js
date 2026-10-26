@@ -1,18 +1,21 @@
 // Thin promise wrapper over IndexedDB. Everything the app owns lives here
 // on the device; OneDrive is a sync target, not the source of truth.
 const DB_NAME = 'worldatlas';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 export const RECORD_STORES = ['worlds', 'articles', 'maps'];
 
 let dbp;
 function open() {
   dbp ??= new Promise((resolve, reject) => {
     const r = indexedDB.open(DB_NAME, DB_VERSION);
-    r.onupgradeneeded = () => {
+    r.onupgradeneeded = (e) => {
       const d = r.result;
-      for (const s of RECORD_STORES) d.createObjectStore(s, { keyPath: 'id' });
-      d.createObjectStore('images', { keyPath: 'id' });
-      d.createObjectStore('meta', { keyPath: 'key' });
+      if (e.oldVersion < 1) {
+        for (const s of RECORD_STORES) d.createObjectStore(s, { keyPath: 'id' });
+        d.createObjectStore('images', { keyPath: 'id' });
+        d.createObjectStore('meta', { keyPath: 'key' });
+      }
+      if (e.oldVersion < 2) d.createObjectStore('history', { keyPath: 'id' });
     };
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
@@ -47,4 +50,12 @@ export async function putMany(store, values) {
 
 export async function getAllKeys(store) {
   return req((await open()).transaction(store).objectStore(store).getAllKeys());
+}
+
+export async function del(store, keys) {
+  if (!keys.length) return;
+  const t = (await open()).transaction(store, 'readwrite');
+  const os = t.objectStore(store);
+  for (const k of keys) os.delete(k);
+  return done(t);
 }

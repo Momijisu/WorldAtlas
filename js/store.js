@@ -3,20 +3,21 @@ import { uid } from './util.js';
 
 // Article templates. `fields` pre-populate the infobox in the editor.
 export const TYPES = {
-  character:    { label: 'Character',    plural: 'Characters',    icon: '👤', fields: ['Full name', 'Species', 'Age', 'Born', 'Died', 'Occupation', 'Affiliation', 'Residence'] },
-  location:     { label: 'Location',     plural: 'Locations',     icon: '🏰', fields: ['Type', 'Region', 'Population', 'Ruler', 'Founded', 'Climate'] },
-  organization: { label: 'Organization', plural: 'Organizations', icon: '⚜️', fields: ['Type', 'Leader', 'Founded', 'Headquarters', 'Members', 'Motto'] },
-  species:      { label: 'Species',      plural: 'Species',       icon: '🐉', fields: ['Lifespan', 'Height', 'Habitat', 'Diet', 'Language'] },
-  item:         { label: 'Item',         plural: 'Items',         icon: '⚔️', fields: ['Type', 'Creator', 'Owner', 'Rarity', 'Material'] },
-  event:        { label: 'Event',        plural: 'Events',        icon: '📜', fields: ['Type', 'Location', 'Participants', 'Outcome'] },
-  religion:     { label: 'Religion',     plural: 'Religions & Deities', icon: '✨', fields: ['Deity', 'Domains', 'Symbol', 'Followers'] },
-  culture:      { label: 'Culture',      plural: 'Cultures & Languages', icon: '🗣️', fields: ['Region', 'Language', 'Values', 'Customs'] },
-  lore:         { label: 'Lore',         plural: 'Lore & Documents', icon: '📖', fields: ['Author', 'Written'] },
-  article:      { label: 'Article',      plural: 'Other articles', icon: '📄', fields: [] },
+  character:    { label: 'Character',    plural: 'Characters',    icon: 'user', fields: ['Full name', 'Species', 'Age', 'Born', 'Died', 'Occupation', 'Affiliation', 'Residence'] },
+  location:     { label: 'Location',     plural: 'Locations',     icon: 'castle-turret', fields: ['Type', 'Region', 'Population', 'Ruler', 'Founded', 'Climate'] },
+  organization: { label: 'Organization', plural: 'Organizations', icon: 'shield', fields: ['Type', 'Leader', 'Founded', 'Headquarters', 'Members', 'Motto'] },
+  species:      { label: 'Species',      plural: 'Species',       icon: 'paw-print', fields: ['Lifespan', 'Height', 'Habitat', 'Diet', 'Language'] },
+  item:         { label: 'Item',         plural: 'Items',         icon: 'sword', fields: ['Type', 'Creator', 'Owner', 'Rarity', 'Material'] },
+  event:        { label: 'Event',        plural: 'Events',        icon: 'scroll', fields: ['Type', 'Location', 'Participants', 'Outcome'] },
+  religion:     { label: 'Religion',     plural: 'Religions & Deities', icon: 'sun-horizon', fields: ['Deity', 'Domains', 'Symbol', 'Followers'] },
+  culture:      { label: 'Culture',      plural: 'Cultures & Languages', icon: 'mask-happy', fields: ['Region', 'Language', 'Values', 'Customs'] },
+  lore:         { label: 'Lore',         plural: 'Lore & Documents', icon: 'book-open-text', fields: ['Author', 'Written'] },
+  article:      { label: 'Article',      plural: 'Other articles', icon: 'file-text', fields: [] },
 };
 
-export const data = { worlds: new Map(), articles: new Map(), maps: new Map() };
-export let meta = { key: 'sync', localRev: 0, syncedRev: 0, eTag: null, lastSync: null };
+export const data = { worlds: new Map(), articles: new Map(), maps: new Map(), history: new Map() };
+export const HISTORY_LIMIT = 40;
+export let meta = { key: 'sync', localRev: 0, syncedRev: 0, eTags: {}, lastSync: null };
 
 const listeners = new Set();
 export const onChange = (fn) => listeners.add(fn);
@@ -28,7 +29,10 @@ export async function load() {
     data[s].clear();
     for (const o of await db.getAll(s)) data[s].set(o.id, o);
   }
+  data.history.clear();
+  for (const h of await db.getAll('history')) data.history.set(h.id, h);
   meta = (await db.get('meta', 'sync')) || meta;
+  meta.eTags ??= meta.eTag ? { 'atlas.json': meta.eTag } : {};
 }
 
 export async function saveMeta(patch) {
@@ -45,6 +49,7 @@ export async function save(store, obj) {
   obj.createdAt ??= obj.updatedAt;
   data[store].set(obj.id, obj);
   await db.put(store, obj);
+  if (store === 'articles' && !obj.deleted) await recordVersion(obj);
   await saveMeta({ localRev: meta.localRev + 1 });
   emit({ local: true, store, id: obj.id });
   return obj;
@@ -99,6 +104,59 @@ export async function mergeRecords(other) {
     await applyRemote(s, incoming);
   }
   return localAhead;
+}
+
+// --- article history ------------------------------------------------------
+// Every save of an article stores a snapshot. History syncs (append-only) via
+// its own OneDrive file and is pruned to the newest HISTORY_LIMIT per article.
+
+const CONTENT_KEYS = ['title', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'banner',
+  'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations'];
+export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, a[k] ?? null]));
+
+async function recordVersion(a) {
+  const last = historyOf(a.id)[0];
+  const snapshot = contentOf(a);
+  if (last && JSON.stringify(last.snapshot) === JSON.stringify(snapshot)) return;
+  const h = { id: uid(), articleId: a.id, worldId: a.worldId, savedAt: a.updatedAt, updatedAt: a.updatedAt, snapshot };
+  data.history.set(h.id, h);
+  await db.put('history', h);
+  await pruneHistory(a.id);
+}
+
+export const historyOf = (articleId) =>
+  [...data.history.values()].filter((h) => h.articleId === articleId).sort((x, y) => y.savedAt - x.savedAt);
+
+async function pruneHistory(articleId) {
+  const extra = historyOf(articleId).slice(HISTORY_LIMIT).map((h) => h.id);
+  extra.forEach((id) => data.history.delete(id));
+  await db.del('history', extra);
+}
+
+// Merge history from another copy; returns true if local has versions `other` lacks.
+export async function mergeHistory(list = []) {
+  const theirs = new Set(list.map((h) => h.id));
+  const incoming = list.filter((h) => !data.history.has(h.id));
+  await db.putMany('history', incoming);
+  incoming.forEach((h) => data.history.set(h.id, h));
+  for (const id of new Set(incoming.map((h) => h.articleId))) await pruneHistory(id);
+  return [...data.history.keys()].some((id) => !theirs.has(id));
+}
+
+// Restoring writes the snapshot as a new current version (and revives a deleted article).
+export async function restoreVersion(h) {
+  const cur = data.articles.get(h.articleId) || {};
+  const a = { ...cur, ...structuredClone(h.snapshot), id: h.articleId, worldId: h.worldId, deleted: undefined };
+  delete a.deleted;
+  return save('articles', a);
+}
+
+export function deletedArticles(wid) {
+  return [...data.articles.values()]
+    .filter((a) => a.deleted && a.worldId === wid)
+    .map((a) => ({ tomb: a, last: historyOf(a.id)[0] }))
+    .filter((x) => x.last)
+    .sort((x, y) => y.tomb.updatedAt - x.tomb.updatedAt);
 }
 
 // --- reads --------------------------------------------------------------
@@ -192,7 +250,7 @@ export const imageIds = () => db.getAllKeys('images');
 export function referencedImages() {
   const ids = new Set();
   for (const w of data.worlds.values()) if (live(w) && w.image) ids.add(w.image);
-  for (const a of data.articles.values()) if (live(a) && a.image) ids.add(a.image);
+  for (const a of data.articles.values()) if (live(a)) { if (a.image) ids.add(a.image); if (a.banner) ids.add(a.banner); }
   for (const m of data.maps.values()) if (live(m) && m.image) ids.add(m.image);
   return ids;
 }
@@ -201,6 +259,7 @@ export function newArticle(worldId, type = 'article', extra = {}) {
   return {
     id: uid(), worldId, type, title: '', parentId: null, tags: [], summary: '', body: '',
     fields: Object.fromEntries((TYPES[type]?.fields || []).map((f) => [f, ''])),
-    gmNotes: '', image: null, start: null, end: null, dateLabel: '', ...extra,
+    gmNotes: '', image: null, banner: null, start: null, startM: null, startD: null, end: null, endM: null, endD: null,
+    dateLabel: '', relations: [], ...extra,
   };
 }

@@ -1,14 +1,23 @@
 // Offline support: the app shell is pre-cached, then served stale-while-revalidate
 // so the app opens instantly (even offline) and picks up new versions on the next launch.
 // Bump VERSION when the file list changes.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'worldatlas-' + VERSION;
 const SHELL = [
-  './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/app.js', 'js/auth.js', 'js/config.js', 'js/db.js', 'js/example.js', 'js/mapview.js',
-  'js/markdown.js', 'js/store.js', 'js/sync.js', 'js/util.js',
-  'vendor/marked.min.js', 'vendor/purify.min.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png',
+  './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/features.css', 'css/graph.css',
+  'css/maps.css', 'js/app.js', 'js/auth.js', 'js/calendar.js', 'js/config.js', 'js/db.js', 'js/example.js',
+  'js/icons.js', 'js/mapview.js', 'js/markdown.js', 'js/relations.js', 'js/store.js', 'js/sync.js',
+  'js/ui.js', 'js/util.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/editor.js',
+  'js/views/graph.js', 'js/views/history.js', 'js/views/home.js', 'js/views/list.js', 'js/views/maps.js',
+  'js/views/settings.js', 'js/views/timeline.js', 'js/views/tree.js', 'vendor/marked.min.js',
+  'vendor/purify.min.js', 'fonts/alegreya-latin-400-italic.woff2', 'fonts/alegreya-latin-400-normal.woff2',
+  'fonts/alegreya-latin-700-italic.woff2', 'fonts/alegreya-latin-700-normal.woff2',
+  'fonts/alegreya-sans-latin-400-italic.woff2', 'fonts/alegreya-sans-latin-400-normal.woff2',
+  'fonts/alegreya-sans-latin-500-normal.woff2', 'fonts/alegreya-sans-latin-700-normal.woff2',
+  'fonts/cormorant-garamond-latin-500-italic.woff2', 'fonts/cormorant-garamond-latin-500-normal.woff2',
+  'fonts/cormorant-garamond-latin-600-normal.woff2', 'fonts/cormorant-garamond-latin-700-normal.woff2',
+  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png',
+  'icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', (e) => {

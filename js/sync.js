@@ -1,8 +1,9 @@
 // Two-way sync between IndexedDB and OneDrive (Apps/WorldAtlas/).
 //
 // atlas.json holds every world/article/map record (including deletion
-// tombstones). Records merge one by one: the newer `updatedAt` wins, so edits
-// to different articles on phone and PC never clobber each other. Uploads use
+// tombstones); history.json holds article versions. Records merge one by one:
+// the newer `updatedAt` wins, so edits to different articles on phone and PC
+// never clobber each other. Uploads use
 // the file's eTag (If-Match), so a concurrent write from another device makes
 // us re-download and merge instead of overwriting. Images are stored as
 // separate immutable files in images/.
@@ -43,9 +44,14 @@ async function run() {
   if (!navigator.onLine) return setStatus('offline', 'Offline — changes are saved on this device.');
   setStatus('syncing');
   try {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      if (await syncRecords()) break;
+    const rev = store.meta.localRev;
+    const dirty = store.isDirty();
+    for (const spec of FILES) {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        if (await syncFile(spec, dirty)) break;
+      }
     }
+    await store.saveMeta({ syncedRev: rev });
     await syncImages();
     await store.saveMeta({ lastSync: Date.now() });
     setStatus(store.isDirty() ? 'pending' : 'synced');
@@ -66,36 +72,49 @@ async function check(res, what) {
   throw err;
 }
 
-// Returns true when local and remote are in agreement, false on an eTag race.
-async function syncRecords() {
-  const metaRes = await auth.graph(`${ROOT}:/${REMOTE_FILE}`);
+// Each OneDrive file: what goes in it and how to merge a downloaded copy.
+const FILES = [
+  {
+    name: REMOTE_FILE,
+    collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()]])),
+    merge: (json) => store.mergeRecords(json),
+    hasLocal: () => RECORD_STORES.some((s) => store.data[s].size),
+  },
+  {
+    name: 'history.json',
+    collect: () => ({ history: [...store.data.history.values()] }),
+    merge: (json) => store.mergeHistory(json.history),
+    hasLocal: () => store.data.history.size > 0,
+  },
+];
+
+// Returns true when local and remote agree for this file, false on an eTag race.
+async function syncFile(spec, dirty) {
+  const metaRes = await auth.graph(`${ROOT}:/${spec.name}`);
   let remoteETag = null;
-  let localAhead = true;
-  if (metaRes.status !== 404) {
+  let localAhead;
+  if (metaRes.status === 404) {
+    localAhead = spec.hasLocal();
+  } else {
     const item = await (await check(metaRes, 'Reading OneDrive')).json();
     remoteETag = item.eTag;
-    if (remoteETag !== store.meta.eTag) {
-      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading atlas');
-      localAhead = await store.mergeRecords(await content.json());
+    if (remoteETag !== store.meta.eTags[spec.name]) {
+      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + spec.name);
+      localAhead = await spec.merge(await content.json());
     } else {
-      localAhead = store.isDirty();
+      localAhead = dirty;
     }
   }
-  const rev = store.meta.localRev;
-  if (!localAhead) {
-    await store.saveMeta({ eTag: remoteETag, syncedRev: rev });
-    return true;
+  if (localAhead) {
+    const res = await auth.graph(`${ROOT}:/${spec.name}:/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(remoteETag ? { 'If-Match': remoteETag } : { 'If-None-Match': '*' }) },
+      body: JSON.stringify({ app: 'WorldAtlas', version: 1, savedAt: Date.now(), ...spec.collect() }),
+    });
+    if (res.status === 412 || res.status === 409) return false; // someone else wrote first — merge again
+    remoteETag = (await (await check(res, 'Uploading ' + spec.name)).json()).eTag;
   }
-  const body = { app: 'WorldAtlas', version: 1, savedAt: Date.now() };
-  for (const s of RECORD_STORES) body[s] = [...store.data[s].values()];
-  const res = await auth.graph(`${ROOT}:/${REMOTE_FILE}:/content`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...(remoteETag ? { 'If-Match': remoteETag } : { 'If-None-Match': '*' }) },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 412 || res.status === 409) return false; // someone else wrote first — merge again
-  const item = await (await check(res, 'Uploading atlas')).json();
-  await store.saveMeta({ eTag: item.eTag, syncedRev: rev });
+  await store.saveMeta({ eTags: { ...store.meta.eTags, [spec.name]: remoteETag } });
   return true;
 }
 
