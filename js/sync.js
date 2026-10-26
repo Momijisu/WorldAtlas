@@ -1,0 +1,147 @@
+// Two-way sync between IndexedDB and OneDrive (Apps/WorldAtlas/).
+//
+// atlas.json holds every world/article/map record (including deletion
+// tombstones). Records merge one by one: the newer `updatedAt` wins, so edits
+// to different articles on phone and PC never clobber each other. Uploads use
+// the file's eTag (If-Match), so a concurrent write from another device makes
+// us re-download and merge instead of overwriting. Images are stored as
+// separate immutable files in images/.
+import * as auth from './auth.js';
+import * as store from './store.js';
+import { RECORD_STORES } from './db.js';
+import { REMOTE_FILE } from './config.js';
+
+const ROOT = '/me/drive/special/approot';
+let status = { state: 'off', message: '' };
+const listeners = new Set();
+export const onStatus = (fn) => listeners.add(fn);
+export const getStatus = () => status;
+function setStatus(state, message = '') {
+  status = { state, message };
+  listeners.forEach((fn) => fn(status));
+}
+
+export function refreshStatus() {
+  if (auth.isSignedIn()) setStatus(store.isDirty() ? 'pending' : 'synced');
+  else if (auth.account()) setStatus('reauth', 'Reconnect OneDrive to resume syncing.');
+  else setStatus('off');
+}
+
+let running = null;
+let again = false;
+export function sync() {
+  if (running) { again = true; return running; }
+  running = run().finally(() => {
+    running = null;
+    if (again) { again = false; sync(); }
+  });
+  return running;
+}
+
+async function run() {
+  if (!auth.isSignedIn()) return refreshStatus();
+  if (!navigator.onLine) return setStatus('offline', 'Offline — changes are saved on this device.');
+  setStatus('syncing');
+  try {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (await syncRecords()) break;
+    }
+    await syncImages();
+    await store.saveMeta({ lastSync: Date.now() });
+    setStatus(store.isDirty() ? 'pending' : 'synced');
+  } catch (e) {
+    console.error('Sync failed', e);
+    if (e instanceof auth.ReauthRequired) setStatus('reauth', e.message);
+    else if (!navigator.onLine) setStatus('offline', 'Offline — changes are saved on this device.');
+    else setStatus('error', e.message || String(e));
+  }
+}
+
+async function check(res, what) {
+  if (res.ok) return res;
+  let msg = `${what} failed (${res.status})`;
+  try { msg += ': ' + (await res.json()).error.message; } catch { /* ignore */ }
+  const err = new Error(msg);
+  err.status = res.status;
+  throw err;
+}
+
+// Returns true when local and remote are in agreement, false on an eTag race.
+async function syncRecords() {
+  const metaRes = await auth.graph(`${ROOT}:/${REMOTE_FILE}`);
+  let remoteETag = null;
+  let localAhead = true;
+  if (metaRes.status !== 404) {
+    const item = await (await check(metaRes, 'Reading OneDrive')).json();
+    remoteETag = item.eTag;
+    if (remoteETag !== store.meta.eTag) {
+      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading atlas');
+      localAhead = await store.mergeRecords(await content.json());
+    } else {
+      localAhead = store.isDirty();
+    }
+  }
+  const rev = store.meta.localRev;
+  if (!localAhead) {
+    await store.saveMeta({ eTag: remoteETag, syncedRev: rev });
+    return true;
+  }
+  const body = { app: 'WorldAtlas', version: 1, savedAt: Date.now() };
+  for (const s of RECORD_STORES) body[s] = [...store.data[s].values()];
+  const res = await auth.graph(`${ROOT}:/${REMOTE_FILE}:/content`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(remoteETag ? { 'If-Match': remoteETag } : { 'If-None-Match': '*' }) },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 412 || res.status === 409) return false; // someone else wrote first — merge again
+  const item = await (await check(res, 'Uploading atlas')).json();
+  await store.saveMeta({ eTag: item.eTag, syncedRev: rev });
+  return true;
+}
+
+async function syncImages() {
+  // Upload images created on this device.
+  for (const id of await store.imageIds()) {
+    const rec = await store.getImage(id);
+    if (!rec || rec.uploaded) continue;
+    const res = await auth.graph(`${ROOT}:/images/${id}:/content`, {
+      method: 'PUT', headers: { 'Content-Type': rec.type }, body: rec.blob,
+    });
+    await check(res, 'Uploading image');
+    await store.putImage({ ...rec, uploaded: true });
+  }
+  // Download images referenced by records that we don't have yet.
+  const have = new Set(await store.imageIds());
+  let fetched = false;
+  for (const id of store.referencedImages()) {
+    if (have.has(id)) continue;
+    const metaRes = await auth.graph(`${ROOT}:/images/${id}`);
+    if (metaRes.status === 404) continue; // not uploaded yet by the other device
+    const item = await (await check(metaRes, 'Reading image')).json();
+    const blob = await (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading image')).blob();
+    await store.putImage({ id, blob, type: item.file?.mimeType || blob.type, uploaded: true });
+    fetched = true;
+  }
+  if (fetched) store.notify({ local: false, store: 'images' });
+}
+
+// Background scheduling: sync shortly after local edits, when the app comes
+// back into view, when the network returns, and every couple of minutes.
+export function start() {
+  const soon = debounceSync(2500);
+  store.onChange((e) => { if (e.local) { refreshStatus(); soon(); } });
+  addEventListener('online', () => sync());
+  addEventListener('offline', () => refreshStatus());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') sync();
+    else if (store.isDirty()) sync(); // try to flush before the app is backgrounded
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') sync(); }, 120000);
+  refreshStatus();
+  sync();
+}
+
+function debounceSync(ms) {
+  let t;
+  return () => { clearTimeout(t); t = setTimeout(sync, ms); };
+}
