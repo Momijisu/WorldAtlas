@@ -7,9 +7,10 @@ import { plain } from './markdown.js';
 
 export const view = document.getElementById('view');
 
-// guard: () => boolean — return false to block navigation (unsaved changes).
+// guard: () => boolean — returns true while the view has unsaved changes;
+//        navigation then asks for confirmation (guardMessage) first.
 // cleanup: called before the next view renders (e.g. to stop a map viewer).
-export const state = { guard: null, cleanup: null, installPrompt: null, wid: null };
+export const state = { guard: null, guardMessage: '', cleanup: null, installPrompt: null, wid: null };
 
 export function setTitle(t) { document.title = t ? `${t} · WorldAtlas` : 'WorldAtlas'; }
 

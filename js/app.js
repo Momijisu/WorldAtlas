@@ -2,7 +2,7 @@ import * as store from './store.js';
 import * as auth from './auth.js';
 import * as sync from './sync.js';
 import { TYPES } from './store.js';
-import { $, $$, esc, toast, timeAgo } from './util.js';
+import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
 import { viewList, viewSearch } from './views/list.js';
@@ -33,7 +33,7 @@ async function boot() {
   wireChrome();
   store.onChange((e) => {
     if (e.local) return;
-    if (state.guard) toast('Changes arrived from another device');
+    if (hasUnsaved()) toast('Changes arrived from another device');
     else route();
   });
   sync.onStatus(renderSyncBadge);
@@ -47,7 +47,7 @@ async function boot() {
     const hadController = !!navigator.serviceWorker.controller;
     let reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (hadController && !reloaded && !state.guard) { reloaded = true; location.reload(); }
+      if (hadController && !reloaded && !hasUnsaved()) { reloaded = true; location.reload(); }
     });
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
   }
@@ -96,7 +96,8 @@ function wireChrome() {
     else sync.sync();
   };
   addEventListener('hashchange', onHash);
-  addEventListener('beforeunload', (e) => { if (state.guard) { e.preventDefault(); e.returnValue = ''; } });
+  // Closing or reloading the tab can only use the browser's own warning (browsers don't allow custom ones).
+  addEventListener('beforeunload', (e) => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; } });
   addEventListener('keydown', (e) => {
     if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); $('#searchInput').focus(); }
   });
@@ -117,9 +118,22 @@ function renderSyncBadge({ state: st, message }) {
 
 // ---------------------------------------------------------------- routing
 
-function onHash() {
+const hasUnsaved = () => !!state.guard?.();
+
+async function onHash() {
   if (ignoreHash) { ignoreHash = false; return; }
-  if (state.guard && !state.guard()) { ignoreHash = true; location.hash = currentHash; return; }
+  if (hasUnsaved()) {
+    // Stay on the current page while we ask, then follow through if confirmed.
+    const target = location.hash;
+    ignoreHash = true;
+    location.hash = currentHash;
+    const leave = await confirmDialog(state.guardMessage || 'You have unsaved changes. Leave and discard them?', 'Discard changes',
+      { title: 'Unsaved changes', cancelLabel: 'Keep editing' });
+    if (!leave) return;
+    state.guard = null;
+    location.hash = target;
+    return;
+  }
   state.guard = null;
   route();
 }

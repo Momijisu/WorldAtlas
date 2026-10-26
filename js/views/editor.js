@@ -18,7 +18,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   a.tags ||= [];
   a.relations ||= [];
   let dirty = isNew && !!a.title;
-  state.guard = () => !dirty || confirm('Discard unsaved changes?');
+  state.guard = () => dirty;
+  state.guardMessage = 'This article has changes that haven’t been saved. Leave and discard them?';
   setTitle(isNew ? 'New article' : 'Editing ' + a.title);
   const excluded = isNew ? new Set() : new Set([a.id, ...store.descendantIds(a)]);
   const cancelHref = isNew ? (a.parentId ? `#/w/${wid}/a/${a.parentId}` : `#/w/${wid}`) : `#/w/${wid}/a/${a.id}`;

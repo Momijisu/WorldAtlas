@@ -158,7 +158,8 @@ export function viewCalendarEdit(wid) {
   c.eras = (c.eras || []).map((e) => ({ ...e, start: e.start === -Infinity || e.start == null ? '' : e.start }));
   c.moons ||= [];
   let dirty = false;
-  state.guard = () => !dirty || confirm('Discard calendar changes?');
+  state.guard = () => dirty;
+  state.guardMessage = 'Your calendar changes haven’t been saved. Leave and discard them?';
   setTitle('Calendar settings');
 
   view.innerHTML = `<form class="page narrow cal-edit" id="cf">

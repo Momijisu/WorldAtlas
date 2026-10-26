@@ -52,10 +52,10 @@ export function modal(title, body, { onMount, wide } = {}) {
   });
 }
 
-export async function confirmDialog(message, okLabel = 'Delete') {
-  return modal('Are you sure?', `<p>${esc(message)}</p>
-    <div class="actions"><button class="btn" data-no>Cancel</button><button class="btn danger" data-yes>${esc(okLabel)}</button></div>`,
-  { onMount: (m, close) => { m.querySelector('[data-no]').onclick = () => close(false); m.querySelector('[data-yes]').onclick = () => close(true); } });
+export async function confirmDialog(message, okLabel = 'Delete', { title = 'Are you sure?', cancelLabel = 'Cancel', danger = true } = {}) {
+  return modal(title, `<p>${esc(message)}</p>
+    <div class="actions"><button class="btn quiet" data-no>${esc(cancelLabel)}</button><button class="btn ${danger ? 'danger solid' : 'primary'}" data-yes>${esc(okLabel)}</button></div>`,
+  { onMount: (m, close) => { m.querySelector('[data-no]').onclick = () => close(false); m.querySelector('[data-yes]').onclick = () => close(true); m.querySelector('[data-no]').focus(); } });
 }
 
 // Downscale an image file to a JPEG blob no larger than maxDim on either side.
