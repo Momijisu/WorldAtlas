@@ -3,7 +3,7 @@
 // Paste the "Application (client) ID" of your Azure app registration here
 // (see README.md → "Set up OneDrive sync"). It can also be entered at runtime
 // on the Settings page, which overrides this value for that device.
-export const CLIENT_ID = '';
+export const CLIENT_ID = 'aaec4fa5-f6e4-4251-8998-177a2fedc48b';
 
 // "common" allows both personal Microsoft accounts and work/school accounts.
 // Use "consumers" if you registered the app for personal accounts only.

@@ -1,7 +1,7 @@
 // Offline support: the app shell is pre-cached, then served stale-while-revalidate
 // so the app opens instantly (even offline) and picks up new versions on the next launch.
 // Bump VERSION when the file list changes.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'worldatlas-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
