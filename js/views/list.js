@@ -8,6 +8,7 @@ export function viewList(wid, { type, tag }) {
   const all = store.articlesOf(wid);
   let list, title, newType = 'article', ic = 'books';
   if (tag) { list = all.filter((a) => (a.tags || []).includes(tag)); title = '#' + esc(tag); ic = 'tag'; }
+  else if (type === 'conflicts') { list = all.filter((a) => a.conflict); title = 'Conflicts to resolve'; ic = 'warning'; }
   else if (type && type !== 'all' && TYPES[type]) { list = all.filter((a) => a.type === type); title = TYPES[type].plural; newType = type; ic = TYPES[type].icon; }
   else { list = all; title = 'All articles'; }
   setTitle(title);

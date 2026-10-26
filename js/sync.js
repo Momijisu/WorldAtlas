@@ -77,8 +77,9 @@ const FILES = [
   {
     name: REMOTE_FILE,
     collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()]])),
-    merge: (json) => store.mergeRecords(json),
+    merge: (json) => store.mergeRecords(json, { detectConflicts: true }),
     hasLocal: () => RECORD_STORES.some((s) => store.data[s].size),
+    agreed: () => store.markSynced(),
   },
   {
     name: 'history.json',
@@ -115,6 +116,7 @@ async function syncFile(spec, dirty) {
     remoteETag = (await (await check(res, 'Uploading ' + spec.name)).json()).eTag;
   }
   await store.saveMeta({ eTags: { ...store.meta.eTags, [spec.name]: remoteETag } });
+  await spec.agreed?.();
   return true;
 }
 

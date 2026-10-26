@@ -40,6 +40,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         <a class="btn quiet" href="${cancelHref}">Cancel</a>
         <button class="btn primary">${icon('check')} Save</button>`,
     })}
+    ${a.conflict ? `<div class="conflict-banner">${icon('warning')}<div><b>This article has conflicting edits from another device.</b> Saving here keeps the conflict open. <a href="#/w/${wid}/a/${a.id}/resolve">Resolve it</a> to choose what to keep.</div></div>` : ''}
     ${prompt ? `<div class="prompt-callout">${icon('feather')}<div><div class="eyebrow">Writing prompt</div><p>${esc(prompt.text)}</p></div></div>` : ''}
     <div class="editor-grid">
       <div class="editor-main">

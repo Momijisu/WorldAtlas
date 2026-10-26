@@ -15,6 +15,7 @@ import { viewMaps, viewMap } from './views/maps.js';
 import { viewTree } from './views/tree.js';
 import { viewGraph } from './views/graph.js';
 import { viewPrompts } from './views/prompts.js';
+import { viewResolve } from './views/conflict.js';
 import { promptsEnabled } from './prompts.js';
 import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.js';
 
@@ -35,6 +36,9 @@ async function boot() {
     if (e.local) return;
     if (hasUnsaved()) toast('Changes arrived from another device');
     else route();
+    if (e.conflicts) {
+      toast(`${e.conflicts} article${e.conflicts === 1 ? ' was' : 's were'} edited on two devices. Open ${e.conflicts === 1 ? 'it' : 'them'} to resolve the conflict.`, 7000);
+    }
   });
   sync.onStatus(renderSyncBadge);
   sync.start();
@@ -179,6 +183,7 @@ export function route() {
       if (!a) return null;
       if (sub === 'edit') return viewEditor(wid, structuredClone(a), false, { prompt: q.get('prompt') });
       if (sub === 'history') return viewHistory(wid, id);
+      if (sub === 'resolve') return viewResolve(wid, id);
       return viewArticle(wid, id);
     },
   };
@@ -208,6 +213,13 @@ function markActiveNav() {
 
 // ---------------------------------------------------------------- sidebar
 
+function conflictNav(wid) {
+  const list = store.conflictsOf(wid);
+  if (!list.length) return '';
+  const href = list.length === 1 ? `#/w/${wid}/a/${list[0].id}/resolve` : `#/w/${wid}/t/conflicts`;
+  return nav(href, 'warning', 'Conflicts to resolve', list.length, 'class="nav-conflict"');
+}
+
 const nav = (href, ic, label, count = '', extra = '') =>
   `<a href="${href}" ${extra}>${icon(ic)}<span>${label}</span>${count !== '' ? `<span class="count">${count}</span>` : ''}</a>`;
 
@@ -231,6 +243,7 @@ function renderSidebar(wid) {
     <div class="world-title"><a href="#/w/${wid}">${esc(w.name)}</a></div>
     <div class="world-sub eyebrow">${arts.length} articles · ${store.mapsOf(wid).length} maps</div>
     ${nav(`#/w/${wid}`, 'compass', 'Overview')}
+    ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
     ${promptsEnabled() ? nav(`#/w/${wid}/prompts`, 'feather', 'Writing prompts') : ''}
     <div class="nav-title">Chronicle</div>

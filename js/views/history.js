@@ -95,7 +95,7 @@ function diffSnapshots(wid, prev, cur) {
 const titleOf = (id) => (id ? store.data.articles.get(id)?.title || '' : '');
 
 // Line-level diff via longest common subsequence, with unchanged runs collapsed.
-function lineDiff(a, b) {
+export function lineDiff(a, b) {
   const A = a.split('\n'), B = b.split('\n');
   const n = A.length, m = B.length;
   if (n * m > 4e6) return `<div class="diff-old">(${n} lines)</div><div class="diff-new">(${m} lines)</div>`;

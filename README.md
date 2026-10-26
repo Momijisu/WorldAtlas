@@ -69,7 +69,7 @@ To test locally, also add `http://localhost:8000/` as an SPA redirect URI and ru
 - Each device keeps a full copy in its browser storage (IndexedDB), so the app is fast and works offline.
 - In OneDrive, `Apps/WorldAtlas/atlas.json` holds all the text (worlds, articles, maps), `history.json` holds article versions, and `images/` holds the pictures.
 - Sync runs a couple of seconds after each edit, when the app comes back to the foreground, when the network returns, and every 2 minutes while the app is open. The cloud icon in the top bar shows the status; tap it to sync now.
-- **Conflicts are merged per article.** If you edit *different* articles on your phone and PC, both edits survive. If you edit the *same* article on both before they sync, the most recent save wins. Deletions sync too.
+- **Conflicts are merged per article.** If you edit *different* articles on your phone and PC, both edits survive. If the *same* article is edited on both before they sync, the app keeps both versions and marks the article as in conflict. You'll see a notice, a banner on the article and a "Conflicts to resolve" entry in the sidebar. The merge resolver shows each difference side by side: pick a version per field, combine tags and relationships, or hand-edit the merged text. Resolving on one device clears the conflict everywhere. Deletions sync too.
 - Microsoft limits browser-app sign-ins to 24 hours. The app renews the sign-in automatically when you open it. If that ever fails, the badge shows **Reconnect** and one tap fixes it. Your changes stay safe on the device in the meantime.
 
 ## Project layout

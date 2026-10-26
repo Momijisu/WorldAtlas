@@ -1,13 +1,13 @@
 // Offline support: the app shell is pre-cached, then served stale-while-revalidate
 // so the app opens instantly (even offline) and picks up new versions on the next launch.
 // Bump VERSION when the file list changes.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = 'worldatlas-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/features.css', 'css/graph.css',
   'css/maps.css', 'js/app.js', 'js/auth.js', 'js/calendar.js', 'js/config.js', 'js/db.js', 'js/example.js',
   'js/guidance.js', 'js/icons.js', 'js/mapview.js', 'js/markdown.js', 'js/prompts.js', 'js/relations.js', 'js/store.js', 'js/sync.js',
-  'js/ui.js', 'js/util.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/editor.js',
+  'js/ui.js', 'js/util.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/conflict.js', 'js/views/editor.js',
   'js/views/graph.js', 'js/views/history.js', 'js/views/home.js', 'js/views/list.js', 'js/views/maps.js', 'js/views/prompts.js',
   'js/views/settings.js', 'js/views/timeline.js', 'js/views/tree.js', 'vendor/marked.min.js',
   'vendor/purify.min.js', 'fonts/alegreya-latin-400-italic.woff2', 'fonts/alegreya-latin-400-normal.woff2',

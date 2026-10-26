@@ -33,6 +33,7 @@ export async function load() {
   for (const h of await db.getAll('history')) data.history.set(h.id, h);
   meta = (await db.get('meta', 'sync')) || meta;
   meta.eTags ??= meta.eTag ? { 'atlas.json': meta.eTag } : {};
+  syncBase = (await db.get('meta', 'base'))?.map || {};
 }
 
 export async function saveMeta(patch) {
@@ -86,24 +87,66 @@ export async function applyRemote(store, records) {
   if (records.length) emit({ local: false, store });
 }
 
+// The updatedAt of each record as last agreed with OneDrive. Lets a merge tell
+// "both devices edited this since the last sync" (a conflict) from "one side
+// is simply newer".
+let syncBase = {};
+
+export async function markSynced() {
+  for (const s of db.RECORD_STORES) for (const r of data[s].values()) syncBase[r.id] = r.updatedAt || 0;
+  await db.put('meta', { key: 'base', map: syncBase });
+}
+
+const sameContent = (a, b) => JSON.stringify(contentOf(a)) === JSON.stringify(contentOf(b));
+
 // Merge records from another copy (OneDrive or a backup file): per record,
-// the newer updatedAt wins. Returns true if local has anything `other` lacks.
-export async function mergeRecords(other) {
+// the newer updatedAt wins. With detectConflicts, an article edited on both
+// sides since the last sync keeps the local text and carries the other
+// version in `conflict` until the user resolves it (this syncs, so every
+// device sees the conflict). Returns true if local has anything `other` lacks.
+export async function mergeRecords(other, { detectConflicts = false } = {}) {
   let localAhead = false;
+  let newConflicts = 0;
   for (const s of db.RECORD_STORES) {
     const incoming = [];
+    const marked = [];
     const otherById = new Map((other[s] || []).map((r) => [r.id, r]));
     for (const r of otherById.values()) {
       const l = data[s].get(r.id);
-      if (!l || (r.updatedAt || 0) > (l.updatedAt || 0)) incoming.push(r);
+      if (!l) { incoming.push(r); continue; }
+      const lu = l.updatedAt || 0, ru = r.updatedAt || 0;
+      if (lu === ru) continue;
+      const b = syncBase[r.id];
+      if (detectConflicts && s === 'articles' && !l.deleted && !r.deleted && b != null && lu > b && ru > b && !sameContent(l, r)) {
+        if (r.conflict && sameContent(r.conflict.theirs, l)) { incoming.push(r); continue; } // they already hold our version
+        if (l.conflict && sameContent(l.conflict.theirs, r)) { // we already hold theirs; make sure ours wins the upload
+          if (ru >= lu) marked.push({ ...l, updatedAt: ru + 1 });
+          continue;
+        }
+        marked.push({ ...l, conflict: { theirs: contentOf(r), theirsAt: ru, at: Date.now() }, updatedAt: Math.max(lu, ru) + 1 });
+        newConflicts++;
+        continue;
+      }
+      if (ru > lu) incoming.push(r);
     }
     for (const l of data[s].values()) {
       const r = otherById.get(l.id);
       if (!r || (l.updatedAt || 0) > (r.updatedAt || 0)) localAhead = true;
     }
-    await applyRemote(s, incoming);
+    if (marked.length) localAhead = true;
+    await applyRemote(s, [...incoming, ...marked]);
   }
+  if (newConflicts) emit({ local: false, store: 'articles', conflicts: newConflicts });
   return localAhead;
+}
+
+export const conflictsOf = (wid) => articlesOf(wid).filter((a) => a.conflict);
+
+// Save the user's merged result and clear the conflict.
+export async function resolveConflict(id, content) {
+  const a = { ...data.articles.get(id), ...content };
+  delete a.conflict;
+  return save('articles', a);
 }
 
 // --- article history ------------------------------------------------------
