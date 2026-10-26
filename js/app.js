@@ -42,7 +42,23 @@ function registerSW() {
   navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
 }
 
-addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); state.installPrompt = e; });
+// Keep the install event so we can offer our own Install button, but don't
+// preventDefault(): that would hide the browser's own install prompt/menu entry.
+addEventListener('beforeinstallprompt', (e) => { state.installPrompt = e; showInstallButton(); });
+addEventListener('appinstalled', () => { state.installPrompt = null; showInstallButton(); });
+
+function showInstallButton() {
+  const btn = document.getElementById('installTop');
+  if (btn) btn.hidden = !state.installPrompt;
+}
+
+async function promptInstall() {
+  if (!state.installPrompt) return;
+  state.installPrompt.prompt();
+  await state.installPrompt.userChoice;
+  state.installPrompt = null;
+  showInstallButton();
+}
 
 function applyTheme() {
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
@@ -60,6 +76,8 @@ function wireChrome() {
     $('#searchInput').blur();
   };
   $('#newBtn').onclick = () => newArticleDialog(state.wid);
+  $('#installTop').onclick = promptInstall;
+  showInstallButton();
   $('#syncBtn').onclick = () => {
     const st = sync.getStatus().state;
     if (st === 'off' || st === 'reauth' || st === 'error') location.hash = '#/settings';
@@ -872,7 +890,10 @@ function viewSettings() {
   setTitle('Settings');
   const theme = localStorage.getItem('wa.theme') || 'dark';
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const edge = /Edg/i.test(ua);
+  const android = /android/i.test(ua);
   view.innerHTML = `<section class="page settings">
     <div class="page-head"><h1>⚙️ Settings &amp; sync</h1></div>
     <div class="panel" id="oneDriveCard"></div>
@@ -881,8 +902,12 @@ function viewSettings() {
       ${standalone ? '<p>✓ You are using the installed app.</p>' : `
         ${state.installPrompt ? '<p><button class="btn primary" id="installBtn">Install WorldAtlas</button></p>' : ''}
         <p class="muted">${ios
-          ? 'On iPhone/iPad: open this page in Safari, tap <b>Share</b> → <b>Add to Home Screen</b>.'
-          : 'On Android (Chrome): menu ⋮ → <b>Install app</b> / <b>Add to Home screen</b>. On PC (Edge or Chrome): click the install icon at the right of the address bar, or menu → <b>Apps</b> → <b>Install</b>.'}</p>`}
+          ? `On iPhone/iPad: tap <b>Share</b> ${edge ? '(in Edge: menu ⋯ → <b>Share</b>)' : ''} → <b>Add to Home Screen</b>. This needs iOS 16.4 or later in Edge/Chrome; on older iOS, use Safari.`
+          : android && edge
+            ? 'In Edge on Android: tap the menu <b>⋯</b> at the bottom of the screen → <b>Add to phone</b> (on some versions: <b>Install app</b> or <b>Add to Home screen</b>). If it isn\'t listed, reload the page once and try again.'
+            : android
+              ? 'On Android (Chrome): menu ⋮ → <b>Install app</b> / <b>Add to Home screen</b>.'
+              : 'On PC (Edge or Chrome): click the install icon at the right of the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
       <p class="muted small">The app works offline. Everything is saved on the device first and synced to OneDrive whenever you're online.</p>
     </div>
     <div class="panel">
@@ -903,12 +928,7 @@ function viewSettings() {
   renderOneDriveCard();
   $('#themeSel').value = theme;
   $('#themeSel').onchange = (e) => { localStorage.setItem('wa.theme', e.target.value); applyTheme(); };
-  $('#installBtn')?.addEventListener('click', async () => {
-    state.installPrompt.prompt();
-    await state.installPrompt.userChoice;
-    state.installPrompt = null;
-    route();
-  });
+  $('#installBtn')?.addEventListener('click', () => promptInstall().then(route));
   $('#exportBtn').onclick = exportBackup;
   $('#importFile').onchange = (e) => e.target.files[0] && importBackup(e.target.files[0]);
 }
