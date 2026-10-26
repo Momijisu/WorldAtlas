@@ -428,7 +428,7 @@ details.secret-edit textarea { margin-top: .7rem; }
 .panel > h2 { font-size: 1.4rem; margin-bottom: .7rem; }
 .panel label:last-child { margin-bottom: 0; }
 .md-toolbar { display: flex; flex-wrap: wrap; gap: 1px; padding: 3px; background: var(--ink-2); border: 1px solid var(--rule-strong); border-bottom: 0; border-radius: var(--r) var(--r) 0 0; }
-.md-toolbar button { display: inline-grid; place-items: center; min-width: 34px; height: 32px; border: 0; border-radius: 2px; background: transparent; color: var(--text-2); font: 500 .88rem var(--sans); cursor: pointer; padding: 0 .5rem; }
+.md-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; min-width: 34px; height: 32px; border: 0; border-radius: 2px; background: transparent; color: var(--text-2); font: 500 .88rem var(--sans); cursor: pointer; padding: 0 .5rem; }
 .md-toolbar button:hover, .md-toolbar button.on { background: var(--ink-4); color: var(--text); }
 textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif); min-height: 340px; padding: .9rem 1rem; }
 .md-preview { border: 1px solid var(--rule-strong); border-radius: 0 0 var(--r) var(--r); padding: 1rem 1.2rem; min-height: 340px; background: var(--ink-1); }

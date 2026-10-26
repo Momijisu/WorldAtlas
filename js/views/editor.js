@@ -5,6 +5,7 @@ import { render } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
+import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
@@ -47,6 +48,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
         </div>
         <label>Summary <small>a line or two, shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
+        ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
         <div class="md-toolbar">
           <button type="button" data-md="bold" title="Bold">${icon('text-b')}</button>
@@ -165,10 +167,61 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   };
   Object.entries(a.fields).forEach(([k, v]) => addRow(k, v));
   $('#addField').onclick = () => addRow().querySelector('.k').focus();
+  let prevType = f.type.value;
   f.type.onchange = () => {
+    const next = TYPES[f.type.value].fields;
+    // Drop empty fields that only belonged to the previous template.
+    for (const row of $$('.kv', fieldsEl)) {
+      const k = row.querySelector('.k').value.trim();
+      if (!row.querySelector('.v').value.trim() && TYPES[prevType]?.fields.includes(k) && !next.includes(k)) row.remove();
+    }
     const have = new Set($$('.kv .k', fieldsEl).map((i) => i.value.trim()));
-    for (const k of TYPES[f.type.value].fields) if (!have.has(k)) addRow(k, '');
+    for (const k of next) if (!have.has(k)) addRow(k, '');
+    prevType = f.type.value;
+    drawGuide();
   };
+
+  // Writing guide: questions for this template; choosing one adds its heading to the article.
+  const guide = $('#guide');
+  function drawGuide() {
+    if (!guide) return;
+    const items = guidanceFor(f.type.value);
+    const have = headingsIn(f.body.value);
+    const done = items.filter((g) => have.has(g.h.toLowerCase())).length;
+    $('summary', guide).innerHTML = `${icon('compass')} Writing guide <span class="muted">· ${esc(TYPES[f.type.value]?.label || 'Article')} · ${done} of ${items.length} covered</span>`;
+    $('.guide-list', guide).innerHTML = items.map((g, i) => `
+      <li class="${have.has(g.h.toLowerCase()) ? 'done' : ''}"><button type="button" data-g="${i}">
+        <span class="g-mark">${have.has(g.h.toLowerCase()) ? icon('check') : icon('plus')}</span>
+        <span><b>${esc(g.h)}</b><span class="g-q">${esc(g.q)}</span></span>
+      </button></li>`).join('');
+  }
+  if (guide) {
+    try { guide.open = localStorage.getItem('wa.guideOpen') !== '0' && (isNew || !a.body); } catch { guide.open = isNew; }
+    guide.addEventListener('toggle', () => { try { localStorage.setItem('wa.guideOpen', guide.open ? '1' : '0'); } catch { /* ignore */ } });
+    $('.guide-list', guide).onclick = (e) => {
+      const b = e.target.closest('[data-g]');
+      if (!b) return;
+      const g = guidanceFor(f.type.value)[+b.dataset.g];
+      const body = f.body;
+      if ($('.md-preview', f).hidden === false) $('#previewBtn').click();
+      const re = new RegExp('^#{1,4}\\s+' + g.h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'im');
+      const m = body.value.match(re);
+      let pos;
+      if (m) pos = m.index + m[0].length;
+      else {
+        const sepr = body.value.trim() ? (body.value.endsWith('\n\n') ? '' : body.value.endsWith('\n') ? '\n' : '\n\n') : '';
+        body.value += `${sepr}## ${g.h}\n`;
+        pos = body.value.length;
+        body.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      body.focus();
+      body.setSelectionRange(pos, pos);
+      const lineH = parseFloat(getComputedStyle(body).lineHeight) || 26;
+      body.scrollTop = Math.max(0, body.value.slice(0, pos).split('\n').length * lineH - body.clientHeight / 2);
+    };
+    f.body.addEventListener('input', drawGuide);
+    drawGuide();
+  }
 
   // Image
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);

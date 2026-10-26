@@ -5,6 +5,7 @@ import * as sync from '../sync.js';
 import { $, esc, toast, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon } from '../ui.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
+import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
 
 export function applyTheme() {
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
@@ -44,9 +45,11 @@ export function viewSettings() {
       </div>
     </div>
     <div class="panel">
-      <h2>Writing prompts</h2>
+      <h2>Writing help</h2>
       <label class="check"><input type="checkbox" id="promptsToggle" ${promptsEnabled() ? 'checked' : ''}> Show writing prompts</label>
-      <p class="muted small">Shows a daily prompt on each world’s overview and a “Writing prompts” link in the sidebar. Turning this off hides them on this device; your answered prompts and articles are kept.</p>
+      <p class="muted small">A daily prompt on each world’s overview and a “Writing prompts” link in the sidebar. Turning this off hides them; your answered prompts and articles are kept.</p>
+      <label class="check"><input type="checkbox" id="guideToggle" ${guidanceEnabled() ? 'checked' : ''}> Show the writing guide in the editor</label>
+      <p class="muted small">Guiding questions for each template (appearance, motivation, history…). These settings apply to this device.</p>
     </div>
     <div class="panel">
       <h2>Backup</h2>
@@ -72,6 +75,10 @@ export function viewSettings() {
   $('#promptsToggle').onchange = (e) => {
     setPromptsEnabled(e.target.checked);
     toast(e.target.checked ? 'Writing prompts shown' : 'Writing prompts hidden');
+  };
+  $('#guideToggle').onchange = (e) => {
+    setGuidanceEnabled(e.target.checked);
+    toast(e.target.checked ? 'Writing guide shown' : 'Writing guide hidden');
   };
   $('#exportBtn').onclick = exportBackup;
   $('#importFile').onchange = (e) => e.target.files[0] && importBackup(e.target.files[0]);

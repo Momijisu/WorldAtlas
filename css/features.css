@@ -217,3 +217,21 @@
   .prompt-list li { flex-wrap: wrap; }
   .pl-actions { margin-left: calc(34px + .9rem); }
 }
+
+/* ---------- writing guide (editor) ---------- */
+details.guide { margin: 0 0 1rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--ink-2); }
+details.guide summary { padding: .7rem .9rem; text-transform: none; letter-spacing: 0; font: 500 .95rem var(--sans); color: var(--text); }
+details.guide summary .i { color: var(--brass); }
+details.guide summary .muted { font-weight: 400; }
+.guide-list { list-style: none; margin: 0; padding: 0 .4rem .5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px; }
+.guide-list button {
+  display: flex; gap: .6rem; align-items: flex-start; width: 100%; text-align: left; padding: .55rem .6rem;
+  border: 0; border-radius: 2px; background: transparent; color: var(--text); cursor: pointer; font: inherit;
+}
+.guide-list button:hover { background: var(--ink-3); }
+.guide-list b { display: block; font: 600 1.08rem/1.2 var(--display); }
+.g-q { display: block; font-size: .86rem; color: var(--text-2); line-height: 1.4; margin-top: .1rem; }
+.g-mark { flex: 0 0 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--rule-strong); border-radius: 50%; color: var(--brass); margin-top: .1rem; }
+.g-mark .i { width: 12px; height: 12px; }
+.guide-list li.done b { color: var(--muted); }
+.guide-list li.done .g-mark { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
