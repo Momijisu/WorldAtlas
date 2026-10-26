@@ -4,10 +4,12 @@ import { TYPES } from '../store.js';
 import { render } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS } from '../relations.js';
+import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
-export function viewEditor(wid, a, isNew) {
+export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
+  const prompt = promptKey ? resolvePrompt(wid, promptKey) : null;
   const w = store.world(wid);
   const cal = calendarOf(w);
   const oldTitle = a.title;
@@ -36,6 +38,7 @@ export function viewEditor(wid, a, isNew) {
         <a class="btn quiet" href="${cancelHref}">Cancel</a>
         <button class="btn primary">${icon('check')} Save</button>`,
     })}
+    ${prompt ? `<div class="prompt-callout">${icon('feather')}<div><div class="eyebrow">Writing prompt</div><p>${esc(prompt.text)}</p></div></div>` : ''}
     <div class="editor-grid">
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
@@ -232,6 +235,7 @@ export function viewEditor(wid, a, isNew) {
       dateLabel: f.dateLabel.value.trim(),
     });
     await store.save('articles', a);
+    if (prompt) await recordAnswer(wid, prompt.key, a.id);
     if (!isNew && oldTitle && oldTitle.trim().toLowerCase() !== title.toLowerCase()) {
       await store.renameReferences(wid, oldTitle, title);
     }

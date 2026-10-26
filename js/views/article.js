@@ -7,6 +7,7 @@ import { relationsOf, REL_TYPES, REL_GROUPS, hasFamily } from '../relations.js';
 import { $, esc, timeAgo } from '../util.js';
 import { view, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
+import { promptsAnsweredBy } from '../prompts.js';
 
 export function viewArticle(wid, id) {
   const w = store.world(wid);
@@ -47,6 +48,7 @@ export function viewArticle(wid, id) {
     </div>
     <div class="article-grid">
       <div class="article-main">
+        ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Written for the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
         ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>This page is blank. <a href="#/w/${wid}/a/${a.id}/edit">Begin writing</a>.</p></div>`}
         ${a.gmNotes ? `<details class="secret"><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary><div class="prose no-dropcap">${render(a.gmNotes, wid)}</div></details>` : ''}

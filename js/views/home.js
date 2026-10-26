@@ -6,6 +6,8 @@ import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
+import { todaysPrompt, promptsEnabled } from '../prompts.js';
+import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
   setTitle('');
@@ -113,6 +115,7 @@ export function viewWorld(wid) {
       </div>
     </div>
     ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
+    <div id="todayPrompt" class="today-prompt"></div>
     ${flourish()}
     <div class="index-grid">
       ${Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k])).join('')}
@@ -124,6 +127,11 @@ export function viewWorld(wid) {
     <div class="section-head"><h2>Recently written</h2><a class="small" href="#/w/${wid}/t/all">All articles →</a></div>
     ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. Start with a character, a place or a faction — <a href="#" id="newArt2">create the first article</a>.</p></div>`}
   </section>`;
+  const showPrompt = (p, eyebrow = 'Today’s prompt') => {
+    $('#todayPrompt').innerHTML = promptCard(wid, p, { eyebrow }) + `<a class="small more-prompts" href="#/w/${wid}/prompts">All writing prompts →</a>`;
+    wirePromptCard(wid, $('#todayPrompt'), { onChange: (np) => showPrompt(np, 'Another prompt') });
+  };
+  if (promptsEnabled()) showPrompt(todaysPrompt(wid));
   $('#editWorld').onclick = () => worldDialog(w);
   $('#newArt').onclick = () => newArticleDialog(wid);
   $('#newArt2')?.addEventListener('click', (e) => { e.preventDefault(); newArticleDialog(wid); });

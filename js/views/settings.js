@@ -4,6 +4,7 @@ import * as auth from '../auth.js';
 import * as sync from '../sync.js';
 import { $, esc, toast, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon } from '../ui.js';
+import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 
 export function applyTheme() {
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
@@ -43,6 +44,11 @@ export function viewSettings() {
       </div>
     </div>
     <div class="panel">
+      <h2>Writing prompts</h2>
+      <label class="check"><input type="checkbox" id="promptsToggle" ${promptsEnabled() ? 'checked' : ''}> Show writing prompts</label>
+      <p class="muted small">Shows a daily prompt on each world’s overview and a “Writing prompts” link in the sidebar. Turning this off hides them on this device; your answered prompts and articles are kept.</p>
+    </div>
+    <div class="panel">
       <h2>Backup</h2>
       <p class="muted">Download everything — worlds, articles, maps, images and revision history — as a single file, or merge a backup back in.</p>
       <div class="actions left">
@@ -63,6 +69,10 @@ export function viewSettings() {
   };
   mark();
   $('#installBtn')?.addEventListener('click', () => state.promptInstall().then(() => state.route()));
+  $('#promptsToggle').onchange = (e) => {
+    setPromptsEnabled(e.target.checked);
+    toast(e.target.checked ? 'Writing prompts shown' : 'Writing prompts hidden');
+  };
   $('#exportBtn').onclick = exportBackup;
   $('#importFile').onchange = (e) => e.target.files[0] && importBackup(e.target.files[0]);
 }

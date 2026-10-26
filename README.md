@@ -13,6 +13,7 @@ A personal worldbuilding wiki, inspired by World Anvil, that runs on your phone 
 - **Timeline**: a chronicle grouped by era, plus a zoomable span chart for lifespans, reigns and wars, with filters by type and tag.
 - **Maps**: pins with icons and colours, drawn regions, layers you can show and hide, nested maps (a pin can open another map), and place search.
 - **Revision history**: every save keeps a version (the last 40 per article). Compare versions line by line, restore any of them, and recover deleted articles.
+- **Writing prompts**: about 150 original prompts in ten categories. Many are tailored to your world ("What does Queen Ysolde fear most?"). Each world's overview shows a daily prompt. Answer a prompt with a new article or add to an existing one, set aside prompts you don't want, and add your own. You can hide prompts in Settings.
 - **GM notes**: a secrets section that stays collapsed while you read.
 - **Two themes**: Nocturne (dark) and Vellum (light parchment).
 - **Works offline and installs as an app.** Everything saves on the device first and syncs to OneDrive when you're online.
@@ -85,6 +86,7 @@ js/sync.js            OneDrive two-way sync
 js/auth.js            Microsoft sign-in (OAuth 2.0 auth-code + PKCE, no library)
 js/calendar.js        custom calendar maths and date formatting
 js/relations.js       relationship types and inverses, family links
+js/prompts.js         writing prompt library and daily prompt
 js/mapview.js         pan/zoom map viewer with pins and regions
 js/markdown.js        Markdown + [[wiki link]] rendering
 js/icons.js           icon set (Phosphor, MIT)

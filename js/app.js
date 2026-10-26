@@ -14,6 +14,8 @@ import { viewCalendar, viewCalendarEdit } from './views/calendar.js';
 import { viewMaps, viewMap } from './views/maps.js';
 import { viewTree } from './views/tree.js';
 import { viewGraph } from './views/graph.js';
+import { viewPrompts } from './views/prompts.js';
+import { promptsEnabled } from './prompts.js';
 import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.js';
 
 const sidebar = $('#sidebar');
@@ -149,18 +151,19 @@ export function route() {
     tree: () => (store.article(id) ? viewTree(wid, id) : null),
     graph: () => viewGraph(wid, q),
     trash: () => viewTrash(wid),
+    prompts: () => viewPrompts(wid),
     new: () => {
       const type = TYPES[id] ? id : 'article';
       const num = (k) => (q.has(k) && q.get(k) !== '' && !isNaN(+q.get(k)) ? +q.get(k) : null);
       return viewEditor(wid, store.newArticle(wid, type, {
         title: q.get('title') || '', parentId: q.get('parent') || null,
         start: num('y'), startM: num('y') == null ? null : num('m'), startD: num('m') == null ? null : num('d'),
-      }), true);
+      }), true, { prompt: q.get('prompt') });
     },
     a: () => {
       const a = store.article(id);
       if (!a) return null;
-      if (sub === 'edit') return viewEditor(wid, structuredClone(a), false);
+      if (sub === 'edit') return viewEditor(wid, structuredClone(a), false, { prompt: q.get('prompt') });
       if (sub === 'history') return viewHistory(wid, id);
       return viewArticle(wid, id);
     },
@@ -215,6 +218,7 @@ function renderSidebar(wid) {
     <div class="world-sub eyebrow">${arts.length} articles · ${store.mapsOf(wid).length} maps</div>
     ${nav(`#/w/${wid}`, 'compass', 'Overview')}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
+    ${promptsEnabled() ? nav(`#/w/${wid}/prompts`, 'feather', 'Writing prompts') : ''}
     <div class="nav-title">Chronicle</div>
     ${nav(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline')}
     ${nav(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '', `data-prefix="#/w/${wid}/calendar"`)}
