@@ -9,10 +9,10 @@ import { view, state, setTitle, pageHead, icon, typeLabel, worldCrumb, sep } fro
 import { lineDiff } from './history.js';
 
 const DATE_KEYS = ['start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel'];
-const titleOf = (id) => (id ? store.data.articles.get(id)?.title || '(deleted article)' : '— none —');
+const titleOf = (id) => (id ? store.data.articles.get(id)?.title || '(deleted article)' : 'None');
 const same = (x, y) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
 const relKey = (r) => r.type + '|' + r.target;
-const relText = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target)}${r.note ? ' — ' + r.note : ''}`;
+const relText = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target)}${r.note ? ` (${r.note})` : ''}`;
 
 // The fields that differ between the two versions, as resolver blocks.
 function blocksFor(cur, other, cal) {
@@ -21,17 +21,17 @@ function blocksFor(cur, other, cal) {
   if (!same(cur.title, other.title)) add({ id: 'title', label: 'Title', kind: 'line' });
   if (!same(cur.type, other.type)) add({ id: 'type', label: 'Template', fmt: (v) => typeLabel(v.type) });
   if (!same(cur.parentId, other.parentId)) add({ id: 'parentId', label: 'Part of', fmt: (v) => titleOf(v.parentId) });
-  if (!same(DATE_KEYS.map((k) => cur[k]), DATE_KEYS.map((k) => other[k]))) add({ id: 'date', label: 'Date', fmt: (v) => articleDateText(cal, v) || '— no date —' });
+  if (!same(DATE_KEYS.map((k) => cur[k]), DATE_KEYS.map((k) => other[k]))) add({ id: 'date', label: 'Date', fmt: (v) => articleDateText(cal, v) || 'No date' });
   for (const k of ['summary', 'body', 'gmNotes']) {
     if (!same(cur[k] || '', other[k] || '')) add({ id: k, label: { summary: 'Summary', body: 'Content', gmNotes: 'Secrets & GM notes' }[k], kind: 'text' });
   }
   const keys = new Set([...Object.keys(cur.fields || {}), ...Object.keys(other.fields || {})]);
   for (const k of keys) {
-    if (!same(cur.fields?.[k] ?? '', other.fields?.[k] ?? '')) add({ id: 'field:' + k, label: 'Infobox · ' + k, fmt: (v) => v.fields?.[k] ?? '— not set —' });
+    if (!same(cur.fields?.[k] ?? '', other.fields?.[k] ?? '')) add({ id: 'field:' + k, label: 'Infobox · ' + k, fmt: (v) => v.fields?.[k] ?? 'Not set' });
   }
-  if (!same([...(cur.tags || [])].sort(), [...(other.tags || [])].sort())) add({ id: 'tags', label: 'Tags', kind: 'set', fmt: (v) => (v.tags || []).map((t) => '#' + t).join('  ') || '— none —' });
+  if (!same([...(cur.tags || [])].sort(), [...(other.tags || [])].sort())) add({ id: 'tags', label: 'Tags', kind: 'set', fmt: (v) => (v.tags || []).map((t) => '#' + t).join('  ') || 'None' });
   if (!same((cur.relations || []).map(relKey).sort(), (other.relations || []).map(relKey).sort()) || !same(cur.relations, other.relations)) {
-    add({ id: 'relations', label: 'Relationships', kind: 'set', fmt: (v) => (v.relations || []).map(relText).join('\n') || '— none —' });
+    add({ id: 'relations', label: 'Relationships', kind: 'set', fmt: (v) => (v.relations || []).map(relText).join('\n') || 'None' });
   }
   for (const k of ['image', 'banner']) {
     if (!same(cur[k], other[k])) add({ id: k, label: k === 'image' ? 'Portrait / image' : 'Header image', kind: 'image' });
@@ -54,15 +54,15 @@ export function viewResolve(wid, aid) {
   const choice = Object.fromEntries(blocks.map((b) => [b.id, b.kind === 'set' ? 'both' : 'cur']));
   let dirty = false;
   state.guard = () => dirty;
-  state.guardMessage = 'Your merge choices haven’t been saved. Leave without resolving?';
+  state.guardMessage = 'Leave without saving your merge?';
   setTitle('Resolve conflict · ' + a.title);
 
   const side = (b, which, v) => {
     const label = which === 'cur' ? 'Current version' : 'Other version';
     const when = which === 'cur' ? (curAt ? 'saved ' + timeAgo(curAt) : '') : 'saved ' + timeAgo(a.conflict.theirsAt);
     let body;
-    if (b.kind === 'image') body = v[b.id] ? `<img class="cf-img" data-img="${v[b.id]}" alt="">` : '<span class="muted">— no image —</span>';
-    else if (b.kind === 'text' || b.kind === 'line') body = `<div class="cf-text">${esc(v[b.id] || '') || '<span class="muted">— empty —</span>'}</div>`;
+    if (b.kind === 'image') body = v[b.id] ? `<img class="cf-img" data-img="${v[b.id]}" alt="">` : '<span class="muted">No image</span>';
+    else if (b.kind === 'text' || b.kind === 'line') body = `<div class="cf-text">${esc(v[b.id] || '') || '<span class="muted">Empty</span>'}</div>`;
     else body = `<div class="cf-text">${esc(b.fmt(v))}</div>`;
     return `<button type="button" class="cf-side" data-pick="${which}"><span class="cf-side-head"><span class="cf-radio"></span>${label}<small>${esc(when)}</small></span>${body}</button>`;
   };
@@ -76,10 +76,10 @@ export function viewResolve(wid, aid) {
     })}
     <div class="conflict-banner">${icon('warning')}<div>
       <b>This article was changed on two devices before they synced.</b>
-      Both versions are kept until you choose. For each difference below, pick the version to keep. Tags and relationships can be combined, and text can be edited by hand.
+      Pick a version for each difference below. Tags and relationships can be combined, and text can be edited.
       <div class="actions left" style="margin-top:.7rem">
-        <button type="button" class="btn small" data-all="cur">Keep current version for everything</button>
-        <button type="button" class="btn small" data-all="other">Keep other version for everything</button>
+        <button type="button" class="btn small" data-all="cur">Use current for all</button>
+        <button type="button" class="btn small" data-all="other">Use other for all</button>
       </div>
     </div></div>
     ${blocks.length ? blocks.map((b) => `
@@ -88,12 +88,12 @@ export function viewResolve(wid, aid) {
         <div class="cf-sides">${side(b, 'cur', cur)}${side(b, 'other', other)}</div>
         ${b.kind === 'set' ? `<button type="button" class="cf-both" data-pick="both"><span class="cf-radio"></span>Combine both</button>` : ''}
         ${b.kind === 'text' ? `
-          <button type="button" class="cf-both" data-pick="both"><span class="cf-radio"></span>Keep both, one after the other</button>
+          <button type="button" class="cf-both" data-pick="both"><span class="cf-radio"></span>Keep both</button>
           ${b.id === 'body' || b.id === 'gmNotes' ? `<details class="cf-diff"><summary>${icon('rows')} Line-by-line differences</summary>${lineDiff(cur[b.id] || '', other[b.id] || '')}</details>` : ''}
-          <label class="cf-merged">Merged text <small>edit freely; this is what will be saved</small>
+          <label class="cf-merged">Merged text <small>this is what gets saved</small>
             <textarea rows="${b.id === 'summary' ? 3 : 10}" data-text="${b.id}"></textarea></label>` : ''}
       </section>`).join('')
-    : '<div class="empty-state small"><p>The two versions have the same content. Save to clear the conflict.</p></div>'}
+    : '<div class="empty-state small"><p>Both versions match. Save to clear the conflict.</p></div>'}
   </form>`;
 
   const textFor = (id, pick) => pick === 'other' ? (other[id] || '') : pick === 'both'

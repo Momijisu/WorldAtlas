@@ -15,7 +15,7 @@ export function viewWorlds() {
   const signedOut = sync.getStatus().state === 'off';
   view.innerHTML = `<section class="page">
     ${ws.length ? `
-      ${pageHead({ eyebrow: 'The Library', title: 'Your worlds', actions: `<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
+      ${pageHead({ title: 'Your worlds', actions: `<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
           <div class="card-cover" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
@@ -27,14 +27,13 @@ export function viewWorlds() {
         </a>`).join('')}</div>` : `
       <div class="empty-state">
         <img class="empty-emblem" src="icons/icon.svg" alt="">
-        <div class="eyebrow" style="justify-content:center">WorldAtlas</div>
-        <h2>Begin a new world</h2>
-        <p>Chronicle its people, places and powers. Link them together with <code>[[wiki links]]</code>, chart them on maps, trace their bloodlines and set their history in your own calendar.</p>
+                <h2>Begin a new world</h2>
+        <p>Write up its people and places, link them together, and map out its history.</p>
         <div class="actions center">
           <button class="btn primary" id="newWorld">${icon('plus')} Create a world</button>
-          <button class="btn" id="example">${icon('book-open-text')} Explore an example</button>
+          <button class="btn" id="example">${icon('book-open-text')} Try an example</button>
         </div>
-        ${signedOut ? `<p class="muted small" style="margin-top:1.6rem">Already using WorldAtlas on another device? <a href="#/settings">Connect OneDrive</a> and your worlds will appear here.</p>` : ''}
+        ${signedOut ? `<p class="muted small" style="margin-top:1.6rem">Using WorldAtlas on another device? <a href="#/settings">Connect OneDrive</a> to load your worlds.</p>` : ''}
       </div>`}
   </section>`;
   $('#newWorld').onclick = () => worldDialog();
@@ -51,14 +50,14 @@ export async function worldDialog(w) {
   await modal(isNew ? 'New world' : 'World settings', `
     <form class="form" id="wf">
       <label>Name<input name="name" required value="${esc(w.name)}" placeholder="e.g. Aerthal"></label>
-      <label>Description <small>Markdown and [[links]] supported</small><textarea name="description" rows="5">${esc(w.description)}</textarea></label>
+      <label>Description <small>Markdown and [[links]]</small><textarea name="description" rows="5">${esc(w.description)}</textarea></label>
       <div class="field-label">Cover image</div>
       <div class="image-field">
         <img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt="">
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
       </div>
-      ${isNew ? '' : `<p class="small muted">Months, weekdays, eras and moons are set in the <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
+      ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><span class="spacer"></span>`}
         <button type="button" class="btn quiet" data-cancel>Cancel</button>
@@ -79,7 +78,7 @@ export async function worldDialog(w) {
       };
       $('[data-rm]', m).onclick = (e) => { w.image = null; thumb.hidden = true; e.currentTarget.hidden = true; };
       $('[data-del]', m)?.addEventListener('click', async () => {
-        if (!(await confirmDialog(`Delete “${w.name}” and all of its articles and maps? This also removes it from your other devices.`))) return;
+        if (!(await confirmDialog(`Delete “${w.name}” and all its articles and maps? This also deletes it on your other devices.`))) return;
         await store.deleteWorld(w.id);
         close();
         location.hash = '#/';
@@ -107,7 +106,7 @@ export function viewWorld(wid) {
   view.innerHTML = `<section class="page">
     <div class="hero" ${w.image ? `data-bg="${w.image}"` : ''}>
       <div class="hero-inner">
-        <div><div class="eyebrow">A world of WorldAtlas</div><h1>${esc(w.name)}</h1></div>
+        <div><h1>${esc(w.name)}</h1></div>
         <div class="actions">
           <button class="btn" id="editWorld">${icon('gear-six')} World settings</button>
           <button class="btn primary" id="newArt">${icon('plus')} New article</button>
@@ -125,7 +124,7 @@ export function viewWorld(wid) {
       ${cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '')}
     </div>
     <div class="section-head"><h2>Recently written</h2><a class="small" href="#/w/${wid}/t/all">All articles →</a></div>
-    ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. Start with a character, a place or a faction — <a href="#" id="newArt2">create the first article</a>.</p></div>`}
+    ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. <a href="#" id="newArt2">Write the first one</a>.</p></div>`}
   </section>`;
   const showPrompt = (p, eyebrow = 'Today’s prompt') => {
     $('#todayPrompt').innerHTML = promptCard(wid, p, { eyebrow }) + `<a class="small more-prompts" href="#/w/${wid}/prompts">All writing prompts →</a>`;
@@ -142,7 +141,7 @@ export function newArticleDialog(wid, extra = '') {
   wid ||= localStorage.getItem('wa.lastWorld');
   if (!store.world(wid)) wid = store.worlds()[0]?.id;
   if (!wid) return worldDialog();
-  modal('New article', `<p class="muted" style="margin-top:0">Choose a template. You can change it later.</p>
+  modal('New article', `<p class="muted" style="margin-top:0">Pick a template. You can change it later.</p>
     <div class="type-grid">${Object.entries(TYPES).map(([k, t]) =>
     `<a class="type-choice" href="#/w/${wid}/new/${k}${extra}" data-go>${icon(t.icon)}${t.label}</a>`).join('')}</div>`,
   { onMount: (m, close) => $$('[data-go]', m).forEach((a) => a.addEventListener('click', () => close())) });

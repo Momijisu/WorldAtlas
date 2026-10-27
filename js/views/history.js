@@ -21,7 +21,7 @@ export function viewHistory(wid, aid) {
     ${versions.length ? `<div class="history-grid">
       <ol class="history-list" id="hlist"></ol>
       <div class="history-detail" id="hdetail"></div>
-    </div>` : `<div class="empty-state small"><p>No saved versions yet. Each time you save this article, a version is kept here (the last ${store.HISTORY_LIMIT}).</p></div>`}
+    </div>` : `<div class="empty-state small"><p>No saved versions yet. Each save keeps a version here (up to ${store.HISTORY_LIMIT}).</p></div>`}
   </section>`;
   if (!versions.length) return;
 
@@ -81,7 +81,7 @@ function diffSnapshots(wid, prev, cur) {
   if ((p.image || null) !== (cur.image || null)) out.push(`<div class="diff-field"><div class="field-label">Image</div><div class="muted small">${cur.image ? 'Image changed' : 'Image removed'}</div></div>`);
   const keys = new Set([...Object.keys(p.fields || {}), ...Object.keys(cur.fields || {})]);
   for (const k of keys) scalar('Infobox · ' + esc(k), p.fields?.[k], cur.fields?.[k]);
-  const relStr = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target) || '(deleted)'}${r.note ? ' — ' + r.note : ''}`;
+  const relStr = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target) || '(deleted)'}${r.note ? ` (${r.note})` : ''}`;
   const pr = new Set((p.relations || []).map(relStr)), cr = new Set((cur.relations || []).map(relStr));
   const relLines = [...[...pr].filter((x) => !cr.has(x)).map((x) => `<div class="diff-old">${esc(x)}</div>`),
     ...[...cr].filter((x) => !pr.has(x)).map((x) => `<div class="diff-new">${esc(x)}</div>`)];
@@ -125,7 +125,7 @@ export function viewTrash(wid) {
   const items = store.deletedArticles(wid);
   view.innerHTML = `<section class="page narrow">
     ${pageHead({ eyebrow: `${worldCrumb(wid)} ${sep} Archive`, title: 'Recently deleted' })}
-    <p class="muted">Deleted articles can be restored with their last saved content. Restoring brings them back on all your devices.</p>
+    <p class="muted">Restore a deleted article with its last saved content, on all your devices.</p>
     ${items.length ? `<ul class="rows">${items.map(({ tomb, last }) => `
       <li><div class="row-link">
         <span class="row-thumb icon">${typeIcon(last.snapshot.type)}</span>

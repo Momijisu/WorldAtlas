@@ -37,14 +37,14 @@ async function boot() {
     if (hasUnsaved()) toast('Changes arrived from another device');
     else route();
     if (e.conflicts) {
-      toast(`${e.conflicts} article${e.conflicts === 1 ? ' was' : 's were'} edited on two devices. Open ${e.conflicts === 1 ? 'it' : 'them'} to resolve the conflict.`, 7000);
+      toast(`${e.conflicts} article${e.conflicts === 1 ? ' has' : 's have'} conflicting edits to resolve`, 7000);
     }
   });
   sync.onStatus(renderSyncBadge);
   sync.start();
   route();
   if (authError) toast('Sign-in failed: ' + authError.message, 7000);
-  else if (returned && !returned.silent) toast('Connected to OneDrive — syncing…');
+  else if (returned && !returned.silent) toast('Connected to OneDrive');
   if ('serviceWorker' in navigator) {
     // When an updated version takes over, reload once so old and new files never mix
     // (unless the user is mid-edit; they'll get the update on the next launch).

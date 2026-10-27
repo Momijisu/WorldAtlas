@@ -27,16 +27,16 @@ export function viewSettings() {
     <div class="panel" id="oneDriveCard"></div>
     <div class="panel">
       <h2>Install the app</h2>
-      ${standalone ? `<p>${icon('check')} You are using the installed app.</p>` : `
+      ${standalone ? `<p>${icon('check')} You’re using the installed app.</p>` : `
         ${state.installPrompt ? `<p><button class="btn primary" id="installBtn">${icon('download-simple')} Install WorldAtlas</button></p>` : ''}
         <p class="muted">${ios
-          ? `On iPhone/iPad: tap <b>Share</b> ${edge ? '(in Edge: menu ⋯ → <b>Share</b>)' : ''} → <b>Add to Home Screen</b>. This needs iOS 16.4 or later in Edge/Chrome; on older iOS, use Safari.`
+          ? `Tap <b>Share</b>${edge ? ' (in Edge, menu ⋯ → Share)' : ''} → <b>Add to Home Screen</b>. Before iOS 16.4, use Safari.`
           : android && edge
-            ? 'In Edge on Android: tap the menu <b>⋯</b> at the bottom of the screen → <b>Add to phone</b> (on some versions: <b>Install app</b> or <b>Add to Home screen</b>). If it isn’t listed, reload the page once and try again.'
+            ? 'Menu <b>⋯</b> → <b>Add to phone</b> (or <b>Install app</b>). If it’s missing, reload and try again.'
             : android
-              ? 'On Android (Chrome): menu ⋮ → <b>Install app</b> / <b>Add to Home screen</b>.'
-              : 'On PC (Edge or Chrome): click the install icon at the right of the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
-      <p class="muted small">The app works offline. Everything is saved on the device first and synced to OneDrive whenever you’re online.</p>
+              ? 'Menu ⋮ → <b>Install app</b>.'
+              : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
+      <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
     <div class="panel">
       <h2>Appearance</h2>
@@ -49,25 +49,25 @@ export function viewSettings() {
     <div class="panel">
       <h2>Writing help</h2>
       <label class="check"><input type="checkbox" id="promptsToggle" ${promptsEnabled() ? 'checked' : ''}> Show writing prompts</label>
-      <p class="muted small">A daily prompt on each world’s overview and a “Writing prompts” link in the sidebar. Turning this off hides them; your answered prompts and articles are kept.</p>
+      <p class="muted small">A daily prompt on each world’s overview, and the Writing prompts page.</p>
       <label class="check"><input type="checkbox" id="guideToggle" ${guidanceEnabled() ? 'checked' : ''}> Show the writing guide in the editor</label>
-      <p class="muted small">Guiding questions for each template (appearance, motivation, history…). These settings apply to this device.</p>
+      <p class="muted small">Questions to help fill out each template. Both settings apply to this device only.</p>
     </div>
     <div class="panel" id="importCard">
       <h2>Import a world</h2>
-      <p class="muted">Bring in a world written in the simple WorldAtlas import format, for example one an AI assistant has prepared from your notes. You’ll see a preview before anything is saved, and importing again updates articles with the same titles instead of duplicating them.</p>
+      <p class="muted">Add articles from a WorldAtlas import file, for example one an AI assistant made from your notes. You’ll see a preview first. Re-importing updates articles with matching titles.</p>
       <div class="actions left">
         <label class="btn primary">${icon('upload-simple')} Import from file<input type="file" id="importWorldFile" accept=".json,.txt,application/json,text/plain" hidden></label>
         <button class="btn" id="pasteImport">${icon('file-text')} Paste text</button>
       </div>
       <div class="field-label" style="margin-top:1.2rem">Working with an AI assistant</div>
-      <p class="muted small">Copy these instructions into an assistant such as Claude, along with your notes, documents or an exported world. It will reply with text you can paste or import here.</p>
+      <p class="muted small">Paste these instructions into an assistant with your notes, then import its reply here.</p>
       <div class="actions left">
         <button class="btn small" id="copyAiPrompt">${icon('feather')} Copy instructions for an assistant</button>
         <a class="btn small quiet" href="${DOCS_URL}" target="_blank" rel="noopener">${icon('arrow-square-out')} Format guide</a>
       </div>
       ${store.worlds().length ? `<div class="field-label" style="margin-top:1.2rem">Export a world in this format</div>
-      <p class="muted small">Useful for asking an assistant to extend or tidy an existing world, then importing the result.</p>
+      <p class="muted small">Give this to an assistant to extend a world, then import its reply.</p>
       <div class="toolbar" style="margin:0">
         <select id="exportWorldSel">${store.worlds().map((w) => `<option value="${w.id}">${esc(w.name)}</option>`).join('')}</select>
         <button class="btn small" id="exportWorldBtn">${icon('download-simple')} Download</button>
@@ -76,7 +76,7 @@ export function viewSettings() {
     </div>
     <div class="panel">
       <h2>Backup</h2>
-      <p class="muted">Download everything — worlds, articles, maps, images and revision history — as a single file, or merge a backup back in.</p>
+      <p class="muted">Save everything, including images and history, to one file, or restore from one.</p>
       <div class="actions left">
         <button class="btn" id="exportBtn">${icon('download-simple')} Export backup</button>
         <label class="btn">${icon('upload-simple')} Import backup<input type="file" id="importFile" accept=".json,application/json" hidden></label>
@@ -94,9 +94,9 @@ export function viewSettings() {
         <button class="btn primary" id="doUpd" hidden>${icon('download-simple')} Update now</button>
         <button class="btn quiet" id="resetCache" title="Clears downloaded app files only. Your worlds are not affected.">Reset offline cache</button>
       </div>
-      <p class="muted small">If the app looks out of date, check for updates. Resetting the offline cache re-downloads the app’s files; your worlds and settings are not affected.</p>
+      <p class="muted small">Resetting the cache re-downloads the app. Your worlds and settings aren’t touched.</p>
     </div>
-    <p class="muted small center">Your worlds live on your devices and in your own OneDrive.<br>Icons by Phosphor · Type: Cormorant Garamond, Alegreya.</p>
+    <p class="muted small center">Icons: Phosphor. Type: Cormorant Garamond, Alegreya.</p>
   </section>`;
   renderOneDriveCard();
   const seg = $('#themeSeg');
@@ -122,7 +122,7 @@ export function viewSettings() {
   $('#importFile').onchange = (e) => e.target.files[0] && importBackup(e.target.files[0]);
   $('#importWorldFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) handleImportText(await f.text()); };
   $('#pasteImport').onclick = pasteDialog;
-  $('#copyAiPrompt').onclick = () => copyText(aiInstructions(), 'Instructions copied — paste them into your assistant');
+  $('#copyAiPrompt').onclick = () => copyText(aiInstructions(), 'Instructions copied');
   const sel = () => $('#exportWorldSel').value;
   const fileName = () => `${(store.world(sel())?.name || 'world').replace(/[^\w\- ]+/g, '').trim() || 'world'}.worldatlas.json`;
   $('#exportWorldBtn')?.addEventListener('click', () => download(fileName(), new Blob([JSON.stringify(exportSimple(sel()), null, 2)], { type: 'application/json' })));
@@ -137,9 +137,9 @@ export function renderOneDriveCard() {
   const cid = auth.clientId();
   let main;
   if (!cid) {
-    main = `<p>To sync between your phone and PC, WorldAtlas saves to a private folder in <b>your</b> OneDrive (<code>Apps/WorldAtlas</code>). This needs a one-time app registration with Microsoft — see the README — then paste the Application (client) ID below.</p>`;
+    main = `<p>Syncing uses a private folder in your OneDrive (<code>Apps/WorldAtlas</code>). It needs a one-time Microsoft app registration (see the README). Paste its Application (client) ID below.</p>`;
   } else if (st.state === 'off') {
-    main = `<p>Sign in with your Microsoft account. Your worlds are stored in <code>OneDrive/Apps/WorldAtlas</code> and kept in step on every device you connect.</p>
+    main = `<p>Sign in with Microsoft to sync your worlds through <code>OneDrive/Apps/WorldAtlas</code>.</p>
       <p><button class="btn primary" id="connectBtn">${icon('cloud-check')} Connect OneDrive</button></p>`;
   } else if (st.state === 'reauth') {
     main = `<p class="warn">${esc(st.message || 'Your OneDrive session expired.')}</p>
@@ -160,7 +160,7 @@ export function renderOneDriveCard() {
   $('#connectBtn')?.addEventListener('click', () => auth.signIn().catch((e) => toast(e.message)));
   $('#syncNowBtn')?.addEventListener('click', () => sync.sync());
   $('#disconnectBtn')?.addEventListener('click', async () => {
-    if (!(await confirmDialog('Disconnect OneDrive on this device? Your worlds stay on this device and in OneDrive.', 'Disconnect'))) return;
+    if (!(await confirmDialog('Disconnect OneDrive on this device? Your worlds stay here and in OneDrive.', 'Disconnect'))) return;
     auth.signOut();
     await store.saveMeta({ eTags: {} });
     sync.refreshStatus();
@@ -251,7 +251,7 @@ async function wireAbout() {
     setTimeout(() => location.reload(), 6000);
   };
   $('#resetCache').onclick = async () => {
-    if (!(await confirmDialog('Clear the app’s downloaded files and reload? Your worlds, images and settings stay safe on this device.', 'Reset and reload', { title: 'Reset offline cache', danger: false }))) return;
+    if (!(await confirmDialog('Clear the app’s downloaded files and reload? Your worlds, images and settings stay.', 'Reset and reload', { title: 'Reset offline cache', danger: false }))) return;
     try {
       for (const k of await caches.keys()) if (k.startsWith('worldatlas-')) await caches.delete(k);
       for (const r of (await navigator.serviceWorker?.getRegistrations()) || []) await r.unregister();
@@ -266,10 +266,9 @@ async function wireAbout() {
 const DOCS_URL = 'https://github.com/Momijisu/WorldAtlas/blob/main/docs/IMPORT_FORMAT.md';
 
 function aiInstructions() {
-  return `Please convert my worldbuilding material into the WorldAtlas import format, so I can paste it into the WorldAtlas app.
+  return `Convert my worldbuilding material into the WorldAtlas import format: ${DOCS_URL}
 
-The format is described here: ${DOCS_URL}
-In short: reply with a single JSON object (no commentary), shaped like this:
+Reply with only a JSON object shaped like this:
 {
   "format": "worldatlas-import", "version": 1,
   "world": { "name": "...", "description": "...", "calendar": { "months": [{"name": "...", "days": 30}], "weekdays": ["..."], "eras": [{"name": "...", "abbr": "...", "start": 0}], "moons": [{"name": "...", "cycle": 30}], "currentYear": 1043 } },
@@ -285,10 +284,10 @@ In short: reply with a single JSON object (no commentary), shaped like this:
 }
 
 Rules:
-- Use exact article titles when linking ([[Title]]), in "parent" and in relationship "target"; every title must be unique.
-- Leave out the calendar if my world doesn't have a custom one. Dates use that calendar's month names; a bare year is fine.
-- Only include facts from my material; don't invent details. Put anything uncertain in "secrets" with a note.
-- Split large topics into separate linked articles rather than one huge article.
+- Use unique titles, and the exact title in [[links]], "parent" and "target".
+- Leave out "calendar" if my world has no custom calendar. Dates use its month names; a bare year is fine.
+- Only use facts from my material. Put anything uncertain in "secrets".
+- Split large topics into several linked articles.
 
 Here is my material:
 `;
@@ -301,7 +300,7 @@ async function copyText(text, msg) {
 
 function pasteDialog() {
   modal('Paste import text', `<form class="form" id="pf">
-      <label>Paste the text your assistant produced (or a WorldAtlas backup)<textarea name="t" rows="12" required placeholder='{ "format": "worldatlas-import", … }' style="font-family:var(--mono);font-size:.85rem"></textarea></label>
+      <label>Paste an import or backup<textarea name="t" rows="12" required placeholder='{ "format": "worldatlas-import", … }' style="font-family:var(--mono);font-size:.85rem"></textarea></label>
       <div class="actions"><button class="btn primary">Preview import</button></div>
     </form>`, {
     wide: true,
@@ -320,10 +319,10 @@ function handleImportText(text) {
     const start = body.indexOf('{');
     json = JSON.parse(start > 0 ? body.slice(start, body.lastIndexOf('}') + 1) : body);
   } catch (e) {
-    return toast('That isn’t valid import text: ' + e.message, 6000);
+    return toast('Not valid import text: ' + e.message, 6000);
   }
   if (json.app === 'WorldAtlas') return importBackupJSON(json);
-  if (!isImportFormat(json)) return toast('No world or articles found in that text.', 5000);
+  if (!isImportFormat(json)) return toast('No articles found in that text.', 5000);
   previewImport(json);
 }
 
@@ -349,10 +348,10 @@ function previewImport(json) {
             <div><b>${plan.same}</b><span>unchanged</span></div>
           </div>
           <div class="chips">${Object.entries(plan.counts).map(([t, n]) => `<span class="chip">${icon(TYPES[t]?.icon)} ${n} ${esc((n === 1 ? TYPES[t]?.label : TYPES[t]?.plural) || t)}</span>`).join('')}</div>
-          ${json.world?.calendar ? `<p class="small muted">${icon('calendar-blank')} ${plan.isNewWorld ? 'Includes a custom calendar.' : 'The world’s calendar will be replaced by the one in this import.'}</p>` : ''}
-          ${w.length ? `<details class="import-warnings" ${w.length <= 6 ? 'open' : ''}><summary>${icon('warning')} ${w.length} thing${w.length === 1 ? '' : 's'} to check</summary><ul>${w.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`
-            : `<p class="small" style="color:var(--ok)">${icon('check')} Everything matched up.</p>`}
-          <p class="small muted">Imported articles get normal revision history, so any update can be undone from an article’s History.</p>
+          ${json.world?.calendar ? `<p class="small muted">${icon('calendar-blank')} ${plan.isNewWorld ? 'Includes a custom calendar.' : 'Replaces this world’s calendar.'}</p>` : ''}
+          ${w.length ? `<details class="import-warnings" ${w.length <= 6 ? 'open' : ''}><summary>${icon('warning')} ${w.length} warning${w.length === 1 ? '' : 's'}</summary><ul>${w.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`
+            : `<p class="small" style="color:var(--ok)">${icon('check')} No problems found.</p>`}
+          <p class="small muted">Updates can be undone from each article’s History.</p>
           <div class="actions">
             <button class="btn quiet" data-cancel>Cancel</button>
             <button class="btn primary" id="ipGo" ${plan.create + plan.update ? '' : 'disabled'}>${icon('check')} Import ${plan.create + plan.update} article${plan.create + plan.update === 1 ? '' : 's'}</button>

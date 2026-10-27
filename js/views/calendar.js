@@ -121,7 +121,7 @@ export function viewCalendar(wid, q) {
         ${monthEvs.length ? `<div><div class="field-label">During ${esc(cal.months[m].name)}</div><div class="cal-list">${monthEvs.map(chip).join('')}</div></div>` : ''}
         ${yearEvs.length ? `<div><div class="field-label">During ${esc(formatYear(cal, y))}</div><div class="cal-list">${yearEvs.map(chip).join('')}</div></div>` : ''}
       </div>` : ''}
-      <p class="muted small">Tap a day to record an event on it. ${cal.months.length} months · ${yearLength(cal)} days a year.</p>`;
+      <p class="muted small">Tap a day to add an event. ${cal.months.length} months, ${yearLength(cal)} days a year.</p>`;
   }
 
   function yearView() {
@@ -159,7 +159,7 @@ export function viewCalendarEdit(wid) {
   c.moons ||= [];
   let dirty = false;
   state.guard = () => dirty;
-  state.guardMessage = 'Your calendar changes haven’t been saved. Leave and discard them?';
+  state.guardMessage = 'Discard your unsaved calendar changes?';
   setTitle('Calendar settings');
 
   view.innerHTML = `<form class="page narrow cal-edit" id="cf">
@@ -175,7 +175,7 @@ export function viewCalendarEdit(wid) {
         <select id="preset">${Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${esc(p.label)}</option>`).join('')}</select>
         <button type="button" class="btn" id="applyPreset">Apply</button>
       </div>
-      <p class="muted small">Replaces the months and weekdays below. Eras and moons are kept.</p>
+      <p class="muted small">Replaces the months and weekdays. Eras and moons stay.</p>
     </div>
     <div class="panel">
       <h2>Months</h2>
@@ -190,19 +190,19 @@ export function viewCalendarEdit(wid) {
     </div>
     <div class="panel">
       <h2>Eras</h2>
-      <p class="muted small">An era applies from its start year onwards, until the next era begins. Its abbreviation follows the year, e.g. “1042 AE”. Tick <i>Count from 1</i> to number years from the start of the era.</p>
+      <p class="muted small">Each era runs from its start year until the next one. Its abbreviation follows the year, as in “1042 AE”. <i>Count from 1</i> numbers years from the era’s start.</p>
       <div id="eras"></div>
       <button type="button" class="btn small" id="addEra">${icon('plus')} Add era</button>
     </div>
     <div class="panel">
       <h2>Moons</h2>
-      <p class="muted small">Phases appear on the calendar. Offset shifts which day the moon is new.</p>
+      <p class="muted small">Offset sets which day the moon is new.</p>
       <div id="moons"></div>
       <button type="button" class="btn small" id="addMoon">${icon('plus')} Add moon</button>
     </div>
     <div class="panel">
       <h2>The present day</h2>
-      <label>Current year <small>used for “Present day” and for open-ended lifespans on the timeline</small><input type="number" id="curYear" step="1" value="${c.currentYear ?? ''}"></label>
+      <label>Current year <small>marks the present on the calendar and timeline</small><input type="number" id="curYear" step="1" value="${c.currentYear ?? ''}"></label>
       <div class="date-preview" id="sample"></div>
     </div>
   </form>`;

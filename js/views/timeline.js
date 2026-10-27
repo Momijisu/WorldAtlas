@@ -41,7 +41,7 @@ export function viewTimeline(wid) {
       </div>
       ${types.length > 1 ? `<div class="chips" id="tlTypes">${types.map((t) => `<button class="chip" data-t="${t}">${icon(TYPES[t]?.icon)} ${TYPES[t]?.plural}</button>`).join('')}</div>` : ''}
       <div id="tlOut"></div>`
-    : `<div class="empty-state small"><p>Nothing is dated yet. Open any article’s editor and set a date under <b>Chronology</b> — births, foundings, battles, reigns — and it will take its place here.</p></div>`}
+    : `<div class="empty-state small"><p>Nothing is dated yet. Give an article a date in its editor and it will appear here.</p></div>`}
   </section>`;
   const modeSeg = $('#mode');
   const syncMode = () => {
@@ -106,7 +106,7 @@ export function viewTimeline(wid) {
       </li>`;
     }
     html += '</ol>';
-    if (cal.currentYear != null) html += `<p class="muted small center">The present day: ${esc(formatYear(cal, cal.currentYear))}</p>`;
+    if (cal.currentYear != null) html += `<p class="muted small center">Present day: ${esc(formatYear(cal, cal.currentYear))}</p>`;
     $('#tlOut').innerHTML = html;
   }
 

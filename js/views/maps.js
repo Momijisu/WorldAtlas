@@ -57,7 +57,7 @@ export function viewMaps(wid) {
           <div class="eyebrow">${(m.pins || []).length} places · ${(m.regions || []).length} regions</div>
         </div></a>`;
     }).join('')}</div>`
-    : `<div class="empty-state small"><p>Upload a map — a continent, a city, a dungeon — then pin articles to it, outline regions, and link maps inside maps.</p></div>`}
+    : `<div class="empty-state small"><p>Upload a map image, then pin articles and outline regions on it.</p></div>`}
   </section>`;
   $('#newMap').onclick = () => mapDialog(wid);
   hydrateImages();
@@ -69,7 +69,7 @@ function mapDialog(wid, m) {
   modal(isNew ? 'New map' : 'Map settings', `
     <form class="form" id="mf">
       <label>Name<input name="name" required value="${esc(m.name)}" placeholder="e.g. The Known World"></label>
-      <label>${isNew ? 'Map image' : 'Replace image <small>(optional — pins keep their relative positions)</small>'}
+      <label>${isNew ? 'Map image' : 'Replace image <small>optional, pins stay in place</small>'}
         <input type="file" name="file" accept="image/*" ${isNew ? 'required' : ''}></label>
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete map</button><span class="spacer"></span>`}
@@ -79,7 +79,7 @@ function mapDialog(wid, m) {
     onMount: (el, close) => {
       const f = $('#mf', el);
       $('[data-del]', el)?.addEventListener('click', async () => {
-        if (!(await confirmDialog(`Delete the map “${m.name}”? Its pins and regions go with it.`))) return;
+        if (!(await confirmDialog(`Delete the map “${m.name}” and its pins and regions?`))) return;
         await store.deleteMap(m.id); close(); location.hash = `#/w/${wid}/maps`;
       });
       f.onsubmit = async (e) => {
@@ -142,7 +142,7 @@ export async function viewMap(wid, mid, q) {
 
   const src = await store.imageURL(m.image);
   if (!src) {
-    $('#mapBox').innerHTML = `<p class="muted pad">This map's image hasn't downloaded yet. It will appear once this device syncs with OneDrive.</p>`;
+    $('#mapBox').innerHTML = `<p class="muted pad">This map’s image hasn’t downloaded yet. It will appear after the next sync.</p>`;
     return;
   }
   const info = $('#mapInfo');
@@ -219,7 +219,7 @@ export async function viewMap(wid, mid, q) {
       bar.innerHTML = `<span class="hint">Tap the new location for this pin</span>
         <button class="btn small" data-act="cancel-move">Cancel</button>`;
     } else if (tool === 'region' && draft?.length) {
-      bar.innerHTML = `<span class="hint">${draft.length} point${draft.length === 1 ? '' : 's'} — keep tapping to outline</span>
+      bar.innerHTML = `<span class="hint">${draft.length} point${draft.length === 1 ? '' : 's'}, keep tapping to outline</span>
         <button class="btn small" data-act="undo" ${draft.length ? '' : 'disabled'}>${icon('arrow-counter-clockwise')} Undo</button>
         <button class="btn small" data-act="cancel">Cancel</button>
         <button class="btn small primary" data-act="finish" ${draft.length >= 3 ? '' : 'disabled'}>${icon('check')} Finish</button>`;
@@ -228,7 +228,7 @@ export async function viewMap(wid, mid, q) {
           <button data-tool="pin" class="${tool === 'pin' ? 'on' : ''}">${icon('map-pin')} Pin</button>
           <button data-tool="region" class="${tool === 'region' ? 'on' : ''}">${icon('polygon')} Region</button>
         </div>
-        <span class="hint">${tool === 'pin' ? 'Tap the map to place a pin · tap a pin to edit' : 'Tap the map to start outlining a region'}</span>`;
+        <span class="hint">${tool === 'pin' ? 'Tap to place a pin, or tap a pin to edit it' : 'Tap to start outlining a region'}</span>`;
     }
     $$('[data-tool]', bar).forEach((b) => b.onclick = () => {
       tool = b.dataset.tool;
@@ -274,7 +274,7 @@ export async function viewMap(wid, mid, q) {
       ${layers.length ? layers.map((l) => `<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
           <span>${l ? esc(l) : 'General'}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
-        </label>`).join('') : '<p class="muted small">No places yet. Pins and regions can be assigned to layers in edit mode.</p>'}`;
+        </label>`).join('') : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
     $$('[data-layer]', panel).forEach((cb) => cb.onchange = () => {
       if (cb.checked) hidden.delete(cb.dataset.layer); else hidden.add(cb.dataset.layer);
       saveHidden(mid, hidden);
@@ -322,7 +322,7 @@ export async function viewMap(wid, mid, q) {
   $$('[data-z]').forEach((b) => b.onclick = () => (b.dataset.z === 'fit' ? ctl.fit() : ctl.zoom(b.dataset.z === 'in' ? 1.5 : 1 / 1.5)));
 
   // ---- dialogs
-  const mapOptions = (selected) => `<option value="">— none —</option>` + store.mapsOf(wid).filter((x) => x.id !== mid)
+  const mapOptions = (selected) => `<option value="">None</option>` + store.mapsOf(wid).filter((x) => x.id !== mid)
     .map((x) => `<option value="${x.id}" ${x.id === selected ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
   const layerList = () => `<datalist id="layerNames">${layersOf(cur()).filter(Boolean).map((l) => `<option value="${esc(l)}">`).join('')}</datalist>`;
   const colourField = (value) => `<div class="field-label">Colour</div>
@@ -340,7 +340,7 @@ export async function viewMap(wid, mid, q) {
     modal(isNew ? 'Add a place' : 'Edit place', `
       <form class="form" id="pf">
         <label>Linked article<select name="articleId">${articleOptions(wid, pin.articleId)}</select></label>
-        <label>Opens map <small>for nested maps — e.g. a city pin on a continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
+        <label>Opens map <small>e.g. a city map from a pin on the continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
         <div class="row">
           <label>Label <small>defaults to the article</small><input name="label" value="${esc(pin.label || '')}"></label>
           <label>Layer<input name="layer" list="layerNames" value="${esc(pin.layer || '')}" placeholder="General">${layerList()}</label>
@@ -367,7 +367,7 @@ export async function viewMap(wid, mid, q) {
         $('[data-move]', el)?.addEventListener('click', () => { moving = pin.id; close(); renderEditBar(); });
         f.onsubmit = async (e) => {
           e.preventDefault();
-          if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Link an article or map, or give the place a label');
+          if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Add a label or link an article or map');
           const next = { ...pin, articleId: f.articleId.value, mapId: f.mapId.value, label: f.label.value.trim(),
             layer: f.layer.value.trim(), icon: chosen, color: f.color.value };
           const pins = cur().pins || [];

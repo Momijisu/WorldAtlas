@@ -15,7 +15,7 @@ export const addToHref = (wid, p) => `#/w/${wid}/a/${p.about.id}/edit?prompt=${e
 export function promptCard(wid, p, { eyebrow = 'A prompt for you', draw = true } = {}) {
   if (!p) {
     return `<div class="prompt-card empty"><div class="eyebrow">${icon('feather')} ${esc(eyebrow)}</div>
-      <p class="prompt-text">Every prompt has been answered or set aside. <a href="#/w/${wid}/prompts">Add your own</a>.</p></div>`;
+      <p class="prompt-text">You’ve answered or set aside every prompt. <a href="#/w/${wid}/prompts">Add your own</a>.</p></div>`;
   }
   return `<div class="prompt-card" data-key="${esc(p.key)}">
     <div class="eyebrow">${icon('feather')} ${esc(eyebrow)} <span class="sep">/</span> ${esc(catLabel(p.cat))}</div>
@@ -37,7 +37,7 @@ export function wirePromptCard(wid, root, { onChange }) {
   $('[data-dismiss]', card)?.addEventListener('click', async () => {
     const key = card.dataset.key;
     await updatePromptState(wid, (st) => { if (!st.dismissed.includes(key)) st.dismissed.push(key); });
-    toast('Prompt set aside. Find it again under “Set aside”.');
+    toast('Prompt set aside');
     onChange(pickPrompt(wid, { exclude: [key] }));
   });
 }
@@ -92,7 +92,7 @@ export function viewPrompts(wid) {
         </div>
       </li>`).join('')}</ul>
       ${list.length > f.limit ? `<p class="center"><button class="btn" data-more>Show more <span class="muted">(${list.length - f.limit} left)</span></button></p>` : ''}`
-      : `<div class="empty-state small"><p>${f.status === 'answered' ? 'No prompts answered here yet.' : f.status === 'dismissed' ? 'Nothing set aside.' : 'Every prompt here is answered or set aside.'}</p></div>`;
+      : `<div class="empty-state small"><p>${f.status === 'answered' ? 'None answered yet.' : f.status === 'dismissed' ? 'Nothing set aside.' : 'All answered or set aside.'}</p></div>`;
   }
 
   $('#cats').onclick = (e) => { const c = e.target.closest('.chip'); if (c) { f.cat = c.dataset.c; f.limit = PAGE; drawList(); } };

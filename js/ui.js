@@ -34,7 +34,7 @@ export function articleRows(list, wid, meta) {
   return `<ul class="rows">${list.map((a) => `
     <li><a href="#/w/${wid}/a/${a.id}" class="row-link">
       ${a.image ? `<img class="row-thumb" data-img="${a.image}" alt="">` : `<span class="row-thumb icon">${typeIcon(a.type)}</span>`}
-      <span class="row-text"><span class="row-title">${esc(a.title)}${a.conflict ? `<span class="conflict-flag" title="Edited on two devices — needs resolving">${icon('warning')} Conflict</span>` : ''}</span>
+      <span class="row-text"><span class="row-title">${esc(a.title)}${a.conflict ? `<span class="conflict-flag" title="Edited on two devices">${icon('warning')} Conflict</span>` : ''}</span>
       <span class="row-sub"><b>${typeLabel(a.type)}</b>${a.summary ? esc(plain(a.summary, 130)) : ''}</span></span>
       ${meta ? `<span class="row-meta">${meta(a)}</span>` : ''}
     </a></li>`).join('')}</ul>`;
@@ -54,7 +54,7 @@ export const worldCrumb = (wid) => `<a href="#/w/${wid}">${esc(store.world(wid)?
 export const sep = '<span class="sep">/</span>';
 
 // Searchable list of articles for <select> elements.
-export function articleOptions(wid, selected, { exclude = new Set(), none = '— none —' } = {}) {
+export function articleOptions(wid, selected, { exclude = new Set(), none = 'None' } = {}) {
   const list = store.articlesOf(wid).filter((a) => !exclude.has(a.id)).sort((x, y) => x.title.localeCompare(y.title));
   return (none != null ? `<option value="">${esc(none)}</option>` : '') +
     list.map((a) => `<option value="${a.id}" ${a.id === selected ? 'selected' : ''}>${esc(a.title)} · ${typeLabel(a.type)}</option>`).join('');

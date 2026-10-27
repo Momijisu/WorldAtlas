@@ -19,7 +19,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   a.relations ||= [];
   let dirty = isNew && !!a.title;
   state.guard = () => dirty;
-  state.guardMessage = 'This article has changes that haven’t been saved. Leave and discard them?';
+  state.guardMessage = 'Discard your unsaved changes to this article?';
   setTitle(isNew ? 'New article' : 'Editing ' + a.title);
   const excluded = isNew ? new Set() : new Set([a.id, ...store.descendantIds(a)]);
   const cancelHref = isNew ? (a.parentId ? `#/w/${wid}/a/${a.parentId}` : `#/w/${wid}`) : `#/w/${wid}/a/${a.id}`;
@@ -40,7 +40,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         <a class="btn quiet" href="${cancelHref}">Cancel</a>
         <button class="btn primary">${icon('check')} Save</button>`,
     })}
-    ${a.conflict ? `<div class="conflict-banner">${icon('warning')}<div><b>This article has conflicting edits from another device.</b> Saving here keeps the conflict open. <a href="#/w/${wid}/a/${a.id}/resolve">Resolve it</a> to choose what to keep.</div></div>` : ''}
+    ${a.conflict ? `<div class="conflict-banner">${icon('warning')}<div><b>Conflicting edits.</b> Saving here won’t clear the conflict. <a href="#/w/${wid}/a/${a.id}/resolve">Resolve it</a>.</div></div>` : ''}
     ${prompt ? `<div class="prompt-callout">${icon('feather')}<div><div class="eyebrow">Writing prompt</div><p>${esc(prompt.text)}</p></div></div>` : ''}
     <div class="editor-grid">
       <div class="editor-main">
@@ -49,7 +49,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <label>Template<select name="type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</select></label>
           <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
         </div>
-        <label>Summary <small>a line or two, shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
+        <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
         ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
         <div class="md-toolbar">
@@ -64,10 +64,10 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <span class="spacer"></span>
           <button type="button" id="previewBtn">${icon('eye')}&nbsp;Preview</button>
         </div>
-        <textarea name="body" rows="18" class="md ac-target" placeholder="Write freely. **bold**, *italic*, ## headings, - lists, and [[Other Article]] links.">${esc(a.body)}</textarea>
+        <textarea name="body" rows="18" class="md ac-target" placeholder="**bold**, *italic*, ## heading, - list, [[Article link]]">${esc(a.body)}</textarea>
         <div class="prose md-preview" hidden></div>
         <details class="secret-edit" ${a.gmNotes ? 'open' : ''}><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary>
-          <textarea name="gmNotes" rows="5" class="ac-target" placeholder="Hidden until opened on the reading page.">${esc(a.gmNotes)}</textarea></details>
+          <textarea name="gmNotes" rows="5" class="ac-target" placeholder="Collapsed on the article page">${esc(a.gmNotes)}</textarea></details>
       </div>
       <aside class="editor-side">
         <div class="panel">
@@ -79,7 +79,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           </div>
         </div>
         <div class="panel">
-          <div class="field-label">Header image <small>— wide banner behind the title</small></div>
+          <div class="field-label">Header image <small>banner behind the title</small></div>
           <div class="image-field">
             <img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt="">
             <label class="btn small">${icon('image')} Upload<input type="file" accept="image/*" hidden id="bannerFile"></label>
@@ -87,13 +87,13 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           </div>
         </div>
         <div class="panel">
-          <div class="field-label">Chronology <small>— places it on the timeline &amp; calendar</small></div>
+          <div class="field-label">Date <small>for the timeline and calendar</small></div>
           <div class="muted small" style="margin-bottom:.3rem">Date / start</div>
           ${dateRow('start', a.start, a.startM, a.startD)}
           <div class="muted small" style="margin:.6rem 0 .3rem">End <small>(optional)</small></div>
           ${dateRow('end', a.end, a.endM, a.endD)}
           <div class="date-preview" id="datePreview"></div>
-          <label>Display text <small>overrides the formatted date</small><input name="dateLabel" value="${esc(a.dateLabel)}" placeholder="e.g. The Long Winter"></label>
+          <label>Date text <small>optional, replaces the date shown</small><input name="dateLabel" value="${esc(a.dateLabel)}" placeholder="e.g. The Long Winter"></label>
           <a class="small" href="#/w/${wid}/calendar/edit">${icon('calendar-blank')} Calendar settings</a>
         </div>
         <div class="panel">
@@ -148,8 +148,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     row.dataset.id = r.id;
     row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
-      <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: '— choose article —' })}</select>
-      <input class="rnote" placeholder="Note (optional), e.g. since 1031" value="${esc(r.note || '')}">`;
+      <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: 'Choose an article' })}</select>
+      <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">`;
     row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
     relsEl.appendChild(row);
     return row;
@@ -256,7 +256,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   $$('.ac-target', f).forEach((ta) => attachAutocomplete(ta, wid));
 
   $('#del')?.addEventListener('click', async () => {
-    if (!(await confirmDialog(`Delete “${a.title}”? You can restore it later from “Recently deleted”.`))) return;
+    if (!(await confirmDialog(`Delete “${a.title}”? You can restore it from Recently deleted.`))) return;
     await store.deleteArticle(a.id);
     state.guard = null;
     location.hash = `#/w/${wid}`;

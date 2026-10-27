@@ -24,9 +24,7 @@ export function viewTree(wid, aid) {
   const layout = buildTree(focus);
   if (layout.nodes.length < 2) {
     view.innerHTML = `<section class="page viz-page">${head}
-      <div class="empty-state small"><p>${esc(focus.title)} has no family recorded yet.<br>
-      Open the article editor and add entries in the <b>Relationships</b> panel — for example
-      <i>Parent of</i>, <i>Child of</i>, <i>Spouse of</i> or <i>Sibling of</i> — and the tree will grow here.</p>
+      <div class="empty-state small"><p>No family recorded for ${esc(focus.title)} yet. Add relationships such as <i>Parent of</i> or <i>Spouse of</i> in the editor.</p>
       <p style="margin-top:1rem"><a class="btn primary small" href="#/w/${wid}/a/${aid}/edit">${icon('pencil-simple')} Edit relationships</a></p></div>
     </section>`;
     return;

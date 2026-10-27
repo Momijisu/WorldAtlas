@@ -46,13 +46,13 @@ export function viewArticle(wid, id) {
         <a class="btn primary" href="#/w/${wid}/a/${a.id}/edit">${icon('pencil-simple')} Edit</a>
       </div>
     </div>
-    ${a.conflict ? `<div class="conflict-banner">${icon('warning')}<div><b>This article has conflicting edits.</b> It was changed on two devices before they synced, and both versions are being kept. You’re reading the current version.
+    ${a.conflict ? `<div class="conflict-banner">${icon('warning')}<div><b>Conflicting edits.</b> This article was changed on two devices before they synced. Both versions are kept until you choose.
       <div class="actions left" style="margin-top:.7rem"><a class="btn small primary" href="#/w/${wid}/a/${a.id}/resolve">${icon('arrows-out-cardinal')} Resolve conflict</a></div></div></div>` : ''}
     <div class="article-grid">
       <div class="article-main">
         ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Written for the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
-        ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>This page is blank. <a href="#/w/${wid}/a/${a.id}/edit">Begin writing</a>.</p></div>`}
+        ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}
         ${a.gmNotes ? `<details class="secret"><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary><div class="prose no-dropcap">${render(a.gmNotes, wid)}</div></details>` : ''}
         ${rels.length ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Relationships</h2>
           <div class="actions">

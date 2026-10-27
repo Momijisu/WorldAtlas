@@ -32,9 +32,7 @@ export function viewGraph(wid, q) {
 
   if (!relEdges.length && !linkEdges.length) {
     view.innerHTML = `<section class="page viz-page">${head}
-      <div class="empty-state small"><p>No relationships recorded in this world yet.<br>
-      Open any article's editor and use the <b>Relationships</b> panel — <i>Parent of</i>, <i>Ally of</i>, <i>Member of</i>, <i>Enemy of</i> and more —
-      and the web of connections will appear here.</p></div></section>`;
+      <div class="empty-state small"><p>No relationships yet. Add them in an article’s editor, under <b>Relationships</b>.</p></div></section>`;
     return;
   }
 
@@ -144,7 +142,7 @@ export function viewGraph(wid, q) {
   function draw() {
     gEdges.innerHTML = edges.map((e, i) => {
       const label = e.kind === 'rel' ? REL_TYPES[e.type].label : 'Mentions';
-      return `<path class="g-edge ${e.kind === 'link' ? 'link' : 'g-' + e.group}" data-i="${i}"><title>${esc(e.s.a.title)} — ${esc(label)} — ${esc(e.t.a.title)}</title></path>`;
+      return `<path class="g-edge ${e.kind === 'link' ? 'link' : 'g-' + e.group}" data-i="${i}"><title>${esc(e.s.a.title)}: ${esc(label)} ${esc(e.t.a.title)}</title></path>`;
     }).join('');
     gNodes.innerHTML = nodes.map((n) => `
       <g class="g-node t-${n.a.type}${n.id === focusId ? ' focus' : ''}" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.a.title)}">

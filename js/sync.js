@@ -41,7 +41,7 @@ export function sync() {
 
 async function run() {
   if (!auth.isSignedIn()) return refreshStatus();
-  if (!navigator.onLine) return setStatus('offline', 'Offline — changes are saved on this device.');
+  if (!navigator.onLine) return setStatus('offline', 'Offline. Changes are saved on this device.');
   setStatus('syncing');
   try {
     const rev = store.meta.localRev;
@@ -58,7 +58,7 @@ async function run() {
   } catch (e) {
     console.error('Sync failed', e);
     if (e instanceof auth.ReauthRequired) setStatus('reauth', e.message);
-    else if (!navigator.onLine) setStatus('offline', 'Offline — changes are saved on this device.');
+    else if (!navigator.onLine) setStatus('offline', 'Offline. Changes are saved on this device.');
     else setStatus('error', e.message || String(e));
   }
 }
