@@ -38,11 +38,10 @@ export function wireDropzone(zone, input = zone.querySelector('input[type=file]'
   });
   zone.addEventListener('pointerenter', () => { lastZone = zone; });
   zone.addEventListener('focusin', () => { lastZone = zone; });
-  // Clicking the empty part of the zone opens the file chooser (not the
-  // picture itself, which is dragged to set its focus, nor the buttons).
+  // While empty, clicking the drop area opens the file chooser. Once there's a
+  // picture the zone only takes drops and pastes; Choose image still works.
   zone.addEventListener('click', (e) => {
-    if (e.target.closest('button, label, input, a, .thumb')) return;
-    input.click();
+    if (e.target.closest('.dz-empty')) input.click();
   });
   zone.addEventListener('keydown', (e) => {
     if ((e.key === 'Enter' || e.key === ' ') && e.target === zone) { e.preventDefault(); input.click(); }
