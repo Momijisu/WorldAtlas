@@ -56,7 +56,13 @@ async function boot() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (hadController && !reloaded && !hasUnsaved()) { reloaded = true; location.reload(); }
     });
-    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
+    // updateViaCache 'none': always fetch sw.js and js/version.js fresh when checking for updates.
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      // Apps are often left open for days: check for a new version regularly and on return.
+      const check = () => { if (navigator.onLine) reg.update().catch(() => {}); };
+      setInterval(check, 30 * 60e3);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    }).catch((e) => console.warn('SW registration failed', e));
   }
   navigator.storage?.persist?.();
 }

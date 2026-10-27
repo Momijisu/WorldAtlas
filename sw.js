@@ -22,7 +22,11 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' bypasses the browser's HTTP cache, so a new version never
+  // installs with stale copies of files from the previous one.
+  e.waitUntil(caches.open(CACHE)
+    .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -42,7 +46,7 @@ self.addEventListener('fetch', (e) => {
   const key = req.mode === 'navigate' ? './' : req;
   e.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(key, { ignoreSearch: req.mode === 'navigate' });
-    const network = fetch(req).then((res) => {
+    const network = fetch(req.url, { cache: 'no-cache' }).then((res) => {
       if (res.ok && res.type === 'basic') cache.put(key, res.clone());
       return res;
     }).catch(() => cached);

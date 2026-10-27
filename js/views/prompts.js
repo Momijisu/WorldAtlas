@@ -21,7 +21,7 @@ export function promptCard(wid, p, { eyebrow = 'A prompt for you', draw = true }
     <div class="eyebrow">${icon('feather')} ${esc(eyebrow)} <span class="sep">/</span> ${esc(catLabel(p.cat))}</div>
     <p class="prompt-text">${esc(p.text)}</p>
     <div class="actions left">
-      <a class="btn primary" href="${answerHref(wid, p)}">${icon('pencil-simple')} Write a new ${esc((TYPES[p.type] || TYPES.article).label.toLowerCase())}</a>
+      <a class="btn primary" href="${answerHref(wid, p)}">${icon('pencil-simple')} New ${esc((TYPES[p.type] || TYPES.article).label.toLowerCase())} article</a>
       ${p.about ? `<a class="btn" href="${addToHref(wid, p)}">${icon('plus')} Add to ${esc(p.about.title)}</a>` : ''}
       ${draw ? `<button class="btn quiet" data-draw>${icon('arrows-clockwise')} Another</button>` : ''}
       <button class="btn quiet" data-dismiss title="Hide this prompt">${icon('eye-slash')} Not for me</button>
