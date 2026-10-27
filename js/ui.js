@@ -21,7 +21,7 @@ export const typeLabel = (type) => (TYPES[type] || TYPES.article).label;
 export async function hydrateImages(root = view) {
   for (const el of $$('[data-img]', root)) {
     const url = await store.imageURL(el.dataset.img);
-    if (url) el.src = url; else el.remove();
+    if (url) el.src = url; else { el.hidden = true; el.removeAttribute('data-img'); } // image not on this device yet
   }
   for (const el of $$('[data-bg]', root)) {
     const url = await store.imageURL(el.dataset.bg);

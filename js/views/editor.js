@@ -17,14 +17,19 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   a.fields ||= {};
   a.tags ||= [];
   a.relations ||= [];
+  // What this edit is based on, to spot changes synced in while editing.
+  const baseAt = a.updatedAt;
+  const baseContent = JSON.stringify(store.contentOf(a));
   let dirty = isNew && !!a.title;
   state.guard = () => dirty;
   state.guardMessage = 'Discard your unsaved changes to this article?';
   setTitle(isNew ? 'New article' : 'Editing ' + a.title);
   const excluded = isNew ? new Set() : new Set([a.id, ...store.descendantIds(a)]);
   const cancelHref = isNew ? (a.parentId ? `#/w/${wid}/a/${a.parentId}` : `#/w/${wid}`) : `#/w/${wid}/a/${a.id}`;
+  // A month past the end of the calendar (e.g. after months were removed) is kept as is.
   const monthOpts = (sel) => `<option value="">Month</option>` +
-    cal.months.map((m, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+    cal.months.map((m, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${esc(m.name)}</option>`).join('') +
+    (sel != null && sel >= cal.months.length ? `<option value="${sel}" selected>Month ${sel + 1}</option>` : '');
   const dateRow = (prefix, y, m, d) => `<div class="date-row">
       <input name="${prefix}" type="number" step="1" value="${y ?? ''}" placeholder="Year" aria-label="Year">
       <select name="${prefix}M" aria-label="Month">${monthOpts(m)}</select>
@@ -127,7 +132,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     if (y === '' || isNaN(+y)) return null;
     const m = f[p + 'M'].value === '' ? null : +f[p + 'M'].value;
     const dRaw = f[p + 'D'].value.trim();
-    const d = m == null || dRaw === '' ? null : Math.max(1, Math.min(+dRaw, cal.months[m].days));
+    const d = m == null || dRaw === '' || isNaN(+dRaw) ? null : Math.max(1, Math.min(Math.round(+dRaw), cal.months[m]?.days ?? Infinity));
     return { y: Math.round(+y), m, d };
   };
   const preview = () => {
@@ -149,7 +154,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     row.dataset.id = r.id;
     row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
-      <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: 'Choose an article' })}</select>
+      <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: 'Choose an article' })}${r.target && !store.article(r.target) ? `<option value="${esc(r.target)}" selected>(deleted article)</option>` : ''}</select>
       <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">`;
     row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
     relsEl.appendChild(row);
@@ -301,7 +306,18 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       end: en?.y ?? null, endM: en?.m ?? null, endD: en?.d ?? null,
       dateLabel: f.dateLabel.value.trim(),
     });
+    // Changed on another device while this was open: keep both versions.
+    const cur = !isNew && store.article(a.id);
+    if (cur && cur.updatedAt !== baseAt) {
+      const theirs = JSON.stringify(store.contentOf(cur));
+      delete a.conflict;
+      if (cur.conflict) a.conflict = cur.conflict;
+      else if (theirs !== baseContent && theirs !== JSON.stringify(store.contentOf(a))) {
+        a.conflict = { theirs: store.contentOf(cur), theirsAt: cur.updatedAt, at: Date.now() };
+      }
+    }
     await store.save('articles', a);
+    if (a.conflict && !cur?.conflict && cur) toast('This article also changed on another device. Both versions are kept for you to resolve.', 7000);
     if (prompt) await recordAnswer(wid, prompt.key, a.id);
     if (!isNew && oldTitle && oldTitle.trim().toLowerCase() !== title.toLowerCase()) {
       await store.renameReferences(wid, oldTitle, title);

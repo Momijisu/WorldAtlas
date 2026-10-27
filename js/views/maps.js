@@ -140,9 +140,11 @@ export async function viewMap(wid, mid, q) {
     </div>
   </section>`;
 
+  const box = $('#mapBox');
   const src = await store.imageURL(m.image);
+  if (!box.isConnected) return; // left this page while the image loaded
   if (!src) {
-    $('#mapBox').innerHTML = `<p class="muted pad">This map’s image hasn’t downloaded yet. It will appear after the next sync.</p>`;
+    box.innerHTML = `<p class="muted pad">This map’s image hasn’t downloaded yet. It will appear after the next sync.</p>`;
     return;
   }
   const info = $('#mapInfo');
@@ -176,9 +178,12 @@ export async function viewMap(wid, mid, q) {
   }
 
   // ---- viewer
-  const ctl = mountMap($('#mapBox'), {
+  const ctl = mountMap(box, {
     src,
     isDrawing: () => editing && tool === 'region',
+    // Editing: the Pin tool drops pins anywhere, even inside regions; the
+    // Region tool edits a region you tap before you start outlining a new one.
+    regionTaps: () => !editing || (tool === 'region' && !draft?.length),
     onPinClick: (p) => {
       const pin = (cur().pins || []).find((x) => x.id === p.id);
       if (!pin) return;
@@ -228,7 +233,7 @@ export async function viewMap(wid, mid, q) {
           <button data-tool="pin" class="${tool === 'pin' ? 'on' : ''}">${icon('map-pin')} Pin</button>
           <button data-tool="region" class="${tool === 'region' ? 'on' : ''}">${icon('polygon')} Region</button>
         </div>
-        <span class="hint">${tool === 'pin' ? 'Tap to place a pin, or tap a pin to edit it' : 'Tap to start outlining a region'}</span>`;
+        <span class="hint">${tool === 'pin' ? 'Tap to place a pin, or tap a pin to edit it' : 'Tap to start outlining a region, or tap a region to edit it'}</span>`;
     }
     $$('[data-tool]', bar).forEach((b) => b.onclick = () => {
       tool = b.dataset.tool;

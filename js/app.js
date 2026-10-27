@@ -24,6 +24,7 @@ import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.j
 
 const sidebar = $('#sidebar');
 let currentHash = location.hash;
+let lastRendered = null;
 let ignoreHash = false;
 
 // ---------------------------------------------------------------- boot
@@ -40,7 +41,7 @@ async function boot() {
   store.onChange((e) => {
     if (e.local) return;
     if (hasUnsaved()) toast('Changes arrived from another device');
-    else route();
+    else route({ keepScroll: true });
     if (e.conflicts) {
       toast(`${e.conflicts} article${e.conflicts === 1 ? ' has' : 's have'} conflicting edits to resolve`, 7000);
     }
@@ -173,20 +174,24 @@ async function onHash() {
   route();
 }
 
-export function route() {
+const decode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+
+export function route({ keepScroll = false } = {}) {
   currentHash = location.hash;
   state.cleanup?.();
   state.cleanup = null;
   document.body.classList.remove('nav-open');
   const raw = location.hash.slice(1) || '/';
   const [path, qs] = raw.split('?');
-  const p = path.split('/').filter(Boolean).map(decodeURIComponent);
+  const p = path.split('/').filter(Boolean).map(decode);
   const q = new URLSearchParams(qs || '');
 
-  if (p[0] === 'settings') return show(null, viewSettings);
-  if (p[0] !== 'w' || !p[1]) return show(null, viewWorlds);
+  const opts = { keepScroll: keepScroll && raw === lastRendered };
+  lastRendered = raw;
+  if (p[0] === 'settings') return show(null, viewSettings, opts);
+  if (p[0] !== 'w' || !p[1]) return show(null, viewWorlds, opts);
   const wid = p[1];
-  if (!store.world(wid)) { toast('That world no longer exists'); return show(null, viewWorlds); }
+  if (!store.world(wid)) { toast('That world no longer exists'); return show(null, viewWorlds, opts); }
   localStorage.setItem('wa.lastWorld', wid);
   const [sec, id, sub] = p.slice(2);
   const routes = {
@@ -196,13 +201,13 @@ export function route() {
     timeline: () => viewTimeline(wid, q),
     calendar: () => (id === 'edit' ? viewCalendarEdit(wid) : viewCalendar(wid, q)),
     maps: () => viewMaps(wid),
-    m: () => (store.map(id) ? viewMap(wid, id, q) : null),
-    tree: () => (store.article(id) ? viewTree(wid, id) : null),
+    m: () => (store.map(id)?.worldId === wid ? viewMap(wid, id, q) : null),
+    tree: () => (store.article(id)?.worldId === wid ? viewTree(wid, id) : null),
     graph: () => viewGraph(wid, q),
     trash: () => viewTrash(wid),
     prompts: () => viewPrompts(wid),
     new: () => {
-      const type = TYPES[id] ? id : 'article';
+      const type = Object.hasOwn(TYPES, id || '') ? id : 'article';
       const num = (k) => (q.has(k) && q.get(k) !== '' && !isNaN(+q.get(k)) ? +q.get(k) : null);
       return viewEditor(wid, store.newArticle(wid, type, {
         title: q.get('title') || '', parentId: q.get('parent') || null,
@@ -211,27 +216,30 @@ export function route() {
     },
     a: () => {
       const a = store.article(id);
-      if (!a) return null;
+      if (a?.worldId !== wid) return null;
       if (sub === 'edit') return viewEditor(wid, structuredClone(a), false, { prompt: q.get('prompt') });
       if (sub === 'history') return viewHistory(wid, id);
       if (sub === 'resolve') return viewResolve(wid, id);
       return viewArticle(wid, id);
     },
   };
-  const fn = sec ? routes[sec] : () => viewWorld(wid);
+  const fn = sec ? (Object.hasOwn(routes, sec) ? routes[sec] : null) : () => viewWorld(wid);
   show(wid, () => {
     if (!fn || fn() === null) { toast('Not found'); viewWorld(wid); }
-  });
+  }, opts);
 }
 state.route = route;
 
-function show(wid, fn) {
+// keepScroll: a re-render of the same page after a sync shouldn't jump to the top.
+function show(wid, fn, { keepScroll = false } = {}) {
+  const y = scrollY;
   state.wid = wid;
   document.body.classList.toggle('in-world', !!wid);
   renderSidebar(wid);
   applyBackground(wid);
   window.scrollTo(0, 0);
   fn();
+  if (keepScroll) requestAnimationFrame(() => window.scrollTo(0, y));
   markActiveNav();
 }
 

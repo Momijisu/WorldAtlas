@@ -13,8 +13,8 @@ export function viewCalendar(wid, q) {
   const cal = calendarOf(w);
   const dated = store.articlesOf(wid).filter((a) => articleStart(a));
   const fallbackYear = cal.currentYear ?? (dated.length ? Math.max(...dated.map((a) => articleStart(a).y)) : 1);
-  let y = q.has('y') ? +q.get('y') : fallbackYear;
-  let m = q.has('m') ? Math.min(+q.get('m'), cal.months.length - 1) : 0;
+  let y = q.has('y') && q.get('y') !== '' && Number.isFinite(+q.get('y')) ? Math.round(+q.get('y')) : fallbackYear;
+  let m = Math.min(Math.max(Math.round(+q.get('m')) || 0, 0), cal.months.length - 1);
   let mode = q.get('view') === 'year' ? 'year' : 'month';
   setTitle('Calendar');
 
@@ -202,7 +202,7 @@ export function viewCalendarEdit(wid) {
     </div>
     <div class="panel">
       <h2>The present day</h2>
-      <label>Current year <small>marks the present on the calendar and timeline</small><input type="number" id="curYear" step="1" value="${c.currentYear ?? ''}"></label>
+      <label>Current year <small>marks the present on the calendar and timeline</small><input type="number" id="curYear" step="1" value="${esc(c.currentYear ?? '')}"></label>
       <div class="date-preview" id="sample"></div>
     </div>
   </form>`;
@@ -235,13 +235,13 @@ export function viewCalendarEdit(wid) {
     rowList($('#eras'), c.eras, (e) => `
       <input class="n" value="${esc(e.name || '')}" placeholder="Era name" aria-label="Era name">
       <input class="a" value="${esc(e.abbr || '')}" placeholder="Abbr." aria-label="Abbreviation" style="max-width:6rem">
-      <input class="s" type="number" value="${e.start ?? ''}" placeholder="Start year" aria-label="Start year" style="max-width:7.5rem">
+      <input class="s" type="number" value="${esc(e.start ?? '')}" placeholder="Start year" aria-label="Start year" style="max-width:7.5rem">
       <label class="check"><input type="checkbox" class="r" ${e.restart ? 'checked' : ''}> Count from 1</label>`, (i) => c.eras.splice(i, 1));
     rowList($('#moons'), c.moons, (mo) => `
       <input class="n" value="${esc(mo.name || '')}" placeholder="Moon name" aria-label="Moon name">
-      <input class="c" type="number" min="1" step="any" value="${mo.cycle ?? 29.5}" title="Cycle length (days)" aria-label="Cycle days" style="max-width:6rem">
-      <input class="o" type="number" step="any" value="${mo.offset ?? 0}" title="Offset (days)" aria-label="Offset" style="max-width:5rem">
-      <input class="col" type="color" value="${mo.color || '#c4a46a'}" aria-label="Colour">`, (i) => c.moons.splice(i, 1));
+      <input class="c" type="number" min="1" step="any" value="${esc(mo.cycle ?? 29.5)}" title="Cycle length (days)" aria-label="Cycle days" style="max-width:6rem">
+      <input class="o" type="number" step="any" value="${esc(mo.offset ?? 0)}" title="Offset (days)" aria-label="Offset" style="max-width:5rem">
+      <input class="col" type="color" value="${esc(mo.color || '#c4a46a')}" aria-label="Colour">`, (i) => c.moons.splice(i, 1));
     refresh();
   }
 
@@ -271,11 +271,12 @@ export function viewCalendarEdit(wid) {
   f.onsubmit = async (e) => {
     e.preventDefault();
     readAll();
+    if (!c.months.length) return toast('Add at least one month');
     if (c.months.some((mo) => !mo.name)) return toast('Every month needs a name');
     if (!c.weekdays.length) return toast('Add at least one weekday');
     c.eras = c.eras.filter((er) => er.name);
     c.moons = c.moons.filter((mo) => mo.name);
-    const next = { ...w, calendar: c };
+    const next = { ...store.world(wid), calendar: c };
     delete next.era; // superseded by calendar eras
     await store.save('worlds', next);
     dirty = false;

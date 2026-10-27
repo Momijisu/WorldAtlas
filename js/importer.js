@@ -93,11 +93,13 @@ function buildCalendar(c, warn) {
   }
   return {
     months, weekdays, epochWeekday: epoch,
-    eras: (c.eras || []).map((e) => ({ name: String(e.name || ''), abbr: String(e.abbr || e.abbreviation || ''), start: e.start ?? e.startYear ?? '', restart: !!(e.countFromOne ?? e.restart) })).filter((e) => e.name),
-    moons: (c.moons || []).map((m) => ({ name: String(m.name || ''), cycle: +(m.cycle || m.cycleDays || 29.5), offset: +(m.offset || 0), color: m.color || '#c4a46a' })).filter((m) => m.name),
-    currentYear: c.currentYear ?? null,
+    eras: (c.eras || []).map((e) => ({ name: String(e.name || ''), abbr: String(e.abbr || e.abbreviation || ''), start: numOr(e.start ?? e.startYear, ''), restart: !!(e.countFromOne ?? e.restart) })).filter((e) => e.name),
+    moons: (c.moons || []).map((m) => ({ name: String(m.name || ''), cycle: +(m.cycle || m.cycleDays || 29.5), offset: +(m.offset || 0), color: /^#[0-9a-f]{3,8}$/i.test(m.color) ? m.color : '#c4a46a' })).filter((m) => m.name),
+    currentYear: numOr(c.currentYear, null),
   };
 }
+
+const numOr = (v, d) => (v === '' || v == null || isNaN(+v) ? d : Math.round(+v));
 
 // Parse "12 Frostmoot 1042 AF", "Frostmoot 1042", "1042", -300, {year, month, day}.
 function parseDate(raw, cal, warn, label) {

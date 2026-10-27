@@ -5,7 +5,7 @@ import * as auth from '../auth.js';
 import { TYPES, GROUPS } from '../store.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
-import { $, $$, esc, uid, modal, confirmDialog, prepareImage } from '../util.js';
+import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
@@ -100,8 +100,13 @@ export async function worldDialog(w) {
       });
       f.onsubmit = async (e) => {
         e.preventDefault();
-        Object.assign(w, { name: f.name.value.trim(), description: f.description.value });
-        await store.save('worlds', w);
+        const name = f.name.value.trim();
+        if (!name) return toast('Give the world a name');
+        // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
+        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, background: w.background };
+        Object.assign(next, { name, description: f.description.value });
+        if (!next.background) delete next.background;
+        await store.save('worlds', next);
         close();
         if (isNew) location.hash = `#/w/${w.id}`; else state.route();
       };
@@ -155,10 +160,10 @@ export function viewWorld(wid) {
     wirePromptCard(wid, $('#todayPrompt'), { onChange: (np) => showPrompt(np, 'Another prompt') });
   };
   if (promptsEnabled()) showPrompt(todaysPrompt(wid));
-  $('#editWorld').onclick = () => worldDialog(w);
+  $('#editWorld').onclick = () => worldDialog(store.world(wid));
   $('#newOwnWorld')?.addEventListener('click', () => worldDialog());
   $('#keepDemo')?.addEventListener('click', async () => {
-    if (!(await confirmDialog('Keep Aerthal as a normal world? It will sync to OneDrive like your other worlds.', 'Keep it', { title: 'Keep the example', danger: false }))) return;
+    if (!(await confirmDialog(`Keep ${w.name} as a normal world? It will sync to OneDrive like your other worlds.`, 'Keep it', { title: 'Keep the example', danger: false }))) return;
     await store.keepDemo(wid);
     state.route();
   });

@@ -100,6 +100,7 @@ export function moonGlyph(phase, color = 'currentColor', size = 14) {
   const rx = Math.abs(1 - 2 * lit) * r;
   const sweepOuter = waxing ? 1 : 0;
   const sweepInner = lit > 0.5 ? (waxing ? 1 : 0) : (waxing ? 0 : 1);
+  if (!/^#[0-9a-f]{3,8}$/i.test(color)) color = '#c4a46a';
   const path = `M7 1 A${r} ${r} 0 0 ${sweepOuter} 7 13 A${rx} ${r} 0 0 ${sweepInner} 7 1Z`;
   return `<svg class="moon" width="${size}" height="${size}" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="${r}" fill="none" stroke="${color}" stroke-width="1" opacity=".55"/>${lit > 0.02 ? `<path d="${path}" fill="${color}"/>` : ''}</svg>`;
 }

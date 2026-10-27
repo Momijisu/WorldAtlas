@@ -320,7 +320,8 @@ export function viewGraph(wid, q) {
   const end = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
-    if (pts.size < 2) pinch = null;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: tf.s }; } // a third finger lifted
+    else if (pts.size < 2) pinch = null;
     if (!drag || pts.size) { if (!pts.size) drag = null; return; }
     box.classList.remove('dragging');
     if (drag.node) drag.node.p.fixed = false;
@@ -393,6 +394,7 @@ export function viewGraph(wid, q) {
       tf.s = Math.max(tf.s, 0.85);
       tf.x = r.width / 2 - n.p.x * tf.s; tf.y = r.height * 0.24 - n.p.y * tf.s;
       applyTf();
+      interacted = true; // don't let the settling layout re-fit it under the sheet
     }
     info.querySelector('.gi-close').onclick = () => select(null);
     info.querySelectorAll('[data-go]').forEach((l) => l.onclick = (ev) => {

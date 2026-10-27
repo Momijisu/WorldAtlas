@@ -5,8 +5,15 @@ import { esc } from './util.js';
 
 marked.use({ gfm: true, breaks: true });
 
+// Code fences and `code spans` are left alone, so [[...]] can be shown literally.
+const CODE = /(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`[^`\n]*`)/;
+
 function wikiLinks(src, wid) {
-  return String(src || '').replace(/\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g, (_, title, label) => {
+  return String(src || '').split(CODE).map((part, i) => (i % 2 ? part : linkify(part, wid))).join('');
+}
+
+function linkify(src, wid) {
+  return src.replace(/\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g, (_, title, label) => {
     const a = store.byTitle(wid, title);
     const text = esc((label || title).trim());
     if (a) return `<a class="wikilink type-${a.type}" href="#/w/${wid}/a/${a.id}" title="${esc(a.summary || a.title)}">${text}</a>`;

@@ -13,7 +13,7 @@
 .map-page .map-head .eyebrow { flex-wrap: wrap; }
 .map-head .actions { gap: .35rem; }
 @media (max-width: 700px) {
-  .hide-sm { display: none; }
+  .map-head .hide-sm { display: none; }
   .map-page { padding-left: .6rem; padding-right: .6rem; padding-top: .7rem; }
   .map-page .map-head { gap: .4rem; }
   .map-page .map-head .actions { width: 100%; justify-content: flex-start; }

@@ -123,7 +123,7 @@ export function viewSettings() {
   };
   wireAbout();
   $('#exportBtn').onclick = exportBackup;
-  $('#importFile').onchange = (e) => e.target.files[0] && importBackup(e.target.files[0]);
+  $('#importFile').onchange = (e) => { const file = e.target.files[0]; e.target.value = ''; if (file) importBackup(file); };
   $('#importWorldFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) handleImportText(await f.text()); };
   $('#pasteImport').onclick = pasteDialog;
   $('#copyAiPrompt').onclick = () => copyText(aiInstructions(), 'Instructions copied');
@@ -167,6 +167,7 @@ export function renderOneDriveCard() {
     if (!(await confirmDialog('Disconnect OneDrive on this device? Your worlds stay here and in OneDrive.', 'Disconnect'))) return;
     auth.signOut();
     await store.saveMeta({ eTags: {} });
+    await store.resetSyncBase();
     sync.refreshStatus();
   });
   $('#saveCid').onclick = () => {
@@ -363,11 +364,21 @@ function previewImport(json) {
         $('#ipTarget', el).onchange = (e) => { target = e.target.value; draw(); };
         $('[data-cancel]', el).onclick = () => close();
         $('#ipGo', el).onclick = async (e) => {
-          e.currentTarget.disabled = true;
-          e.currentTarget.textContent = 'Importing…';
-          const { wid, failedImages } = await applyImport(plan);
+          const btn = e.currentTarget;
+          const label = btn.innerHTML;
+          btn.disabled = true;
+          btn.textContent = 'Importing…';
+          let result;
+          try { result = await applyImport(plan); } catch (err) {
+            console.error(err);
+            toast('Import failed: ' + (err.message || err), 6000);
+            btn.disabled = false; btn.innerHTML = label;
+            return;
+          }
+          const { wid, failedImages } = result;
+          const n = plan.create + plan.update;
           close();
-          toast(failedImages.length ? `Imported. ${failedImages.length} image${failedImages.length === 1 ? '' : 's'} couldn’t be downloaded.` : `Imported ${plan.create + plan.update} articles into ${plan.world.name}`, 5000);
+          toast(failedImages.length ? `Imported. ${failedImages.length} image${failedImages.length === 1 ? '' : 's'} couldn’t be downloaded.` : `Imported ${n} article${n === 1 ? '' : 's'} into ${plan.world.name}`, 5000);
           location.hash = `#/w/${wid}`;
         };
       };

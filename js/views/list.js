@@ -7,9 +7,9 @@ import { view, setTitle, hydrateImages, articleRows, pageHead, icon, worldCrumb,
 export function viewList(wid, { type, tag }) {
   const all = store.articlesOf(wid);
   let list, title, newType = 'article', ic = 'books';
-  if (tag) { list = all.filter((a) => (a.tags || []).includes(tag)); title = '#' + esc(tag); ic = 'tag'; }
+  if (tag) { list = all.filter((a) => (a.tags || []).includes(tag)); title = '#' + tag; ic = 'tag'; }
   else if (type === 'conflicts') { list = all.filter((a) => a.conflict); title = 'Conflicts to resolve'; ic = 'warning'; }
-  else if (type && type !== 'all' && TYPES[type]) { list = all.filter((a) => a.type === type); title = TYPES[type].plural; newType = type; ic = TYPES[type].icon; }
+  else if (type && type !== 'all' && Object.hasOwn(TYPES, type)) { list = all.filter((a) => a.type === type); title = TYPES[type].plural; newType = type; ic = TYPES[type].icon; }
   else { list = all; title = 'All articles'; }
   setTitle(title);
   const sortKey = localStorage.getItem('wa.sort') || 'title';
@@ -17,7 +17,7 @@ export function viewList(wid, { type, tag }) {
   view.innerHTML = `<section class="page">
     ${pageHead({
       eyebrow: `${worldCrumb(wid)} ${sep} ${icon(ic)} ${tag ? 'Tag' : 'Codex'}`,
-      title,
+      title: esc(title),
       actions: `<a class="btn primary" href="#/w/${wid}/new/${newType}">${icon('plus')} New ${TYPES[newType].label.toLowerCase()}</a>`,
     })}
     <div class="toolbar">

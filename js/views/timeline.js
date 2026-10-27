@@ -7,7 +7,7 @@ import {
   calendarOf, articleStart, articleEnd, articleDateText, dayNumber, yearLength, eraFor, formatYear,
 } from '../calendar.js';
 import { $, $$, esc } from '../util.js';
-import { view, state, setTitle, pageHead, icon, typeIcon, worldCrumb, sep } from '../ui.js';
+import { view, setTitle, pageHead, icon, typeIcon, worldCrumb, sep } from '../ui.js';
 
 export function viewTimeline(wid) {
   const w = store.world(wid);
@@ -18,7 +18,7 @@ export function viewTimeline(wid) {
     .map((a) => {
       const s = dayNumber(cal, articleStart(a));
       const endD = articleEnd(a);
-      let e = endD ? dayNumber(cal, endD) + (endD.m == null ? ylen - 1 : endD.d == null ? cal.months[endD.m].days - 1 : 0) : null;
+      let e = endD ? dayNumber(cal, endD) + (endD.m == null ? ylen - 1 : endD.d == null ? (cal.months[endD.m]?.days ?? 1) - 1 : 0) : null;
       if (e != null && e < s) e = null;
       return { a, s, e, open: e == null && a.type === 'character' && cal.currentYear != null && cal.currentYear >= articleStart(a).y };
     })
@@ -53,7 +53,8 @@ export function viewTimeline(wid) {
     if (!b) return;
     f.mode = b.dataset.m;
     localStorage.setItem('wa.tlMode', f.mode);
-    syncMode(); draw();
+    syncMode();
+    if (dated.length) draw();
   };
   syncMode();
   if (!dated.length) return;
@@ -73,8 +74,6 @@ export function viewTimeline(wid) {
     (!f.text || a.title.toLowerCase().includes(f.text) || (a.summary || '').toLowerCase().includes(f.text)));
 
   function draw() {
-    state.cleanup?.();
-    state.cleanup = null;
     const items = visible();
     if (!items.length) { $('#tlOut').innerHTML = '<div class="empty-state small"><p>No events match these filters.</p></div>'; return; }
     if (f.mode === 'spans') drawSpans(items); else drawChronicle(items);

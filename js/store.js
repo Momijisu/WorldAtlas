@@ -35,7 +35,9 @@ export const isDirty = () => meta.localRev > meta.syncedRev;
 // --- writes -------------------------------------------------------------
 
 export async function save(store, obj) {
-  obj.updatedAt = Date.now();
+  // Never older than the version it replaces, so a device with a slow clock
+  // can't produce an edit that loses to the text it was based on.
+  obj.updatedAt = Math.max(Date.now(), (data[store].get(obj.id)?.updatedAt || 0) + 1);
   obj.createdAt ??= obj.updatedAt;
   data[store].set(obj.id, obj);
   await db.put(store, obj);
@@ -81,8 +83,15 @@ export async function applyRemote(store, records) {
 // is simply newer".
 let syncBase = {};
 
-export async function markSynced() {
-  for (const s of db.RECORD_STORES) for (const r of data[s].values()) syncBase[r.id] = r.updatedAt || 0;
+// `snapshot` is { id: updatedAt } of exactly what was uploaded or found equal,
+// so edits made while a sync was in flight still count as unsynced.
+export async function markSynced(snapshot) {
+  Object.assign(syncBase, snapshot);
+  await db.put('meta', { key: 'base', map: syncBase });
+}
+
+export async function resetSyncBase() {
+  syncBase = {};
   await db.put('meta', { key: 'base', map: syncBase });
 }
 
@@ -309,7 +318,7 @@ export async function removeDemo(wid) {
   data.worlds.delete(wid);
   await db.del('worlds', [wid]);
   await db.del('images', images);
-  emit({ local: false, store: 'worlds' });
+  emit({ local: true, store: 'worlds' }); // the caller navigates away itself
 }
 
 // Turn the demo into a normal world that syncs like any other.

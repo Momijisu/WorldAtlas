@@ -36,8 +36,10 @@ export function modal(title, body, { onMount, wide } = {}) {
     wrap.innerHTML = `<div class="modal${wide ? ' wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <header><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="Close">${icon('x')}</button></header>
       <div class="modal-body">${body}</div></div>`;
-    const close = (v) => { wrap.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
-    const onKey = (e) => { if (e.key === 'Escape') close(null); };
+    const opener = document.activeElement;
+    const close = (v) => { wrap.remove(); document.removeEventListener('keydown', onKey); opener?.focus?.(); resolve(v); };
+    // Only the topmost dialog answers Escape.
+    const onKey = (e) => { if (e.key === 'Escape' && root.lastElementChild === wrap) { e.stopImmediatePropagation(); close(null); } };
     wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(null); });
     wrap.querySelector('[data-close]').onclick = () => close(null);
     document.addEventListener('keydown', onKey);

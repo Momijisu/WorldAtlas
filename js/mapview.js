@@ -7,7 +7,7 @@ import { esc } from './util.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
-export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
@@ -155,14 +155,15 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   const onEnd = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
-    if (pts.size < 2) pinch = null;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s }; } // a third finger lifted
+    else if (pts.size < 2) pinch = null;
     if (pts.size === 1) { const p = [...pts.values()][0]; start = { px: p.x, py: p.y, x, y }; }
     if (pts.size === 0) {
       if (!moved && e.type === 'pointerup') {
         const r = container.getBoundingClientRect();
         const ix = (e.clientX - r.left - x) / s / w, iy = (e.clientY - r.top - y) / s / h;
         const regionEl = downTarget?.closest?.('[data-region]');
-        if (regionEl && !isDrawing?.()) {
+        if (regionEl && (regionTaps ? regionTaps() : !isDrawing?.())) {
           const reg = items.regions.find((g) => g.id === regionEl.dataset.region);
           if (reg) onRegionClick?.(reg, { x: ix, y: iy });
         } else if (ix >= 0 && ix <= 1 && iy >= 0 && iy <= 1) {

@@ -319,7 +319,8 @@ export function panZoom(box, stage, { width, height, onTransform, maxScale = 3, 
   const up = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
-    if (pts.size < 2) pinch = null;
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s }; } // a third finger lifted
+    else if (pts.size < 2) pinch = null;
     if (pts.size === 1) { const p = [...pts.values()][0]; start = { px: p.x, py: p.y, tx, ty }; }
     if (pts.size === 0) {
       start = null; captured = false; box.classList.remove('dragging');

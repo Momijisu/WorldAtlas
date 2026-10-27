@@ -89,7 +89,8 @@ async function tokenRequest(params) {
   let acct = tokens?.account || null;
   if (json.id_token) {
     try {
-      const claims = JSON.parse(atob(json.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const bin = atob(json.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const claims = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
       acct = { name: claims.name, username: claims.preferred_username || claims.email };
     } catch { /* keep previous */ }
   }
@@ -128,5 +129,6 @@ export async function graph(path, opts = {}) {
   const go = async (force) => fetch(url, { ...opts, headers: { ...opts.headers, Authorization: 'Bearer ' + (await accessToken(force)) } });
   let res = await go(false);
   if (res.status === 401) res = await go(true);
+  if (res.status === 401) throw new ReauthRequired('Your Microsoft sign-in has expired. Reconnect to keep syncing.');
   return res;
 }

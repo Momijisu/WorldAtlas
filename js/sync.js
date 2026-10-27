@@ -47,9 +47,9 @@ async function run() {
     const rev = store.meta.localRev;
     const dirty = store.isDirty();
     for (const spec of FILES) {
-      for (let attempt = 0; attempt < 4; attempt++) {
-        if (await syncFile(spec, dirty)) break;
-      }
+      let done = false;
+      for (let attempt = 0; attempt < 4 && !done; attempt++) done = await syncFile(spec, dirty);
+      if (!done) throw new Error(`OneDrive kept changing ${spec.name} during sync. Try again shortly.`);
     }
     await store.saveMeta({ syncedRev: rev });
     await syncImages();
@@ -79,7 +79,7 @@ const FILES = [
     collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()].filter(store.syncable)])),
     merge: (json) => store.mergeRecords(json, { detectConflicts: true }),
     hasLocal: () => RECORD_STORES.some((s) => [...store.data[s].values()].some(store.syncable)),
-    agreed: () => store.markSynced(),
+    agreed: (body) => store.markSynced(Object.fromEntries(RECORD_STORES.flatMap((s) => body[s].map((r) => [r.id, r.updatedAt || 0])))),
   },
   {
     name: 'history.json',
@@ -106,17 +106,19 @@ async function syncFile(spec, dirty) {
       localAhead = dirty;
     }
   }
+  // Snapshot now: the upload (and the sync baseline) cover exactly this state.
+  const body = spec.collect();
   if (localAhead) {
     const res = await auth.graph(`${ROOT}:/${spec.name}:/content`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(remoteETag ? { 'If-Match': remoteETag } : { 'If-None-Match': '*' }) },
-      body: JSON.stringify({ app: 'WorldAtlas', version: 1, savedAt: Date.now(), ...spec.collect() }),
+      body: JSON.stringify({ app: 'WorldAtlas', version: 1, savedAt: Date.now(), ...body }),
     });
     if (res.status === 412 || res.status === 409) return false; // someone else wrote first — merge again
     remoteETag = (await (await check(res, 'Uploading ' + spec.name)).json()).eTag;
   }
   await store.saveMeta({ eTags: { ...store.meta.eTags, [spec.name]: remoteETag } });
-  await spec.agreed?.();
+  await spec.agreed?.(body);
   return true;
 }
 
