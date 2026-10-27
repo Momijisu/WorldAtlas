@@ -71,6 +71,7 @@ const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.65
 // name → { label, make() or src (a PNG made by tools/paper.py), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
+  gradient: { label: 'Gradient', css: true, strength: 0.2 }, // drawn in css/app.css
   parchment: { label: 'Parchment', src: 'assets/backgrounds/parchment.png', size: '512px', strength: 0.2 },
   stars: { label: 'Starfield', make: stars, size: '300px', strength: 0.5 },
   celestial: { label: 'Star chart', make: celestial, size: '600px', strength: 0.17 },
@@ -84,6 +85,7 @@ export const PATTERNS = {
 };
 
 const cache = {};
+const adjustable = (name) => tiled(name) || !!PATTERNS[name]?.css || name === 'image';
 const tiled = (name) => !!(PATTERNS[name]?.make || PATTERNS[name]?.src);
 // Image tiles get an absolute URL: a url() inside a custom property resolves
 // against the stylesheet that uses it (css/), not the page.
@@ -96,6 +98,7 @@ const clampScale = (v) => Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round(+v 
 // CSS custom properties for a pattern at a given size (percent of its natural tile).
 export function patternStyle(name, scale = 100, opacity) {
   const p = PATTERNS[name];
+  if (p?.css) return `--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
   if (!tiled(name)) return '';
   const px = parseFloat(p.size) * clampScale(scale) / 100;
   return `--bg-mask:url("${maskOf(name)}");--bg-size:${px.toFixed(2)}px;--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
@@ -135,7 +138,7 @@ export function pickerHTML(current, { allowDefault = false } = {}) {
     ${opts.map(([k, p]) => `<button type="button" class="bg-swatch ${sel === k ? 'on' : ''}" data-bg="${k}"><span class="bg-prev" data-p="${k}" style='${patternStyle(k)}'></span><span>${p.label}</span></button>`).join('')}
     <label class="bg-swatch ${sel === 'image' ? 'on' : ''}" data-bg="image"><span class="bg-prev img" data-p="image"></span><span>Your image</span><input type="file" accept="image/*" hidden></label>
   </div>
-  <div class="bg-adjust" ${tiled(sel) || sel === 'image' ? '' : 'hidden'}>
+  <div class="bg-adjust" ${adjustable(sel) ? '' : 'hidden'}>
     <label class="bg-scale" data-k="scale" ${tiled(sel) ? '' : 'hidden'}>Size
       <input type="range" min="${SCALE_MIN}" max="${SCALE_MAX}" step="5" value="${clampScale(current?.scale ?? 100)}"><output></output></label>
     <label class="bg-scale" data-k="opacity">Opacity
@@ -160,7 +163,7 @@ export function wirePicker(root, current, onPick, prepareImage) {
   const sync = () => {
     const name = bg?.pattern ?? 'default';
     picker.querySelectorAll('.bg-swatch').forEach((s) => s.classList.toggle('on', s.dataset.bg === name));
-    adjust.hidden = !(tiled(name) || name === 'image');
+    adjust.hidden = !adjustable(name);
     scaleRow.hidden = !tiled(name);
     label();
   };

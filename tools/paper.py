@@ -1,4 +1,6 @@
-"""Generate the seamless Parchment background tile (assets/backgrounds/parchment.png).
+"""Generate the background textures: the seamless Parchment tile
+(assets/backgrounds/parchment.png) and the fine noise used by Gradient
+(assets/backgrounds/noise.png).
 
 The tile is an alpha mask: the app paints the theme's brass colour through it.
 Everything is built from periodic noise (FFT-filtered) and fibres drawn with
@@ -80,3 +82,13 @@ la = np.zeros((N, N, 2), np.uint8)
 la[..., 1] = alpha
 Image.fromarray(la, 'LA').save('assets/backgrounds/parchment.png', optimize=True)
 print('alpha mean %.3f sd %.3f' % (alpha.mean() / 255, alpha.std() / 255))
+
+
+# Fine white noise for the Gradient background: each pixel is faintly lighter
+# or darker (white or black at a low alpha), so it reads on both themes.
+M = 128
+n = rng.standard_normal((M, M)) / 2.5
+noise = np.zeros((M, M, 2), np.uint8)
+noise[..., 0] = np.where(n > 0, 255, 0)
+noise[..., 1] = np.clip(np.abs(n) * 22, 0, 255).astype(np.uint8)
+Image.fromarray(noise, 'LA').save('assets/backgrounds/noise.png', optimize=True)

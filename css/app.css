@@ -110,6 +110,15 @@ body[data-bg="image"]::after {
   -webkit-mask: none; mask: none; opacity: 1;
   background: linear-gradient(color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent), color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent)), var(--wallpaper) center / cover no-repeat;
 }
+/* Gradient: a soft brass glow from the top and a faint warm one from the
+   corner, with fine white noise so it doesn't band. Also used by its swatch. */
+body[data-bg="gradient"]::after, .bg-prev[data-p="gradient"]::after {
+  -webkit-mask: none; mask: none; opacity: 1;
+  background:
+    url("../assets/backgrounds/noise.png") repeat 0 0 / 128px,
+    radial-gradient(140% 90% at 50% -20%, color-mix(in srgb, var(--brass) calc(var(--bg-strength, .2) * 100%), transparent), transparent 70%),
+    radial-gradient(110% 80% at 100% 120%, color-mix(in srgb, var(--rubric) calc(var(--bg-strength, .2) * 50%), transparent), transparent 65%);
+}
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; line-height: 1.1; letter-spacing: .005em; }
