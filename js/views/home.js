@@ -8,7 +8,7 @@ import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
-import { pickerHTML, wirePicker } from '../backgrounds.js';
+import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
@@ -107,6 +107,8 @@ export async function worldDialog(w) {
       };
     },
   });
+  // The background picker previews live; put back whatever is now saved.
+  applyBackground(state.wid);
 }
 
 export function viewWorld(wid) {
