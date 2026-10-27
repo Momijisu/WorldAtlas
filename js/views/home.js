@@ -16,7 +16,7 @@ export function viewWorlds() {
   const signedOut = sync.getStatus().state === 'off';
   view.innerHTML = `<section class="page">
     ${ws.length ? `
-      ${pageHead({ title: 'Your worlds', actions: `<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
+      ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
           <div class="card-cover" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
@@ -38,6 +38,9 @@ export function viewWorlds() {
       </div>`}
   </section>`;
   $('#newWorld').onclick = () => worldDialog();
+  $('#openExample')?.addEventListener('click', async () => {
+    location.hash = `#/w/${await exampleWorld(store, { demo: true })}`;
+  });
   $('#example')?.addEventListener('click', async () => {
     const id = await exampleWorld(store, { demo: !auth.account() });
     location.hash = `#/w/${id}`;
