@@ -267,3 +267,8 @@ details.guide summary .muted { font-weight: 400; }
 .cf-diff .diff-lines { margin-top: .5rem; max-height: 320px; overflow-y: auto; }
 .cf-merged { margin-top: .9rem; }
 @media (max-width: 700px) { .cf-sides { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- settings: about ---------- */
+.about-list { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1.2rem; margin: 0 0 1rem; }
+.about-list dt { font: 500 .74rem/1.9 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.about-list dd { margin: 0; }

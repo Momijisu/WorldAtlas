@@ -93,9 +93,10 @@ js/mapview.js         pan/zoom map viewer with pins and regions
 js/markdown.js        Markdown + [[wiki link]] rendering
 js/icons.js           icon set (Phosphor, MIT)
 js/config.js          your Azure client ID
+js/version.js         app version (shown in Settings, names the offline cache)
 sw.js                 service worker (offline cache)
 fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (SIL OFL)
 vendor/               marked (Markdown), DOMPurify (sanitising)
 ```
 
-When you add or remove files, update the list in `sw.js` and bump its `VERSION`. Edits to existing files are picked up automatically on the next launch after the one that downloads them.
+**Releasing an update:** bump `WA_VERSION` (and `WA_BUILD`) in `js/version.js`. Installed apps notice the new version, download it and replace their offline cache. Settings → About shows the running version, the cached version and the latest version online, with **Check for updates**, **Update now** and **Reset offline cache**. When you add or remove files, also update the `SHELL` list in `sw.js`. Edits to existing files are picked up automatically on the next launch after the one that downloads them.
