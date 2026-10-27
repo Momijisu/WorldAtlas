@@ -131,7 +131,7 @@ export function viewWorld(wid) {
   const recent = [...arts].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
-  view.innerHTML = `<section class="page">
+  view.innerHTML = `<section class="page wide world-home">
     <div class="hero${w.image ? ' with-img' : ''}">
       ${w.image ? `<div class="hero-img" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"></div>` : ''}
       <div class="hero-inner">
@@ -149,8 +149,10 @@ export function viewWorld(wid) {
         <button class="btn small" id="keepDemo">Keep this as my own</button>
         <button class="btn small quiet" id="removeDemo">Remove example</button>
       </div></div></div>` : ''}
-    ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
-    <div id="todayPrompt" class="today-prompt"></div>
+    <div class="world-intro${w.description && promptsEnabled() ? ' two-col' : ''}">
+      ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
+      <div id="todayPrompt" class="today-prompt"></div>
+    </div>
     ${flourish()}
     <div class="index-grid">
       ${Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k])).join('')}

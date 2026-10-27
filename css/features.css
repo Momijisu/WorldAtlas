@@ -197,6 +197,14 @@
 .prompt-text { font: italic 500 clamp(1.4rem, 3.4vw, 1.9rem)/1.3 var(--display); color: var(--text); margin: .6rem 0 1.1rem; max-width: 46ch; }
 .prompt-card.empty .prompt-text { font-size: 1.2rem; color: var(--text-2); margin-bottom: 0; }
 .today-prompt { margin-top: 1.6rem; }
+.today-prompt:empty { display: none; }
+.world-home .hero-inner { max-width: none; }
+/* Wide screens: today's prompt sits beside the world description. */
+@media (min-width: 1100px) {
+  .world-intro.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 460px); gap: 2.6rem; align-items: start; }
+  .world-intro.two-col .world-desc { max-width: none; }
+  .world-intro.two-col .today-prompt { margin-top: 1.6rem; }
+}
 .more-prompts { display: inline-block; margin-top: -.3rem; }
 .prompt-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
 .prompt-list li { display: flex; align-items: flex-start; gap: .9rem; padding: .85rem .3rem; border-bottom: 1px solid var(--rule); }
