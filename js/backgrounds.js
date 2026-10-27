@@ -71,7 +71,7 @@ const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.65
 // name → { label, make() or src (a PNG made by tools/paper.py), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
-  gradient: { label: 'Gradient', css: true, strength: 0.2 }, // drawn in css/app.css
+  gradient: { label: 'Gradient', css: true, strength: 0.05 }, // drawn in css/app.css
   parchment: { label: 'Parchment', src: 'assets/backgrounds/parchment.png', size: '512px', strength: 0.2 },
   stars: { label: 'Starfield', make: stars, size: '300px', strength: 0.5 },
   celestial: { label: 'Star chart', make: celestial, size: '600px', strength: 0.17 },

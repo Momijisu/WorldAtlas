@@ -116,8 +116,8 @@ body[data-bg="gradient"]::after, .bg-prev[data-p="gradient"]::after {
   -webkit-mask: none; mask: none; opacity: 1;
   background:
     url("../assets/backgrounds/noise.png") repeat 0 0 / 128px,
-    radial-gradient(140% 100% at var(--g-from, 50% -20%), color-mix(in srgb, var(--brass) calc(var(--bg-strength, .2) * 100%), transparent), transparent 72%),
-    radial-gradient(120% 90% at var(--g-to, 50% 125%), color-mix(in srgb, var(--rubric) calc(var(--bg-strength, .2) * 50%), transparent), transparent 65%);
+    radial-gradient(140% 100% at var(--g-from, 50% -20%), color-mix(in srgb, var(--brass) calc(var(--bg-strength, .05) * 100%), transparent), transparent 72%),
+    radial-gradient(120% 90% at var(--g-to, 50% 125%), color-mix(in srgb, var(--rubric) calc(var(--bg-strength, .05) * 50%), transparent), transparent 65%);
 }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
