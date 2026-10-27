@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import * as auth from '../auth.js';
 import * as sync from '../sync.js';
 import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download, prepareImage } from '../util.js';
-import { view, state, setTitle, pageHead, icon } from '../ui.js';
+import { view, state, setTitle, pageHead, icon, rowPicturesOn } from '../ui.js';
 import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
@@ -53,6 +53,7 @@ export function viewSettings() {
         <button data-w="regular">Regular</button>
         <button data-w="light" style="font-family:'Alegreya Sans Light', var(--sans)">Light</button>
       </div>
+      <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show pictures behind list rows <small class="muted">header image, or portrait, fading to the right</small></label>
       <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
       ${pickerHTML(deviceDefault())}
       <label class="bg-scale" style="margin-top:.9rem" title="Fine grain over the whole app that softens flat colours">Noise
@@ -129,6 +130,7 @@ export function viewSettings() {
     applyTheme(); markW();
   };
   markW();
+  $('#rowPicsToggle').onchange = (e) => { try { localStorage.setItem('wa.rowPics', e.target.checked ? 'on' : 'off'); } catch { /* private mode */ } };
   $('#noiseRange').addEventListener('input', (e) => { setNoise(e.target.value); e.target.nextElementSibling.textContent = e.target.value + '%'; });
   $('#noiseRange').addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });
   wirePicker($('#themeSeg').closest('.panel'), deviceDefault(), (bg) => { setDeviceDefault(bg || { pattern: 'plain' }); applyBackground(null); }, prepareImage);

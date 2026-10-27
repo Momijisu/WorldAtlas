@@ -352,6 +352,14 @@ label.inline select { width: auto; }
   border-bottom: 1px solid var(--rule); color: var(--text); text-decoration: none !important;
 }
 .row-link:hover { background: var(--ink-2); }
+/* Optional picture behind a row, fading out to the right. */
+.row-link:has(.row-bg) { position: relative; isolation: isolate; overflow: hidden; }
+.row-bg {
+  position: absolute; inset: 0 auto 0 0; width: min(520px, 70%); z-index: -1; pointer-events: none;
+  background: center / cover no-repeat; opacity: .32; transition: opacity .15s;
+  -webkit-mask-image: linear-gradient(90deg, #000 15%, transparent 100%); mask-image: linear-gradient(90deg, #000 15%, transparent 100%);
+}
+.row-link:hover .row-bg { opacity: .45; }
 .row-thumb { width: 46px; height: 46px; flex-shrink: 0; border-radius: 2px; object-fit: cover; border: 1px solid var(--rule); }
 .row-thumb.icon { display: grid; place-items: center; background: var(--ink-2); color: var(--brass); }
 .row-thumb.icon .i { width: 1.35rem; height: 1.35rem; }

@@ -31,11 +31,19 @@ export async function hydrateImages(root = view) {
   }
 }
 
+// Settings → Appearance: show each article's picture faded behind its list row.
+export const rowPicturesOn = () => { try { return localStorage.getItem('wa.rowPics') === 'on'; } catch { return false; } };
+const rowPicture = (a) => {
+  const id = a.banner || a.image;
+  if (!id || !rowPicturesOn()) return '';
+  return `<span class="row-bg" data-bg="${esc(id)}" style="background-position:${a.banner ? posCSS(a.bannerPos, [50, 35]) : posCSS(a.imagePos)}" aria-hidden="true"></span>`;
+};
+
 // listType: the template a list is of, so its rows needn't repeat it.
 export function articleRows(list, wid, meta, { listType } = {}) {
   if (!list.length) return '';
   return `<ul class="rows">${list.map((a, _, __, label = rowLabel(a, listType)) => `
-    <li><a href="#/w/${wid}/a/${a.id}" class="row-link">
+    <li><a href="#/w/${wid}/a/${a.id}" class="row-link">${rowPicture(a)}
       ${a.image ? `<img class="row-thumb" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="row-thumb icon">${typeIcon(a.type)}</span>`}
       <span class="row-text"><span class="row-title">${esc(a.title)}${a.conflict ? `<span class="conflict-flag" title="Edited on two devices">${icon('warning')} Conflict</span>` : ''}</span>
       <span class="row-sub">${label ? `<b>${esc(label)}</b>` : ''}${a.summary ? esc(plain(a.summary, 130)) : ''}</span></span>
