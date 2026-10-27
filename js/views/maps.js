@@ -225,6 +225,7 @@ export async function viewMap(wid, mid, q) {
     // Editing: the Pin tool drops pins anywhere, even inside regions; the
     // Region tool edits a region you tap before you start outlining a new one.
     regionTaps: () => !editing || (tool === 'region' && !draft?.length),
+    onDraftChange: (points) => { draft = points; },
     onPinClick: (p) => {
       const pin = (cur().pins || []).find((x) => x.id === p.id);
       if (!pin) return;
@@ -265,7 +266,7 @@ export async function viewMap(wid, mid, q) {
       bar.innerHTML = `<span class="hint">Tap the new location for this pin</span>
         <button class="btn small" data-act="cancel-move">Cancel</button>`;
     } else if (tool === 'region' && draft?.length) {
-      bar.innerHTML = `<span class="hint">${draft.length} point${draft.length === 1 ? '' : 's'}, keep tapping to outline</span>
+      bar.innerHTML = `<span class="hint">${draft.length} point${draft.length === 1 ? '' : 's'}, tap to add more, drag a point to move it</span>
         <button class="btn small" data-act="undo" ${draft.length ? '' : 'disabled'}>${icon('arrow-counter-clockwise')} Undo</button>
         <button class="btn small" data-act="cancel">Cancel</button>
         <button class="btn small primary" data-act="finish" ${draft.length >= 3 ? '' : 'disabled'}>${icon('check')} Finish</button>`;

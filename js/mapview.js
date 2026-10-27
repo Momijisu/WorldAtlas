@@ -7,7 +7,7 @@ import { esc } from './util.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
-export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps, onDraftChange }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
@@ -106,13 +106,14 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       el.addEventListener('click', (e) => { if (isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });
       pinLayer.appendChild(el);
     }
-    for (const [px, py] of draft || []) {
+    (draft || []).forEach(([px, py], i) => {
       const d = document.createElement('span');
       d.className = 'draft-dot';
+      d.dataset.vertex = i;
       d.style.left = px * 100 + '%';
       d.style.top = py * 100 + '%';
       pinLayer.appendChild(d);
-    }
+    });
   }
 
   img.onload = () => {
@@ -126,9 +127,23 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   // Pointer handling: one pointer pans, two pinch-zoom; a tap that barely moves is a click.
   const pts = new Map();
   let start = null, moved = false, pinch = null, downTarget = null;
+  let vertex = null; // index of a draft vertex being dragged
+  const toImage = (e) => {
+    const r = container.getBoundingClientRect();
+    return [Math.min(1, Math.max(0, (e.clientX - r.left - x) / s / w)), Math.min(1, Math.max(0, (e.clientY - r.top - y) / s / h))];
+  };
   const onDown = (e) => {
     if (e.button > 0) return;
     if (pts.size === 0) downTarget = e.target;
+    // Pressing a vertex of the region being drawn moves it instead of adding one.
+    const v = pts.size === 0 && e.target.closest?.('[data-vertex]');
+    if (v) {
+      vertex = +v.dataset.vertex;
+      moved = true;
+      container.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      return;
+    }
     container.setPointerCapture(e.pointerId);
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) { start = { px: e.clientX, py: e.clientY, x, y }; moved = false; }
@@ -141,6 +156,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   const onMove = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (vertex != null && draft?.[vertex]) { draft[vertex] = toImage(e); draw(); return; }
     const r = container.getBoundingClientRect();
     if (pts.size === 2 && pinch) {
       const [a, b] = [...pts.values()];
@@ -155,6 +171,12 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   const onEnd = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
+    if (vertex != null) {
+      vertex = null;
+      if (pts.size === 0) { downTarget = null; start = null; }
+      onDraftChange?.([...draft]);
+      return;
+    }
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s }; } // a third finger lifted
     else if (pts.size < 2) pinch = null;
     if (pts.size === 1) { const p = [...pts.values()][0]; start = { px: p.x, py: p.y, x, y }; }

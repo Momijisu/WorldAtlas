@@ -56,7 +56,11 @@
   position: absolute; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
   transform: scale(var(--inv, 1)); border-radius: 50%;
   background: var(--brass); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+  cursor: move; touch-action: none; pointer-events: auto;
 }
+/* A bigger invisible target, so vertices are easy to grab with a finger. */
+.draft-dot::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; }
+.draft-dot:hover { background: #fff; }
 
 /* pins */
 .pin {
