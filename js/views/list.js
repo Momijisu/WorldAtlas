@@ -71,7 +71,7 @@ export function viewSearch(wid, q) {
     <form class="toolbar" id="sf"><input type="search" name="q" value="${esc(q)}" placeholder="Search titles, text, fields and tags…"><button class="btn">${icon('magnifying-glass')} Search</button></form>
     <p class="eyebrow">${q ? `${scored.length} result${scored.length === 1 ? '' : 's'}` : ''}</p>
     ${articleRows(scored.map((s) => s[0]), wid)}
-    ${q && !store.byTitle(wid, q) ? `<p style="margin-top:1.4rem"><a class="btn" href="#/w/${wid}/new/article?title=${encodeURIComponent(q)}">${icon('plus')} Create “${esc(q)}”</a></p>` : ''}
+    ${q && !store.byTitle(wid, q) ? `<p style="margin-top:1.4rem"><a class="btn" href="#/w/${wid}/new/article?title=${encodeURIComponent(q)}" data-create="${esc(q)}">${icon('plus')} Create “${esc(q)}”</a></p>` : ''}
   </section>`;
   $('#sf').onsubmit = (e) => { e.preventDefault(); location.hash = `#/w/${wid}/search?q=${encodeURIComponent(e.target.q.value.trim())}`; };
   hydrateImages();

@@ -10,7 +10,7 @@ function wikiLinks(src, wid) {
     const a = store.byTitle(wid, title);
     const text = esc((label || title).trim());
     if (a) return `<a class="wikilink type-${a.type}" href="#/w/${wid}/a/${a.id}" title="${esc(a.summary || a.title)}">${text}</a>`;
-    return `<a class="wikilink missing" href="#/w/${wid}/new/article?title=${encodeURIComponent(title.trim())}" title="Create “${esc(title.trim())}”">${text}</a>`;
+    return `<a class="wikilink missing" href="#/w/${wid}/new/article?title=${encodeURIComponent(title.trim())}" data-create="${esc(title.trim())}" title="Create “${esc(title.trim())}”">${text}</a>`;
   });
 }
 

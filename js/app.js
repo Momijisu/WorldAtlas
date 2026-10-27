@@ -99,6 +99,13 @@ function wireChrome() {
     if (st === 'off' || st === 'reauth' || st === 'error') location.hash = '#/settings';
     else sync.sync();
   };
+  // Links to articles that don't exist yet: ask which template to start from.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-create]');
+    if (!a || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    newArticleDialog(state.wid, '', { title: a.dataset.create });
+  });
   addEventListener('hashchange', onHash);
   // Closing or reloading the tab can only use the browser's own warning (browsers don't allow custom ones).
   addEventListener('beforeunload', (e) => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; } });

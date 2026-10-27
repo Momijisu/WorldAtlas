@@ -137,11 +137,14 @@ export function viewWorld(wid) {
   hydrateImages();
 }
 
-export function newArticleDialog(wid, extra = '') {
+// Template picker. `extra` is a query string added to the new-article link
+// (e.g. "?parent=…"); `title` pre-fills the new article's title.
+export function newArticleDialog(wid, extra = '', { title } = {}) {
   wid ||= localStorage.getItem('wa.lastWorld');
   if (!store.world(wid)) wid = store.worlds()[0]?.id;
   if (!wid) return worldDialog();
-  modal('New article', `<p class="muted" style="margin-top:0">Pick a template. You can change it later.</p>
+  if (title) extra += (extra ? '&' : '?') + 'title=' + encodeURIComponent(title);
+  modal(title ? `Create “${title}”` : 'New article', `<p class="muted" style="margin-top:0">${title ? 'Pick a template to start from.' : 'Pick a template. You can change it later.'}</p>
     ${Object.entries(GROUPS).map(([g, gl]) => {
       const items = Object.entries(TYPES).filter(([, t]) => t.group === g);
       return `<div class="type-group">${esc(gl)}</div><div class="type-grid">${items.map(([k, t]) =>
