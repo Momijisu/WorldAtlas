@@ -14,6 +14,20 @@
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+/* Light text (Settings → Appearance → Text weight): the same families with
+   each weight served by the next lighter cut. */
+@font-face { font-family: "Cormorant Light"; src: url(../fonts/cormorant-garamond-latin-400-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Cormorant Light"; src: url(../fonts/cormorant-garamond-latin-400-italic.woff2) format("woff2"); font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: "Cormorant Light"; src: url(../fonts/cormorant-garamond-latin-500-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Cormorant Light"; src: url(../fonts/cormorant-garamond-latin-600-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Alegreya Light"; src: url(../fonts/alegreya-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Alegreya Light"; src: url(../fonts/alegreya-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Light"; src: url(../fonts/alegreya-latin-500-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Alegreya Light"; src: url(../fonts/alegreya-latin-500-italic.woff2) format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans Light"; src: url(../fonts/alegreya-sans-latin-300-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Alegreya Sans Light"; src: url(../fonts/alegreya-sans-latin-300-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans Light"; src: url(../fonts/alegreya-sans-latin-400-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Alegreya Sans Light"; src: url(../fonts/alegreya-sans-latin-500-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
 
 /* ---------- tokens ---------- */
 :root {
@@ -81,6 +95,12 @@
     --noise-blend: multiply; --shadow: 0 18px 40px rgba(60, 40, 15, .18);
     color-scheme: light;
   }
+}
+
+:root[data-weight="light"] {
+  --display: "Cormorant Light", "Cormorant", "Cormorant Garamond", Garamond, "Times New Roman", serif;
+  --serif: "Alegreya Light", "Alegreya", Georgia, serif;
+  --sans: "Alegreya Sans Light", "Alegreya Sans", "Gill Sans", "Segoe UI", sans-serif;
 }
 
 /* ---------- base ---------- */

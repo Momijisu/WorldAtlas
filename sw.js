@@ -17,6 +17,9 @@ const SHELL = [
   'fonts/alegreya-sans-latin-500-normal.woff2', 'fonts/alegreya-sans-latin-700-normal.woff2',
   'fonts/cormorant-garamond-latin-500-italic.woff2', 'fonts/cormorant-garamond-latin-500-normal.woff2',
   'fonts/cormorant-garamond-latin-600-normal.woff2', 'fonts/cormorant-garamond-latin-700-normal.woff2',
+  'fonts/cormorant-garamond-latin-400-normal.woff2', 'fonts/cormorant-garamond-latin-400-italic.woff2',
+  'fonts/alegreya-latin-500-normal.woff2', 'fonts/alegreya-latin-500-italic.woff2',
+  'fonts/alegreya-sans-latin-300-normal.woff2', 'fonts/alegreya-sans-latin-300-italic.woff2',
   'assets/demo/map.svg', 'assets/demo/cover.svg', 'assets/backgrounds/parchment.png', 'assets/backgrounds/noise.png', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png',
   'icons/apple-touch-icon.png',
 ];

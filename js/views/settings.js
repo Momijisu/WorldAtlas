@@ -12,6 +12,7 @@ import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackgroun
 
 export function applyTheme() {
   applyNoise();
+  document.documentElement.dataset.weight = localStorage.getItem('wa.weight') || 'regular';
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
   const light = getComputedStyle(document.documentElement).colorScheme === 'light';
   document.querySelector('meta[name="theme-color"]').content = light ? '#e6dcc8' : '#161411';
@@ -46,6 +47,11 @@ export function viewSettings() {
         <button data-t="dark">${icon('moon-stars')} Nocturne</button>
         <button data-t="light">${icon('sun')} Vellum</button>
         <button data-t="auto">Match device</button>
+      </div>
+      <div class="field-label" style="margin-top:1.2rem">Text weight</div>
+      <div class="seg" id="weightSeg">
+        <button data-w="regular">Regular</button>
+        <button data-w="light" style="font-family:'Alegreya Sans Light', var(--sans)">Light</button>
       </div>
       <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
       ${pickerHTML(deviceDefault())}
@@ -114,6 +120,15 @@ export function viewSettings() {
     applyTheme(); mark();
   };
   mark();
+  const wseg = $('#weightSeg');
+  const markW = () => { for (const b of wseg.children) b.classList.toggle('on', b.dataset.w === (localStorage.getItem('wa.weight') || 'regular')); };
+  wseg.onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    localStorage.setItem('wa.weight', b.dataset.w);
+    applyTheme(); markW();
+  };
+  markW();
   $('#noiseRange').addEventListener('input', (e) => { setNoise(e.target.value); e.target.nextElementSibling.textContent = e.target.value + '%'; });
   $('#noiseRange').addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });
   wirePicker($('#themeSeg').closest('.panel'), deviceDefault(), (bg) => { setDeviceDefault(bg || { pattern: 'plain' }); applyBackground(null); }, prepareImage);
