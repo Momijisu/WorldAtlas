@@ -572,3 +572,4 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 code.copy { user-select: all; word-break: break-all; }
 .status-synced { color: var(--ok); }
 .status-error { color: var(--warn); }
+.rel-row .rel-from { font-size: .78rem; }

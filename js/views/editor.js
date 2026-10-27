@@ -154,19 +154,29 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const relTypeOptions = (sel) => Object.entries(REL_GROUPS).map(([g, gl]) =>
     `<optgroup label="${gl}">${Object.entries(REL_TYPES).filter(([, t]) => t.group === g)
       .map(([k, t]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('');
-  const addRel = (r = { id: uid(), type: 'ally', target: '', note: '' }) => {
+  // from: the article a relationship is stored on, when it was added there.
+  const addRel = (r = { id: uid(), type: 'ally', target: '', note: '' }, from = null) => {
     const row = document.createElement('div');
     row.className = 'rel-row';
     row.dataset.id = r.id;
+    if (from) row.dataset.from = from;
     row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
       <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: 'Choose an article' })}${r.target && !store.article(r.target) ? `<option value="${esc(r.target)}" selected>(deleted article)</option>` : ''}</select>
-      <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">`;
+      <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">
+      ${from ? `<small class="muted rel-from">Added on ${esc(store.article(from)?.title || 'another article')}</small>` : ''}`;
     row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
     relsEl.appendChild(row);
     return row;
   };
   a.relations.forEach((r) => addRel(r));
+  // Relationships added on other articles that point here, shown from this
+  // side. Changing or removing one here updates the article it's stored on.
+  const own = new Set(a.relations.map((r) => r.type + r.target));
+  const incoming = isNew ? [] : store.articlesOf(wid).filter((o) => o.id !== a.id)
+    .flatMap((o) => (o.relations || []).filter((r) => r.target === a.id && REL_TYPES[r.type]).map((rel) => ({ from: o.id, rel })))
+    .filter(({ from, rel }) => !own.has(REL_TYPES[rel.type].inverse + from));
+  incoming.forEach(({ from, rel }) => addRel({ id: rel.id, type: REL_TYPES[rel.type].inverse, target: from, note: rel.note }, from));
   $('#addRel').onclick = () => addRel().querySelector('.rtarget').focus();
 
   // Infobox fields, grouped by the template's sections; extra fields go under "Other".
@@ -305,9 +315,17 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const fields = {};
     for (const [k, v] of readFields()) fields[k] = v;
     const seen = new Set();
-    const relations = $$('.rel-row', relsEl).map((row) => ({
-      id: row.dataset.id, type: row.querySelector('.rt').value, target: row.querySelector('.rtarget').value, note: row.querySelector('.rnote').value.trim(),
-    })).filter((r) => r.target && !seen.has(r.type + r.target) && seen.add(r.type + r.target));
+    const relations = [];
+    const onSource = new Map(); // incoming relationship id → note, for those left where they are
+    for (const row of $$('.rel-row', relsEl)) {
+      const r = { id: row.dataset.id, type: row.querySelector('.rt').value, target: row.querySelector('.rtarget').value, note: row.querySelector('.rnote').value.trim() };
+      if (!r.target || seen.has(r.type + r.target)) continue;
+      seen.add(r.type + r.target);
+      const inc = row.dataset.from && incoming.find((i) => i.rel.id === r.id && i.from === row.dataset.from);
+      // Unchanged apart from its note: it stays on the other article.
+      if (inc && r.target === inc.from && r.type === REL_TYPES[inc.rel.type].inverse) { onSource.set(r.id, r.note); continue; }
+      relations.push(inc ? { ...r, id: uid() } : r); // changed: now stored here
+    }
     const s = readDate('start');
     const en = s ? readDate('end') : null;
     Object.assign(a, {
@@ -330,6 +348,17 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       }
     }
     await store.save('articles', a);
+    // Update the other articles whose relationships were removed, moved here or re-noted.
+    for (const from of new Set(incoming.map((i) => i.from))) {
+      const src = store.article(from);
+      if (!src) continue;
+      const next = (src.relations || []).flatMap((r) => {
+        if (r.target !== a.id || !incoming.some((i) => i.rel.id === r.id)) return [r];
+        if (!onSource.has(r.id)) return [];
+        return [{ ...r, note: onSource.get(r.id) }];
+      });
+      if (JSON.stringify(next) !== JSON.stringify(src.relations || [])) await store.save('articles', { ...src, relations: next });
+    }
     if (a.conflict && !cur?.conflict && cur) toast('This article also changed on another device. Both versions are kept for you to resolve.', 7000);
     if (prompt) await recordAnswer(wid, prompt.key, a.id);
     if (!isNew && oldTitle && oldTitle.trim().toLowerCase() !== title.toLowerCase()) {
