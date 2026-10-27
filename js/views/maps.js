@@ -1,6 +1,7 @@
 // Maps: a list of a world's maps, and the interactive map page with pins,
 // regions, layers, nested maps and a "Places" finder.
 import * as store from '../store.js';
+import { posCSS } from '../focus.js';
 import { mountMap } from '../mapview.js';
 import { plain } from '../markdown.js';
 import { view, state, setTitle, pageHead, icon, hydrateImages, articleOptions, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
@@ -163,7 +164,7 @@ export async function viewMap(wid, mid, q) {
     const sub = store.map(it.mapId);
     info.hidden = false;
     info.innerHTML = `<button class="icon-btn sm close" aria-label="Close">${icon('x')}</button>
-      ${a?.image ? `<img data-img="${a.image}" alt="">` : ''}
+      ${a?.image ? `<img data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : ''}
       <div class="info-body">
         <div class="eyebrow">${a ? `${typeIcon(a.type)} ${typeLabel(a.type)}` : kind === 'region' ? `${icon('polygon')} Region` : `${icon(it.icon || 'map-pin')} Place`}${it.layer ? ` <span class="sep">/</span> ${esc(it.layer)}` : ''}</div>
         <div class="info-title">${esc(itemTitle(it))}</div>

@@ -1,6 +1,7 @@
 // Relationship graph: articles as nodes, typed relationships (and optionally
 // [[wiki links]]) as edges, laid out with a small force simulation.
 import * as store from '../store.js';
+import { posCSS } from '../focus.js';
 import { TYPES } from '../store.js';
 import { REL_TYPES, REL_GROUPS, worldEdges, relationsOf, hasFamily } from '../relations.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, typeLabel, hydrateImages, worldCrumb, sep } from '../ui.js';
@@ -373,7 +374,7 @@ export function viewGraph(wid, q) {
     info.innerHTML = `
       <button class="icon-btn gi-close" aria-label="Close">${icon('x')}</button>
       <div class="gi-head">
-        ${a.image ? `<img class="gi-img" data-img="${a.image}" alt="">` : `<span class="gi-img icon">${typeIcon(a.type)}</span>`}
+        ${a.image ? `<img class="gi-img" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="gi-img icon">${typeIcon(a.type)}</span>`}
         <div><div class="eyebrow">${typeLabel(a.type)}</div><div class="gi-title">${esc(a.title)}</div></div>
       </div>
       ${a.summary ? `<p class="gi-sum">${esc(plain(a.summary, 220))}</p>` : ''}

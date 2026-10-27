@@ -83,6 +83,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <img class="thumb" ${a.image ? `data-img="${a.image}"` : 'hidden'} alt="">
             <label class="btn small">${icon('image')} Upload<input type="file" accept="image/*" hidden id="imgFile"></label>
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
+            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag the picture to choose what shows in thumbnails. The infobox shows it whole.</p>
           </div>
         </div>
         <div class="panel">
@@ -249,6 +250,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
 
   // Image
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);
+  const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; }, ratio: 1 });
   const bThumb = $('.banner-thumb', f);
   const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: 2.4 });
   $('#bannerFile').onchange = async (e) => {
@@ -264,9 +266,11 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const file = e.target.files[0];
     if (!file) return;
     a.image = await store.addImage(await prepareImage(file));
-    thumb.src = await store.imageURL(a.image); thumb.hidden = false; $('#imgRm').hidden = false; dirty = true;
+    a.imagePos = null;
+    thumb.src = await store.imageURL(a.image); thumb.hidden = false; $('#imgHint').hidden = false; $('#imgRm').hidden = false; dirty = true;
+    iFocus.refresh();
   };
-  $('#imgRm').onclick = () => { a.image = null; thumb.hidden = true; $('#imgRm').hidden = true; dirty = true; };
+  $('#imgRm').onclick = () => { a.image = null; a.imagePos = null; thumb.hidden = true; $('#imgHint').hidden = true; $('#imgRm').hidden = true; dirty = true; };
 
   // Markdown helpers
   const body = f.body;

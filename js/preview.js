@@ -2,6 +2,7 @@
 // card shows the article's picture, template, title and opening lines.
 // Mouse and pen only; on touch a tap simply follows the link.
 import * as store from './store.js';
+import { posCSS } from './focus.js';
 import { TYPES } from './store.js';
 import { plain } from './markdown.js';
 import { esc } from './util.js';
@@ -40,7 +41,7 @@ async function show(link, a) {
     const url = await store.imageURL(pic);
     const img = card.querySelector('.lp-img');
     if (current !== link || !img) return;
-    if (url) img.style.backgroundImage = `url("${url}")`; else img.remove();
+    if (url) { img.style.backgroundImage = `url("${url}")`; img.style.backgroundPosition = a.banner ? posCSS(a.bannerPos, [50, 35]) : posCSS(a.imagePos); } else img.remove();
     place(link);
   }
 }

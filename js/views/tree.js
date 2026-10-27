@@ -1,6 +1,7 @@
 // Family tree centred on one article: ancestors above, descendants below,
 // spouses/partners beside their partner, siblings beside the focus.
 import * as store from '../store.js';
+import { posCSS } from '../focus.js';
 import { family } from '../relations.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, hydrateImages, worldCrumb, sep } from '../ui.js';
@@ -59,7 +60,7 @@ export function viewTree(wid, aid) {
     const dates = articleDateText(cal, a);
     const rel = n.label ? `<span class="tn-rel">${n.label}</span>` : '';
     return `<div class="tree-node${a.id === aid ? ' focus' : ''}" style="left:${n.x - W / 2 + ox}px;top:${n.y - H / 2 + oy}px;width:${W}px;height:${H}px" data-id="${a.id}" tabindex="0" role="button" aria-label="Show family of ${esc(a.title)}">
-      ${a.image ? `<img class="tn-img" data-img="${a.image}" alt="">` : `<span class="tn-img icon">${typeIcon(a.type)}</span>`}
+      ${a.image ? `<img class="tn-img" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="tn-img icon">${typeIcon(a.type)}</span>`}
       <span class="tn-text">${rel}<span class="tn-title">${esc(a.title)}</span>${dates ? `<span class="tn-dates">${esc(dates)}</span>` : ''}</span>
       <a class="tn-open" href="#/w/${wid}/a/${a.id}" title="Open article" aria-label="Open ${esc(a.title)}">${icon('arrow-square-out')}</a>
     </div>`;

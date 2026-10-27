@@ -144,7 +144,7 @@ export function viewResolve(wid, aid) {
         } else out.relations = structuredClone(src.relations || []);
       } else {
         out[b.id] = src[b.id] ?? null;
-        if (b.id === 'banner') out.bannerPos = src.bannerPos ?? null; // the focus belongs to its picture
+        if (b.kind === 'image') out[b.id + 'Pos'] = src[b.id + 'Pos'] ?? null; // the focus belongs to its picture
       }
     }
     out.title = String(out.title || '').trim() || a.title;

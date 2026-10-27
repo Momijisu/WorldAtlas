@@ -1,5 +1,6 @@
 // Shared UI state and helpers used by every view.
 import * as store from './store.js';
+import { posCSS } from './focus.js';
 import { TYPES } from './store.js';
 import { icon } from './icons.js';
 import { esc, $$ } from './util.js';
@@ -33,7 +34,7 @@ export function articleRows(list, wid, meta) {
   if (!list.length) return '';
   return `<ul class="rows">${list.map((a) => `
     <li><a href="#/w/${wid}/a/${a.id}" class="row-link">
-      ${a.image ? `<img class="row-thumb" data-img="${a.image}" alt="">` : `<span class="row-thumb icon">${typeIcon(a.type)}</span>`}
+      ${a.image ? `<img class="row-thumb" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="row-thumb icon">${typeIcon(a.type)}</span>`}
       <span class="row-text"><span class="row-title">${esc(a.title)}${a.conflict ? `<span class="conflict-flag" title="Edited on two devices">${icon('warning')} Conflict</span>` : ''}</span>
       <span class="row-sub"><b>${typeLabel(a.type)}</b>${a.summary ? esc(plain(a.summary, 130)) : ''}</span></span>
       ${meta ? `<span class="row-meta">${meta(a)}</span>` : ''}
