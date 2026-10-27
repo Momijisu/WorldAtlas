@@ -7,6 +7,7 @@ import { REL_TYPES, REL_GROUPS } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
+import { wireFocus } from '../focus.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
@@ -90,6 +91,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt="">
             <label class="btn small">${icon('image')} Upload<input type="file" accept="image/*" hidden id="bannerFile"></label>
             <button type="button" class="btn small quiet" id="bannerRm" ${a.banner ? '' : 'hidden'}>Remove</button>
+            <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
           </div>
         </div>
         <div class="panel">
@@ -248,13 +250,16 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // Image
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);
   const bThumb = $('.banner-thumb', f);
+  const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: 2.4 });
   $('#bannerFile').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     a.banner = await store.addImage(await prepareImage(file, 2400));
-    bThumb.src = await store.imageURL(a.banner); bThumb.hidden = false; $('#bannerRm').hidden = false; dirty = true;
+    a.bannerPos = null;
+    bThumb.src = await store.imageURL(a.banner); bThumb.hidden = false; $('#bannerHint').hidden = false; $('#bannerRm').hidden = false; dirty = true;
+    bFocus.refresh();
   };
-  $('#bannerRm').onclick = () => { a.banner = null; bThumb.hidden = true; $('#bannerRm').hidden = true; dirty = true; };
+  $('#bannerRm').onclick = () => { a.banner = null; a.bannerPos = null; bThumb.hidden = true; $('#bannerHint').hidden = true; $('#bannerRm').hidden = true; dirty = true; };
   $('#imgFile').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;

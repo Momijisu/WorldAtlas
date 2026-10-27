@@ -469,6 +469,10 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 .rel-row select, .rel-row input { min-height: 36px; padding: .3em .5em; }
 .image-field { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .6rem; }
 .image-field .thumb { width: 100%; max-height: 210px; object-fit: cover; border: 1px solid var(--rule); }
+.image-field .thumb.focus-pick { max-height: none; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.image-field .thumb.focus-pick.dragging { cursor: grabbing; border-color: var(--brass); }
+.image-field .thumb.focus-pick:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.image-field .focus-hint { flex-basis: 100%; margin: 0; }
 .date-row { display: grid; grid-template-columns: 1.1fr 1.5fr .8fr; gap: .4rem; }
 .date-row input, .date-row select { min-height: 36px; padding: .3em .5em; }
 .date-preview { font: italic 500 1.05rem var(--display); color: var(--brass); min-height: 1.4em; margin: .2rem 0 .7rem; }

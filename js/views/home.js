@@ -9,6 +9,7 @@ import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../u
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
+import { posCSS, wireFocus } from '../focus.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
@@ -20,7 +21,7 @@ export function viewWorlds() {
       ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
-          <div class="card-cover" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
+          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
             <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${store.articlesOf(w.id).length} articles · ${store.mapsOf(w.id).length} maps</div>
             <h3>${esc(w.name)}</h3>
@@ -61,6 +62,7 @@ export async function worldDialog(w) {
         <img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt="">
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
+        <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
       </div>
       <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
@@ -75,6 +77,8 @@ export async function worldDialog(w) {
       hydrateImages(m);
       const f = $('#wf', m);
       const thumb = $('.thumb', m);
+      const hint = $('.focus-hint', m);
+      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: 2 });
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
@@ -82,9 +86,11 @@ export async function worldDialog(w) {
         const file = f.file.files[0];
         if (!file) return;
         w.image = await store.addImage(await prepareImage(file, 2400));
-        thumb.src = await store.imageURL(w.image); thumb.hidden = false; $('[data-rm]', m).hidden = false;
+        w.imagePos = null;
+        thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false;
+        focus.refresh();
       };
-      $('[data-rm]', m).onclick = (e) => { w.image = null; thumb.hidden = true; e.currentTarget.hidden = true; };
+      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; };
       $('[data-del]', m)?.addEventListener('click', async () => {
         if (store.isDemo(w.id)) {
           if (!(await confirmDialog('Remove the example world from this device?', 'Remove'))) return;
@@ -103,7 +109,7 @@ export async function worldDialog(w) {
         const name = f.name.value.trim();
         if (!name) return toast('Give the world a name');
         // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
-        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, background: w.background };
+        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, background: w.background };
         Object.assign(next, { name, description: f.description.value });
         if (!next.background) delete next.background;
         await store.save('worlds', next);
@@ -126,7 +132,7 @@ export function viewWorld(wid) {
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
   view.innerHTML = `<section class="page">
-    <div class="hero" ${w.image ? `data-bg="${w.image}"` : ''}>
+    <div class="hero" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}>
       <div class="hero-inner">
         <div><h1>${esc(w.name)}</h1></div>
         <div class="actions">

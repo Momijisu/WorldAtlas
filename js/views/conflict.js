@@ -142,7 +142,10 @@ export function viewResolve(wid, aid) {
           const seen = new Set();
           out.relations = [...(cur.relations || []), ...(other.relations || [])].filter((r) => !seen.has(relKey(r)) && seen.add(relKey(r)));
         } else out.relations = structuredClone(src.relations || []);
-      } else out[b.id] = src[b.id] ?? null;
+      } else {
+        out[b.id] = src[b.id] ?? null;
+        if (b.id === 'banner') out.bannerPos = src.bannerPos ?? null; // the focus belongs to its picture
+      }
     }
     out.title = String(out.title || '').trim() || a.title;
     const clash = store.byTitle(wid, out.title);
