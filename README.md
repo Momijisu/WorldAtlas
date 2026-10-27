@@ -18,7 +18,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - Merge resolver for articles edited on two devices before they synced
 - Import from a simple JSON format ([docs/IMPORT_FORMAT.md](docs/IMPORT_FORMAT.md)), e.g. one an AI assistant made from your notes
 - Full backup to a single file
-- Dark and light themes, and a gradient, background patterns or your own wallpaper image for each world
+- Dark and light themes, a gradient, background patterns or your own wallpaper image for each world, and adjustable fine noise that softens flat colours
 - An example world, Aerthal, opens on first visit. It stays on that device and never syncs unless you choose to keep it.
 
 Plain HTML, CSS and JavaScript. No server, no build step.

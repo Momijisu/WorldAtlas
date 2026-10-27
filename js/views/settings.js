@@ -8,9 +8,10 @@ import { planImport, applyImport, isImportFormat, exportSimple } from '../import
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
-import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground } from '../backgrounds.js';
+import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground, noiseLevel, setNoise, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
 
 export function applyTheme() {
+  applyNoise();
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
   const light = getComputedStyle(document.documentElement).colorScheme === 'light';
   document.querySelector('meta[name="theme-color"]').content = light ? '#e6dcc8' : '#161411';
@@ -48,6 +49,8 @@ export function viewSettings() {
       </div>
       <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
       ${pickerHTML(deviceDefault())}
+      <label class="bg-scale" style="margin-top:.9rem" title="Fine grain over the whole app that softens flat colours">Noise
+        <input type="range" id="noiseRange" min="0" max="100" step="1" value="${noiseLevel()}"><output>${noiseLevel()}%</output></label>
     </div>
     <div class="panel">
       <h2>Writing help</h2>
@@ -111,6 +114,8 @@ export function viewSettings() {
     applyTheme(); mark();
   };
   mark();
+  $('#noiseRange').addEventListener('input', (e) => { setNoise(e.target.value); e.target.nextElementSibling.textContent = e.target.value + '%'; });
+  $('#noiseRange').addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });
   wirePicker($('#themeSeg').closest('.panel'), deviceDefault(), (bg) => { setDeviceDefault(bg || { pattern: 'plain' }); applyBackground(null); }, prepareImage);
   $('#installBtn')?.addEventListener('click', () => state.promptInstall().then(() => state.route()));
   $('#promptsToggle').onchange = (e) => {

@@ -37,7 +37,6 @@
   --warn: #e3b55b;
   --secret-bg: rgba(196, 85, 59, .07);
   --shadow: 0 18px 50px rgba(0, 0, 0, .5);
-  --grain-opacity: .05;
   --r: 3px;
   --display: "Cormorant", "Cormorant Garamond", Garamond, "Times New Roman", serif;
   --serif: "Alegreya", Georgia, serif;
@@ -68,7 +67,6 @@
   --warn: #8a5f00;
   --secret-bg: rgba(155, 47, 30, .06);
   --shadow: 0 18px 40px rgba(60, 40, 15, .18);
-  --grain-opacity: .07;
   color-scheme: light;
 }
 @media (prefers-color-scheme: light) {
@@ -78,7 +76,7 @@
     --text: #2a2219; --text-2: #4a3f31; --muted: #7a6b57;
     --rubric: #9b2f1e; --rubric-ink: #fff8ef; --brass: #8a6a35; --link: #8d2e1f; --missing: #b4321c;
     --danger: #a8301c; --ok: #3f7a35; --warn: #8a5f00; --secret-bg: rgba(155, 47, 30, .06);
-    --shadow: 0 18px 40px rgba(60, 40, 15, .18); --grain-opacity: .07;
+    --shadow: 0 18px 40px rgba(60, 40, 15, .18);
     color-scheme: light;
   }
 }
@@ -94,10 +92,10 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-/* paper grain */
+/* Fine noise over everything, softening flat colours (Settings → Appearance → Noise). */
 body::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: var(--grain-opacity);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .4 0 0 0 0 .3 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  content: ""; position: fixed; inset: 0; z-index: 1000; pointer-events: none; opacity: var(--noise, .25);
+  background: url("../assets/backgrounds/noise.png") repeat 0 0 / 128px;
 }
 /* background wallpaper (see js/backgrounds.js) */
 body::after {
@@ -111,11 +109,10 @@ body[data-bg="image"]::after {
   background: linear-gradient(color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent), color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent)), var(--wallpaper) center / cover no-repeat;
 }
 /* Gradient: a soft brass glow from one side and a faint warm one from the
-   opposite side (direction in --g-from / --g-to), with fine white noise so it doesn't band. Also used by its swatch. */
+   opposite side (direction in --g-from / --g-to). Also used by its swatch. */
 body[data-bg="gradient"]::after, .bg-prev[data-p="gradient"]::after {
   -webkit-mask: none; mask: none; opacity: 1;
   background:
-    url("../assets/backgrounds/noise.png") repeat 0 0 / 128px,
     radial-gradient(140% 100% at var(--g-from, 50% -20%), color-mix(in srgb, var(--brass) calc(var(--bg-strength, .05) * 100%), transparent), transparent 72%),
     radial-gradient(120% 90% at var(--g-to, 50% 125%), color-mix(in srgb, var(--rubric) calc(var(--bg-strength, .05) * 50%), transparent), transparent 65%);
 }
