@@ -2,6 +2,7 @@
 // over a theme colour, so they suit both light and dark themes. A world can
 // also use an uploaded image. A world's choice syncs; the default is per device.
 import * as store from './store.js';
+import { wireDropzone } from './dropzone.js';
 
 const svg = (w, h, body) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`;
 
@@ -190,6 +191,7 @@ export function wirePicker(root, current, onPick, prepareImage) {
     sync(); emit();
   };
   const imgPrev = picker.querySelector('.bg-prev.img');
+  wireDropzone(imgPrev.closest('.bg-swatch')); // drop or paste a wallpaper onto Your image
   const showImage = async (id) => { const url = id && await store.imageURL(id); if (url) imgPrev.style.backgroundImage = `url("${url}")`; };
   if (current?.pattern === 'image') showImage(current.image);
   picker.addEventListener('click', (e) => {

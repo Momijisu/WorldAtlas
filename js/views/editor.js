@@ -8,6 +8,7 @@ import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
 import { wireFocus } from '../focus.js';
+import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
@@ -81,7 +82,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <div class="field-label">Portrait / image</div>
           <div class="image-field">
             <img class="thumb" ${a.image ? `data-img="${a.image}"` : 'hidden'} alt="">
-            <label class="btn small">${icon('image')} Upload<input type="file" accept="image/*" hidden id="imgFile"></label>
+            ${dropzoneEmpty('a portrait')}
+            <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="imgFile"></label>
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
             <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag the picture to choose what shows in thumbnails. The infobox shows it whole.</p>
           </div>
@@ -90,7 +92,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <div class="field-label">Header image <small>banner behind the title</small></div>
           <div class="image-field">
             <img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt="">
-            <label class="btn small">${icon('image')} Upload<input type="file" accept="image/*" hidden id="bannerFile"></label>
+            ${dropzoneEmpty('a header image')}
+            <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="bannerFile"></label>
             <button type="button" class="btn small quiet" id="bannerRm" ${a.banner ? '' : 'hidden'}>Remove</button>
             <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
           </div>
@@ -252,6 +255,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);
   const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; }, ratio: 1 });
   const bThumb = $('.banner-thumb', f);
+  $$('.image-field', f).forEach((z) => wireDropzone(z));
   const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: 2.4 });
   $('#bannerFile').onchange = async (e) => {
     const file = e.target.files[0];

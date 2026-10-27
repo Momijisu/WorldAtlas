@@ -11,6 +11,7 @@ import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flou
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
 import { posCSS, wireFocus } from '../focus.js';
+import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
@@ -61,6 +62,7 @@ export async function worldDialog(w) {
       <div class="field-label">Cover image</div>
       <div class="image-field">
         <img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt="">
+        ${dropzoneEmpty()}
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
         <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
@@ -79,6 +81,7 @@ export async function worldDialog(w) {
       const f = $('#wf', m);
       const thumb = $('.thumb', m);
       const hint = $('.focus-hint', m);
+      wireDropzone($('.image-field', m));
       const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: 2 });
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);

@@ -3,6 +3,7 @@
 import * as store from '../store.js';
 import { posCSS } from '../focus.js';
 import { mountMap } from '../mapview.js';
+import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { plain } from '../markdown.js';
 import { view, state, setTitle, pageHead, icon, hydrateImages, articleOptions, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
@@ -70,8 +71,13 @@ function mapDialog(wid, m) {
   modal(isNew ? 'New map' : 'Map settings', `
     <form class="form" id="mf">
       <label>Name<input name="name" required value="${esc(m.name)}" placeholder="e.g. The Known World"></label>
-      <label>${isNew ? 'Map image' : 'Replace image <small>optional, pins stay in place</small>'}
-        <input type="file" name="file" accept="image/*" ${isNew ? 'required' : ''}></label>
+      <div class="field-label">${isNew ? 'Map image' : 'Replace image <small>optional, pins stay in place</small>'}</div>
+      <div class="image-field">
+        <img class="thumb" hidden alt="">
+        ${dropzoneEmpty('the map image')}
+        <label class="btn small">${icon('image')} Choose image<input type="file" name="file" accept="image/*" hidden></label>
+        <span class="small muted dz-name"></span>
+      </div>
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete map</button><span class="spacer"></span>`}
         <button class="btn primary">${isNew ? 'Create map' : 'Save'}</button>
@@ -79,12 +85,22 @@ function mapDialog(wid, m) {
     </form>`, {
     onMount: (el, close) => {
       const f = $('#mf', el);
+      wireDropzone($('.image-field', f));
+      f.file.addEventListener('change', () => {
+        const file = f.file.files[0];
+        if (!file) return;
+        const t = $('.image-field .thumb', f);
+        URL.revokeObjectURL(t.src);
+        t.src = URL.createObjectURL(file); t.hidden = false;
+        $('.dz-name', f).textContent = file.name;
+      });
       $('[data-del]', el)?.addEventListener('click', async () => {
         if (!(await confirmDialog(`Delete the map “${m.name}” and its pins and regions?`))) return;
         await store.deleteMap(m.id); close(); location.hash = `#/w/${wid}/maps`;
       });
       f.onsubmit = async (e) => {
         e.preventDefault();
+        if (isNew && !f.file.files[0]) return toast('Choose an image for the map');
         const btn = $('.btn.primary', f);
         btn.disabled = true; btn.textContent = 'Saving…';
         try {
