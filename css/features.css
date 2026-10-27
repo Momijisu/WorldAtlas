@@ -305,6 +305,9 @@ details.guide summary .muted { font-weight: 400; }
 .bg-adjust .btn { margin-top: .2rem; }
 .bg-scale { display: grid; grid-template-columns: 4.5rem 1fr 3.2em; align-items: center; gap: .6rem; margin: 0 0 .3rem; font-size: .9rem; color: var(--text-2); }
 .bg-scale input[type="range"] { flex: 1; min-height: 0; padding: 0; border: 0; background: transparent; accent-color: var(--brass); }
+.bg-scale .seg { justify-self: start; }
+.bg-scale .seg button { padding: .3em .75em; }
+.bg-scale .seg button.on { box-shadow: inset 0 -2px 0 var(--brass); }
 .bg-scale output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
 
 /* ---------- contents box ---------- */

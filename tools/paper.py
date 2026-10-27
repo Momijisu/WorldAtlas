@@ -90,5 +90,5 @@ M = 128
 n = rng.standard_normal((M, M)) / 2.5
 noise = np.zeros((M, M, 2), np.uint8)
 noise[..., 0] = np.where(n > 0, 255, 0)
-noise[..., 1] = np.clip(np.abs(n) * 22, 0, 255).astype(np.uint8)
+noise[..., 1] = np.clip(np.abs(n) * 11, 0, 255).astype(np.uint8)
 Image.fromarray(noise, 'LA').save('assets/backgrounds/noise.png', optimize=True)

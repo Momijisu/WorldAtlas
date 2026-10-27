@@ -91,14 +91,22 @@ const tiled = (name) => !!(PATTERNS[name]?.make || PATTERNS[name]?.src);
 // against the stylesheet that uses it (css/), not the page.
 const maskOf = (name) => (cache[name] ??= PATTERNS[name].src ? new URL(PATTERNS[name].src, document.baseURI).href : PATTERNS[name].make());
 
+// Gradient directions: where the glow starts and where the warm tint sits.
+export const GRADIENT_DIRS = {
+  top: { label: 'Top to bottom', from: '50% -20%', to: '50% 125%' },
+  'top-right': { label: 'Top right to bottom left', from: '105% -15%', to: '-10% 115%' },
+  'top-left': { label: 'Top left to bottom right', from: '-5% -15%', to: '110% 115%' },
+};
+const gradientVars = (dir) => { const d = GRADIENT_DIRS[dir] || GRADIENT_DIRS.top; return `--g-from:${d.from};--g-to:${d.to};`; };
+
 // CSS custom properties for a pattern (used for the page and for swatches).
 export const SCALE_MIN = 5, SCALE_MAX = 200;
 const clampScale = (v) => Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round(+v || 100)));
 
 // CSS custom properties for a pattern at a given size (percent of its natural tile).
-export function patternStyle(name, scale = 100, opacity) {
+export function patternStyle(name, scale = 100, opacity, dir) {
   const p = PATTERNS[name];
-  if (p?.css) return `--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
+  if (p?.css) return `--bg-strength:${opacity == null ? p.strength : opacity / 100};${gradientVars(dir)}`;
   if (!tiled(name)) return '';
   const px = parseFloat(p.size) * clampScale(scale) / 100;
   return `--bg-mask:url("${maskOf(name)}");--bg-size:${px.toFixed(2)}px;--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
@@ -126,8 +134,11 @@ export async function showBackground(bg) {
   body.dataset.bg = name;
   body.style.cssText = name === 'image'
     ? `--wallpaper:url("${url}");--wall-op:${clampOpacity(bg.opacity ?? defaultOpacity('image'))}%`
-    : patternStyle(name, bg.scale, bg.opacity == null ? null : clampOpacity(bg.opacity));
+    : patternStyle(name, bg.scale, bg.opacity == null ? null : clampOpacity(bg.opacity), bg.dir);
 }
+
+// Small arrow showing a gradient's direction.
+const dirIcon = (k) => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" style="transform:rotate(${{ top: 0, 'top-right': 45, 'top-left': -45 }[k]}deg)"><path d="M8 2v12M3.5 9.5 8 14l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // A picker of swatches. `current` is { pattern, image }; onPick(bg) is called on change.
 export function pickerHTML(current, { allowDefault = false } = {}) {
@@ -141,9 +152,11 @@ export function pickerHTML(current, { allowDefault = false } = {}) {
   <div class="bg-adjust" ${adjustable(sel) ? '' : 'hidden'}>
     <label class="bg-scale" data-k="scale" ${tiled(sel) ? '' : 'hidden'}>Size
       <input type="range" min="${SCALE_MIN}" max="${SCALE_MAX}" step="5" value="${clampScale(current?.scale ?? 100)}"><output></output></label>
+    <div class="bg-scale" data-k="dir" ${sel === 'gradient' ? '' : 'hidden'}><span>Direction</span>
+      <div class="seg">${Object.entries(GRADIENT_DIRS).map(([k, d]) => `<button type="button" data-dir="${k}" class="${(current?.dir || 'top') === k ? 'on' : ''}" title="${d.label}" aria-label="${d.label}">${dirIcon(k)}</button>`).join('')}</div></div>
     <label class="bg-scale" data-k="opacity">Opacity
       <input type="range" min="0" max="100" step="1" value="${clampOpacity(current?.opacity ?? defaultOpacity(sel))}"><output></output></label>
-    <button type="button" class="btn small quiet" data-reset-bg>Reset size and opacity</button>
+    <button type="button" class="btn small quiet" data-reset-bg>Reset</button>
   </div>`;
 }
 
@@ -154,6 +167,7 @@ export function wirePicker(root, current, onPick, prepareImage) {
   const scaleRow = adjust.querySelector('[data-k="scale"]');
   const scale = scaleRow.querySelector('input');
   const opacity = adjust.querySelector('[data-k="opacity"] input');
+  const dirRow = adjust.querySelector('[data-k="dir"]');
   let bg = current ? { ...current } : null; // null = device default
   const emit = () => { onPick(bg ? { ...bg } : null); showBackground(bg); };
   const label = () => {
@@ -165,6 +179,8 @@ export function wirePicker(root, current, onPick, prepareImage) {
     picker.querySelectorAll('.bg-swatch').forEach((s) => s.classList.toggle('on', s.dataset.bg === name));
     adjust.hidden = !adjustable(name);
     scaleRow.hidden = !tiled(name);
+    dirRow.hidden = name !== 'gradient';
+    dirRow.querySelectorAll('[data-dir]').forEach((b) => b.classList.toggle('on', b.dataset.dir === (bg?.dir || 'top')));
     label();
   };
   // Picking a new background starts from its own default opacity.
@@ -182,12 +198,19 @@ export function wirePicker(root, current, onPick, prepareImage) {
     choose(sw.dataset.bg === 'default' ? null : { pattern: sw.dataset.bg });
   });
   scale.addEventListener('input', () => { if (bg) { bg.scale = +scale.value; label(); emit(); } });
+  dirRow.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-dir]');
+    if (!b || !bg) return;
+    if (b.dataset.dir === 'top') delete bg.dir; else bg.dir = b.dataset.dir;
+    sync(); emit();
+  });
   opacity.addEventListener('input', () => { if (bg) { bg.opacity = +opacity.value; label(); emit(); } });
   adjust.querySelector('[data-reset-bg]').addEventListener('click', () => {
     if (!bg) return;
     scale.value = 100;
     opacity.value = defaultOpacity(bg.pattern);
     delete bg.opacity;
+    delete bg.dir;
     if (tiled(bg.pattern)) bg.scale = 100;
     label(); emit();
   });
