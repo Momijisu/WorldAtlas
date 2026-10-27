@@ -132,7 +132,8 @@ export function viewWorld(wid) {
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
   view.innerHTML = `<section class="page">
-    <div class="hero" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}>
+    <div class="hero${w.image ? ' with-img' : ''}">
+      ${w.image ? `<div class="hero-img" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"></div>` : ''}
       <div class="hero-inner">
         <div><h1>${esc(w.name)}</h1></div>
         <div class="actions">

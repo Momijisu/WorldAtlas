@@ -172,11 +172,13 @@
   position: relative; height: clamp(220px, 38vw, 420px);
   margin: -2rem calc(-1 * max(1.1rem, env(safe-area-inset-right))) 0;
   background: var(--ink-2) center 35% / cover no-repeat;
+  /* Fade the picture itself out, so it blends into any page background. */
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
 }
 .article-hero::after {
   content: ""; position: absolute; inset: 0;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ink-0) 35%, transparent) 0%, transparent 28%, color-mix(in srgb, var(--ink-0) 70%, transparent) 70%, var(--ink-0) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--ink-0) 35%, transparent) 0%, transparent 28%, color-mix(in srgb, var(--ink-0) 60%, transparent) 75%),
     linear-gradient(90deg, color-mix(in srgb, var(--ink-0) 45%, transparent), transparent 60%);
 }
 .article-head.over-hero { position: relative; z-index: 1; margin-top: -7.5rem; }
