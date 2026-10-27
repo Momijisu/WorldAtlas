@@ -66,14 +66,32 @@ const waves = () => svg(80, 40, `<g fill="none" stroke="#000" stroke-width="1">
 
 const graph = () => svg(120, 120, `<g fill="none" stroke="#000"><path d="M0 .5H120M.5 0V120" stroke-width="1"/><path d="M0 30.5H120M0 60.5H120M0 90.5H120M30.5 0V120M60.5 0V120M90.5 0V120" stroke-width=".5" stroke-dasharray="1 3"/></g>`);
 
-const parchment = () => svg(240, 240, `<filter id="f"><feTurbulence type="fractalNoise" baseFrequency=".012 .05" numOctaves="4" seed="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.2 -0.9"/></filter><rect width="240" height="240" filter="url(#f)"/>`);
+// Paper: soft mottling, fine grain and short fibres at random angles. Fibres
+// near an edge are drawn again on the opposite side so the tile repeats seamlessly.
+function parchment() {
+  const T = 360;
+  const r = rng(9);
+  let d = '';
+  for (let i = 0; i < 140; i++) {
+    const x = r() * T, y = r() * T, a = r() * Math.PI, L = 6 + r() * 22, bend = (r() - 0.5) * 8;
+    const dx = (Math.cos(a) * L) / 2, dy = (Math.sin(a) * L) / 2;
+    for (const [ox, oy] of [[0, 0], [T, 0], [-T, 0], [0, T], [0, -T]]) {
+      const cx = x + ox, cy = y + oy;
+      if (cx + L < 0 || cx - L > T || cy + L < 0 || cy - L > T) continue;
+      d += `M${(cx - dx).toFixed(1)} ${(cy - dy).toFixed(1)}Q${(cx - (dy * bend) / L).toFixed(1)} ${(cy + (dx * bend) / L).toFixed(1)} ${(cx + dx).toFixed(1)} ${(cy + dy).toFixed(1)}`;
+    }
+  }
+  const noise = (id, freq, octaves, seed, k, off) => `<filter id="${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="${octaves}" seed="${seed}" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${k} ${off}"/></filter><rect width="${T}" height="${T}" filter="url(#${id})"/>`;
+  return svg(T, T, noise('m', 0.011, 3, 7, 1.05, -0.38) + noise('g', 1.1, 1, 3, 1.6, -0.75) +
+    `<path d="${d}" fill="none" stroke="#000" stroke-width=".7" stroke-linecap="round" opacity=".55"/>`);
+}
 
 const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.1"><path d="M0 16c16 0 16 32 32 32s16-32 32-32M0 48c16 0 16-32 32-32s16 32 32 32"/><circle cx="32" cy="32" r="4"/><circle cx="0" cy="32" r="4"/><circle cx="64" cy="32" r="4"/></g>`);
 
 // name → { label, make(), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
-  parchment: { label: 'Parchment', make: parchment, size: '240px', strength: 0.11 },
+  parchment: { label: 'Parchment', make: parchment, size: '360px', strength: 0.18 },
   stars: { label: 'Starfield', make: stars, size: '300px', strength: 0.5 },
   celestial: { label: 'Star chart', make: celestial, size: '600px', strength: 0.2 },
   topo: { label: 'Contours', make: topo, size: '480px', strength: 0.14 },
