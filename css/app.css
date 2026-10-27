@@ -37,6 +37,7 @@
   --warn: #e3b55b;
   --secret-bg: rgba(196, 85, 59, .07);
   --shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  --noise-blend: screen;   /* grain only lightens dark colours */
   --r: 3px;
   --display: "Cormorant", "Cormorant Garamond", Garamond, "Times New Roman", serif;
   --serif: "Alegreya", Georgia, serif;
@@ -67,6 +68,7 @@
   --warn: #8a5f00;
   --secret-bg: rgba(155, 47, 30, .06);
   --shadow: 0 18px 40px rgba(60, 40, 15, .18);
+  --noise-blend: multiply; /* and only darkens light ones */
   color-scheme: light;
 }
 @media (prefers-color-scheme: light) {
@@ -76,7 +78,7 @@
     --text: #2a2219; --text-2: #4a3f31; --muted: #7a6b57;
     --rubric: #9b2f1e; --rubric-ink: #fff8ef; --brass: #8a6a35; --link: #8d2e1f; --missing: #b4321c;
     --danger: #a8301c; --ok: #3f7a35; --warn: #8a5f00; --secret-bg: rgba(155, 47, 30, .06);
-    --shadow: 0 18px 40px rgba(60, 40, 15, .18);
+    --noise-blend: multiply; --shadow: 0 18px 40px rgba(60, 40, 15, .18);
     color-scheme: light;
   }
 }
@@ -92,10 +94,13 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-/* Fine noise over everything, softening flat colours (Settings → Appearance → Noise). */
+/* Film grain over everything, softening flat colours (Settings → Appearance →
+   Noise): random grey per pixel at a few percent, screened onto dark themes
+   and multiplied onto light ones so it never greys the colours. */
 body::before {
-  content: ""; position: fixed; inset: 0; z-index: 1000; pointer-events: none; opacity: var(--noise, .25);
-  background: url("../assets/backgrounds/noise.png") repeat 0 0 / 128px;
+  content: ""; position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+  opacity: var(--noise, .025); mix-blend-mode: var(--noise-blend, screen);
+  background: url("../assets/backgrounds/noise.png") repeat 0 0 / 256px;
 }
 /* background wallpaper (see js/backgrounds.js) */
 body::after {

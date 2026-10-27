@@ -230,7 +230,7 @@ export function noiseLevel() {
   try { const v = localStorage.getItem('wa.noise'); return v == null ? NOISE_DEFAULT : clampOpacity(v); } catch { return NOISE_DEFAULT; }
 }
 export function applyNoise(level = noiseLevel()) {
-  document.documentElement.style.setProperty('--noise', String(level / 100));
+  document.documentElement.style.setProperty('--noise', String(level / 1000)); // 25 → 2.5% opacity
 }
 export function setNoise(level) {
   try { localStorage.setItem('wa.noise', String(clampOpacity(level))); } catch { /* private mode */ }

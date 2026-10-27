@@ -84,12 +84,9 @@ Image.fromarray(la, 'LA').save('assets/backgrounds/parchment.png', optimize=True
 print('alpha mean %.3f sd %.3f' % (alpha.mean() / 255, alpha.std() / 255))
 
 
-# Fine white noise laid over the whole app to soften flat colours: each pixel
-# is faintly lighter or darker (white or black at a low alpha), so it suits
-# both themes. Its overall strength is the Noise setting (--noise).
-M = 128
-n = rng.standard_normal((M, M)) / 2.5
-noise = np.zeros((M, M, 2), np.uint8)
-noise[..., 0] = np.where(n > 0, 255, 0)
-noise[..., 1] = np.clip(np.abs(n) * 24, 0, 255).astype(np.uint8)
-Image.fromarray(noise, 'LA').save('assets/backgrounds/noise.png', optimize=True)
+# Film grain laid over the whole app to soften flat colours: an opaque tile of
+# random greys, one per CSS pixel. The app shows it at a few percent opacity
+# (the Noise setting), screened on dark themes and multiplied on light ones.
+M = 256
+grain = rng.integers(0, 256, (M, M), dtype=np.uint8)
+Image.fromarray(grain, 'L').save('assets/backgrounds/noise.png', optimize=True)
