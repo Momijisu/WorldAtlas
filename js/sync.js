@@ -121,10 +121,11 @@ async function syncFile(spec, dirty) {
 }
 
 async function syncImages() {
-  // Upload images created on this device (except the local-only demo world's).
-  const demoImages = store.referencedImages({ demo: true });
+  // Upload images created on this device that synced records use (not the
+  // demo world's, a device-only wallpaper, or images from abandoned edits).
+  const used = store.referencedImages();
   for (const id of await store.imageIds()) {
-    if (demoImages.has(id)) continue;
+    if (!used.has(id)) continue;
     const rec = await store.getImage(id);
     if (!rec || rec.uploaded) continue;
     const res = await auth.graph(`${ROOT}:/images/${id}:/content`, {

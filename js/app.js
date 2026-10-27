@@ -6,6 +6,7 @@ import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
+import { applyBackground } from './backgrounds.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';
 import { viewEditor } from './views/editor.js';
@@ -220,6 +221,7 @@ function show(wid, fn) {
   state.wid = wid;
   document.body.classList.toggle('in-world', !!wid);
   renderSidebar(wid);
+  applyBackground(wid);
   window.scrollTo(0, 0);
   fn();
   markActiveNav();

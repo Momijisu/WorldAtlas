@@ -2,12 +2,13 @@
 import * as store from '../store.js';
 import * as auth from '../auth.js';
 import * as sync from '../sync.js';
-import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
+import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download, prepareImage } from '../util.js';
 import { view, state, setTitle, pageHead, icon } from '../ui.js';
 import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
+import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground } from '../backgrounds.js';
 
 export function applyTheme() {
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
@@ -45,6 +46,8 @@ export function viewSettings() {
         <button data-t="light">${icon('sun')} Vellum</button>
         <button data-t="auto">Match device</button>
       </div>
+      <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
+      ${pickerHTML(deviceDefault())}
     </div>
     <div class="panel">
       <h2>Writing help</h2>
@@ -108,6 +111,7 @@ export function viewSettings() {
     applyTheme(); mark();
   };
   mark();
+  wirePicker($('#themeSeg').closest('.panel'), deviceDefault(), (bg) => { setDeviceDefault(bg || { pattern: 'plain' }); applyBackground(null); }, prepareImage);
   $('#installBtn')?.addEventListener('click', () => state.promptInstall().then(() => state.route()));
   $('#promptsToggle').onchange = (e) => {
     setPromptsEnabled(e.target.checked);

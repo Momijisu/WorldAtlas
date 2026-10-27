@@ -99,6 +99,17 @@ body::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .4 0 0 0 0 .3 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* background wallpaper (see js/backgrounds.js) */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; display: none;
+  background: var(--brass); opacity: var(--bg-strength, .1);
+  -webkit-mask: var(--bg-mask) repeat 0 0 / var(--bg-size, auto); mask: var(--bg-mask) repeat 0 0 / var(--bg-size, auto);
+}
+body[data-bg]:not([data-bg="plain"])::after { display: block; }
+body[data-bg="image"]::after {
+  -webkit-mask: none; mask: none; opacity: 1;
+  background: linear-gradient(color-mix(in srgb, var(--ink-0) 78%, transparent), color-mix(in srgb, var(--ink-0) 90%, transparent)), var(--wallpaper) center / cover no-repeat;
+}
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; line-height: 1.1; letter-spacing: .005em; }

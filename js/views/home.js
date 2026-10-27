@@ -8,6 +8,7 @@ import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
+import { pickerHTML, wirePicker } from '../backgrounds.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
@@ -61,6 +62,8 @@ export async function worldDialog(w) {
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
       </div>
+      <div class="field-label" style="margin-top:1rem">Background</div>
+      ${pickerHTML(w.background, { allowDefault: true })}
       ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><span class="spacer"></span>`}
@@ -73,6 +76,7 @@ export async function worldDialog(w) {
       const f = $('#wf', m);
       const thumb = $('.thumb', m);
       $('[data-cancel]', m).onclick = () => close();
+      wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
       f.file.onchange = async () => {
         const file = f.file.files[0];

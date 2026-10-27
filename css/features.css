@@ -291,3 +291,13 @@ details.guide summary .muted { font-weight: 400; }
 }
 .demo-banner > .i { color: var(--brass); width: 1.4rem; height: 1.4rem; margin-top: .1rem; }
 .demo-banner b { color: var(--text); }
+
+/* ---------- background picker ---------- */
+.bg-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: .5rem; margin: .3rem 0 .2rem; }
+.bg-swatch { display: flex; flex-direction: column; gap: .3rem; padding: 0 0 .35rem; margin: 0; border: 1px solid var(--rule); border-radius: var(--r); background: transparent; color: var(--text-2); font: 500 .78rem var(--sans); cursor: pointer; overflow: hidden; text-align: center; }
+.bg-swatch:hover { border-color: var(--rule-strong); }
+.bg-swatch.on { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); color: var(--text); }
+.bg-prev { position: relative; display: block; height: 52px; background: var(--ink-0) center / cover no-repeat; }
+.bg-prev::after { content: ""; position: absolute; inset: 0; background: var(--brass); opacity: min(1, calc(var(--bg-strength, 0) * 2.5)); -webkit-mask: var(--bg-mask) repeat 0 0 / calc(var(--bg-size) * .5); mask: var(--bg-mask) repeat 0 0 / calc(var(--bg-size) * .5); }
+.bg-prev[data-p="plain"]::after, .bg-prev.img::after { display: none; }
+.bg-prev.img:not([style]) { background-image: repeating-linear-gradient(45deg, var(--ink-3) 0 6px, var(--ink-2) 6px 12px); }

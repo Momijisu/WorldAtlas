@@ -17,7 +17,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - Merge resolver for articles edited on two devices before they synced
 - Import from a simple JSON format ([docs/IMPORT_FORMAT.md](docs/IMPORT_FORMAT.md)), e.g. one an AI assistant made from your notes
 - Full backup to a single file
-- Dark and light themes
+- Dark and light themes, and background patterns or your own wallpaper image for each world
 - An example world, Aerthal, opens on first visit. It stays on that device and never syncs unless you choose to keep it.
 
 Plain HTML, CSS and JavaScript. No server, no build step.
@@ -80,6 +80,7 @@ js/calendar.js        calendar maths and date formatting
 js/relations.js       relationship types and family links
 js/prompts.js         writing prompts
 js/guidance.js        writing guide questions
+js/backgrounds.js     background patterns and wallpaper
 js/templates.js       article templates and their infobox sections
 js/importer.js        import/export format
 js/mapview.js         map pan/zoom, pins and regions

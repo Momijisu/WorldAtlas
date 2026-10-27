@@ -25,7 +25,7 @@ export async function exampleWorld(store, { demo = false } = {}) {
   calendar.currentYear = 1043;
   const cover = await assetImage(store, 'assets/demo/cover.svg');
   const world = {
-    id: wid, name: 'Aerthal', image: cover, calendar, ...(demo ? { demo: true } : {}),
+    id: wid, name: 'Aerthal', image: cover, calendar, background: { pattern: 'stars' }, ...(demo ? { demo: true } : {}),
     description: 'A shattered continent where the flying cities of the old **Skyward Empire** fell from the sky, and five kingdoms now squabble over the ruins. Start at [[Varenhold]], meet [[Queen Ysolde]], or open the map of [[Vael]].',
   };
   await store.save('worlds', world);

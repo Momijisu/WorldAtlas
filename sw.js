@@ -6,7 +6,7 @@ importScripts('js/version.js');
 const CACHE = 'worldatlas-' + self.WA_VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/features.css', 'css/graph.css',
-  'css/maps.css', 'js/app.js', 'js/auth.js', 'js/calendar.js', 'js/config.js', 'js/db.js', 'js/example.js',
+  'css/maps.css', 'js/app.js', 'js/auth.js', 'js/backgrounds.js', 'js/calendar.js', 'js/config.js', 'js/db.js', 'js/example.js',
   'js/guidance.js', 'js/icons.js', 'js/importer.js', 'js/mapview.js', 'js/markdown.js', 'js/prompts.js', 'js/relations.js', 'js/store.js', 'js/sync.js', 'js/templates.js',
   'js/ui.js', 'js/util.js', 'js/version.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/conflict.js', 'js/views/editor.js',
   'js/views/graph.js', 'js/views/history.js', 'js/views/home.js', 'js/views/list.js', 'js/views/maps.js', 'js/views/prompts.js',
