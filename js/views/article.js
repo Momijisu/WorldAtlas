@@ -1,6 +1,6 @@
 // Reading view of a single article.
 import * as store from '../store.js';
-import { TYPES } from '../store.js';
+import { TYPES, sectionsOf } from '../store.js';
 import { render, renderInline } from '../markdown.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { relationsOf, REL_TYPES, REL_GROUPS, hasFamily } from '../relations.js';
@@ -19,7 +19,8 @@ export function viewArticle(wid, id) {
   const children = store.articlesOf(wid).filter((c) => c.parentId === a.id).sort((x, y) => x.title.localeCompare(y.title));
   const back = store.backlinks(a).sort((x, y) => x.title.localeCompare(y.title));
   const onMaps = store.mapsOf(wid).filter((m) => (m.pins || []).some((p) => p.articleId === a.id) || (m.regions || []).some((r) => r.articleId === a.id));
-  const fields = Object.entries(a.fields || {}).filter(([k, v]) => k && String(v).trim());
+  const sections = sectionsOf(a.type, a.fields || {});
+  const fieldCount = sections.reduce((n, sec) => n + sec.entries.length, 0);
   const date = articleDateText(cal, a);
   const rels = relationsOf(a);
   const versions = store.historyOf(a.id).length;
@@ -66,9 +67,9 @@ export function viewArticle(wid, id) {
         ${a.image ? `<img class="infobox-img" data-img="${a.image}" alt="">` : ''}
         <div class="infobox-title">${esc(a.title)}</div>
         <div class="infobox-type"><a href="#/w/${wid}/t/${a.type}">${t.label}</a></div>
-        ${fields.length || date || crumbs.length || onMaps.length ? `<dl>
+        ${fieldCount || date || crumbs.length || onMaps.length ? `<dl>
           ${date ? `<dt>Date</dt><dd>${esc(date)}</dd>` : ''}
-          ${fields.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${renderInline(v, wid)}</dd>`).join('')}
+          ${sections.map((sec) => `${sections.length > 1 ? `<div class="ib-sec">${esc(sec.name)}</div>` : ''}${sec.entries.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${renderInline(v, wid)}</dd>`).join('')}`).join('')}
           ${crumbs.length ? `<dt>Part of</dt><dd><a href="#/w/${wid}/a/${crumbs.at(-1).id}">${esc(crumbs.at(-1).title)}</a></dd>` : ''}
           ${onMaps.length ? `<dt>Maps</dt><dd>${onMaps.map((m) => `<a href="#/w/${wid}/m/${m.id}?pin=${a.id}">${esc(m.name)}</a>`).join(', ')}</dd>` : ''}
         </dl>` : ''}

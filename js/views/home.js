@@ -1,7 +1,7 @@
 // Library (all worlds), world overview, world settings and the "new article" picker.
 import * as store from '../store.js';
 import * as sync from '../sync.js';
-import { TYPES } from '../store.js';
+import { TYPES, GROUPS } from '../store.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, modal, confirmDialog, prepareImage } from '../util.js';
@@ -142,7 +142,10 @@ export function newArticleDialog(wid, extra = '') {
   if (!store.world(wid)) wid = store.worlds()[0]?.id;
   if (!wid) return worldDialog();
   modal('New article', `<p class="muted" style="margin-top:0">Pick a template. You can change it later.</p>
-    <div class="type-grid">${Object.entries(TYPES).map(([k, t]) =>
-    `<a class="type-choice" href="#/w/${wid}/new/${k}${extra}" data-go>${icon(t.icon)}${t.label}</a>`).join('')}</div>`,
+    ${Object.entries(GROUPS).map(([g, gl]) => {
+      const items = Object.entries(TYPES).filter(([, t]) => t.group === g);
+      return `<div class="type-group">${esc(gl)}</div><div class="type-grid">${items.map(([k, t]) =>
+        `<a class="type-choice" href="#/w/${wid}/new/${k}${extra}" data-go title="${esc(t.hint)}">${icon(t.icon)}<span><b>${t.label}</b><small>${esc(t.hint)}</small></span></a>`).join('')}</div>`;
+    }).join('')}`,
   { onMount: (m, close) => $$('[data-go]', m).forEach((a) => a.addEventListener('click', () => close())) });
 }

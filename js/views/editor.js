@@ -1,6 +1,6 @@
 // Article editor: content, infobox fields, calendar dates, relationships.
 import * as store from '../store.js';
-import { TYPES } from '../store.js';
+import { TYPES, GROUPS } from '../store.js';
 import { render } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS } from '../relations.js';
@@ -46,9 +46,10 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
         <div class="row">
-          <label>Template<select name="type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</select></label>
+          <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
           <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
         </div>
+        <p class="tpl-hint" id="tplHint"></p>
         <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
         ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
@@ -157,29 +158,43 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   a.relations.forEach((r) => addRel(r));
   $('#addRel').onclick = () => addRel().querySelector('.rtarget').focus();
 
-  // Infobox fields
+  // Infobox fields, grouped by the template's sections; extra fields go under "Other".
   const fieldsEl = $('#fields');
-  const addRow = (k = '', v = '') => {
-    const row = document.createElement('div');
-    row.className = 'kv';
-    row.innerHTML = `<input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="Value" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove">${icon('x')}</button>`;
-    row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
-    fieldsEl.appendChild(row);
-    return row;
-  };
-  Object.entries(a.fields).forEach(([k, v]) => addRow(k, v));
-  $('#addField').onclick = () => addRow().querySelector('.k').focus();
-  let prevType = f.type.value;
-  f.type.onchange = () => {
-    const next = TYPES[f.type.value].fields;
-    // Drop empty fields that only belonged to the previous template.
-    for (const row of $$('.kv', fieldsEl)) {
-      const k = row.querySelector('.k').value.trim();
-      if (!row.querySelector('.v').value.trim() && TYPES[prevType]?.fields.includes(k) && !next.includes(k)) row.remove();
+  const customRow = (k = '', v = '') => `<div class="kv"><input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="Value" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove" data-rm>${icon('x')}</button></div>`;
+  const readFields = () => $$('.kv', fieldsEl).map((row) => [row.querySelector('.k').value.trim(), row.querySelector('.v').value]).filter(([k]) => k);
+  function drawFields(values, type) {
+    const t = TYPES[type] || TYPES.article;
+    const map = new Map(values);
+    const inTemplate = new Set(t.fields);
+    let html = '';
+    for (const sec of t.sections) {
+      html += `<div class="kv-sec">${esc(sec.name)}</div>`;
+      for (const k of sec.fields) {
+        html += `<div class="kv tpl"><input class="k" type="hidden" value="${esc(k)}"><label class="k-lab" for="fv-${esc(k)}">${esc(k)}</label><input class="v" id="fv-${esc(k)}" value="${esc(map.get(k) ?? '')}"></div>`;
+      }
     }
-    const have = new Set($$('.kv .k', fieldsEl).map((i) => i.value.trim()));
-    for (const k of next) if (!have.has(k)) addRow(k, '');
-    prevType = f.type.value;
+    const extra = values.filter(([k]) => !inTemplate.has(k));
+    html += `<div class="kv-sec" id="otherSec" ${extra.length || !t.sections.length ? '' : 'hidden'}>${t.sections.length ? 'Other' : 'Fields'}</div>`;
+    html += extra.map(([k, v]) => customRow(k, v)).join('');
+    fieldsEl.innerHTML = html;
+  }
+  fieldsEl.addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (rm) { rm.closest('.kv').remove(); dirty = true; }
+  });
+  drawFields(Object.entries(a.fields), a.type);
+  $('#addField').onclick = () => {
+    $('#otherSec').hidden = false;
+    fieldsEl.insertAdjacentHTML('beforeend', customRow());
+    $$('.kv .k', fieldsEl).at(-1).focus();
+  };
+  const tplHint = () => { $('#tplHint').textContent = TYPES[f.type.value]?.hint || ''; };
+  tplHint();
+  f.type.onchange = () => {
+    const next = new Set(TYPES[f.type.value].fields);
+    // Keep anything filled in, plus fields of the new template; drop empty leftovers.
+    drawFields(readFields().filter(([k, v]) => v.trim() || next.has(k)), f.type.value);
+    tplHint();
     drawGuide();
   };
 
@@ -270,10 +285,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const clash = store.byTitle(wid, title);
     if (clash && clash.id !== a.id) return toast(`Another article is already called “${title}”`);
     const fields = {};
-    for (const row of $$('.kv', fieldsEl)) {
-      const k = row.querySelector('.k').value.trim();
-      if (k) fields[k] = row.querySelector('.v').value;
-    }
+    for (const [k, v] of readFields()) fields[k] = v;
     const seen = new Set();
     const relations = $$('.rel-row', relsEl).map((row) => ({
       id: row.dataset.id, type: row.querySelector('.rt').value, target: row.querySelector('.rtarget').value, note: row.querySelector('.rnote').value.trim(),

@@ -273,7 +273,7 @@ Reply with only a JSON object shaped like this:
   "format": "worldatlas-import", "version": 1,
   "world": { "name": "...", "description": "...", "calendar": { "months": [{"name": "...", "days": 30}], "weekdays": ["..."], "eras": [{"name": "...", "abbr": "...", "start": 0}], "moons": [{"name": "...", "cycle": 30}], "currentYear": 1043 } },
   "articles": [
-    { "title": "...", "type": "character|location|organization|species|item|event|religion|culture|lore|article",
+    { "title": "...", "type": "character|species|culture|profession|title|location|settlement|building|organization|religion|event|conflict|plot|myth|spell|law|condition|technology|item|vehicle|material|tradition|language|lore|article",
       "summary": "one or two lines", "body": "Markdown, with [[Other Article Title]] links",
       "parent": "Title of the article this belongs to", "tags": ["..."],
       "fields": { "Species": "...", "Occupation": "..." },

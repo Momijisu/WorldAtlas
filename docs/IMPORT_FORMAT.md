@@ -95,7 +95,7 @@ Only `title` is required.
 | Key | Meaning |
 |---|---|
 | `title` | Unique name. Other articles refer to it by this. |
-| `type` | `character`, `location`, `organization`, `species`, `item`, `event`, `religion`, `culture`, `lore` or `article`. Synonyms such as NPC, city, faction, race, artifact, battle, deity or myth also work. Anything else becomes `article`. |
+| `type` | One of `character`, `species`, `culture`, `profession`, `title`, `location`, `settlement`, `building`, `organization`, `religion`, `event`, `conflict`, `plot`, `myth`, `spell`, `law` (natural law / magic system), `condition`, `technology`, `item`, `vehicle`, `material`, `tradition`, `language`, `lore`, `article`. Synonyms such as NPC, city, castle, faction, war, quest, legend, disease, ship or festival also work. Anything else becomes `article`. |
 | `summary` | A line or two for lists and link previews. |
 | `body` | Markdown. Link with `[[Title]]` or `[[Title|shown text]]`. |
 | `secrets` | GM notes in Markdown, collapsed when reading. Alias: `gmNotes`. |

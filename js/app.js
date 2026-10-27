@@ -253,7 +253,7 @@ function renderSidebar(wid) {
     ${nav(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length || '', `data-prefix="#/w/${wid}/m/"`)}
     ${nav(`#/w/${wid}/graph`, 'graph', 'Relationships')}
     <div class="nav-title">Codex</div>
-    ${Object.entries(TYPES).map(([k, t]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k] || '', counts[k] ? '' : 'class="empty"')).join('')}
+    ${Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k])).join('') || '<p class="nav-empty">Articles you write are listed here by template.</p>'}
     <div class="nav-sep"></div>
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
     ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}

@@ -17,7 +17,7 @@ export async function exampleWorld(store) {
     description: 'A shattered continent where the flying cities of the old **Skyward Empire** fell from the sky, and five kingdoms now squabble over the ruins. Start at [[Varenhold]] or meet [[Queen Ysolde]].',
   });
   const A = (type, title, rest = {}) => ({ ...store.newArticle(wid, type), title, ...rest });
-  const varenhold = A('location', 'Varenhold', {
+  const varenhold = A('settlement', 'Varenhold', {
     summary: 'The rain-slick capital of the Kingdom of Vael, built on the bones of a Skyward citadel.',
     body: '## Overview\nVarenhold climbs a granite spur above the [[River Ost]]. Its upper city still floats a few feet off the ground: the last working Skyward engine.\n\n## Districts\n- **The Lift**: noble estates on the floating stone\n- **Tallowmarket**: candlemakers, smugglers and the [[Lantern Guild]]\n- **The Drowns**: flood-prone docks\n\n> "Nothing in Varenhold is level, least of all its people." (a traveller\'s saying)',
     fields: { Type: 'Capital city', Region: 'Vael', Population: '~84,000', Ruler: '[[Queen Ysolde]]', Founded: '312 AF', Climate: 'Wet, temperate' },

@@ -1,19 +1,8 @@
 import * as db from './db.js';
 import { uid } from './util.js';
 
-// Article templates. `fields` pre-populate the infobox in the editor.
-export const TYPES = {
-  character:    { label: 'Character',    plural: 'Characters',    icon: 'user', fields: ['Full name', 'Species', 'Age', 'Born', 'Died', 'Occupation', 'Affiliation', 'Residence'] },
-  location:     { label: 'Location',     plural: 'Locations',     icon: 'castle-turret', fields: ['Type', 'Region', 'Population', 'Ruler', 'Founded', 'Climate'] },
-  organization: { label: 'Organization', plural: 'Organizations', icon: 'shield', fields: ['Type', 'Leader', 'Founded', 'Headquarters', 'Members', 'Motto'] },
-  species:      { label: 'Species',      plural: 'Species',       icon: 'paw-print', fields: ['Lifespan', 'Height', 'Habitat', 'Diet', 'Language'] },
-  item:         { label: 'Item',         plural: 'Items',         icon: 'sword', fields: ['Type', 'Creator', 'Owner', 'Rarity', 'Material'] },
-  event:        { label: 'Event',        plural: 'Events',        icon: 'scroll', fields: ['Type', 'Location', 'Participants', 'Outcome'] },
-  religion:     { label: 'Religion',     plural: 'Religions & Deities', icon: 'sun-horizon', fields: ['Deity', 'Domains', 'Symbol', 'Followers'] },
-  culture:      { label: 'Culture',      plural: 'Cultures & Languages', icon: 'mask-happy', fields: ['Region', 'Language', 'Values', 'Customs'] },
-  lore:         { label: 'Lore',         plural: 'Lore & Documents', icon: 'book-open-text', fields: ['Author', 'Written'] },
-  article:      { label: 'Article',      plural: 'Other articles', icon: 'file-text', fields: [] },
-};
+import { TYPES } from './templates.js';
+export { TYPES, GROUPS, sectionsOf } from './templates.js';
 
 export const data = { worlds: new Map(), articles: new Map(), maps: new Map(), history: new Map() };
 export const HISTORY_LIMIT = 40;

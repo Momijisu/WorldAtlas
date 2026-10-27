@@ -6,7 +6,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 
 ## Features
 
-- Articles from ten templates (character, location, organization, species, item, event, religion, culture, lore, generic), each with an infobox, portrait and header image
+- Articles from 25 templates (characters, settlements, spells, natural laws, conditions, conflicts, plots and more), each with an infobox grouped into sections, a portrait and a header image
 - `[[Wiki links]]` with autocomplete, backlinks, and links that update when an article is renamed
 - Typed relationships, family trees and a relationship web
 - Custom calendars with eras and moons, a calendar view and a timeline
@@ -79,6 +79,7 @@ js/calendar.js        calendar maths and date formatting
 js/relations.js       relationship types and family links
 js/prompts.js         writing prompts
 js/guidance.js        writing guide questions
+js/templates.js       article templates and their infobox sections
 js/importer.js        import/export format
 js/mapview.js         map pan/zoom, pins and regions
 js/markdown.js        Markdown and [[link]] rendering
