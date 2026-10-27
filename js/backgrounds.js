@@ -1,4 +1,4 @@
-// Background wallpapers. Patterns are seamless SVG tiles used as a CSS mask
+// Background wallpapers. Patterns are seamless tiles used as a CSS mask
 // over a theme colour, so they suit both light and dark themes. A world can
 // also use an uploaded image. A world's choice syncs; the default is per device.
 import * as store from './store.js';
@@ -66,32 +66,12 @@ const waves = () => svg(80, 40, `<g fill="none" stroke="#000" stroke-width="1.5"
 
 const graph = () => svg(120, 120, `<g fill="none" stroke="#000"><path d="M0 .75H120M.75 0V120" stroke-width="1.5"/><path d="M0 30.5H120M0 60.5H120M0 90.5H120M30.5 0V120M60.5 0V120M90.5 0V120" stroke-width=".8" stroke-dasharray="1.5 3.5"/></g>`);
 
-// Paper: soft mottling, fine grain and short fibres at random angles. Fibres
-// near an edge are drawn again on the opposite side so the tile repeats seamlessly.
-function parchment() {
-  const T = 360;
-  const r = rng(9);
-  let d = '';
-  for (let i = 0; i < 140; i++) {
-    const x = r() * T, y = r() * T, a = r() * Math.PI, L = 6 + r() * 22, bend = (r() - 0.5) * 8;
-    const dx = (Math.cos(a) * L) / 2, dy = (Math.sin(a) * L) / 2;
-    for (const [ox, oy] of [[0, 0], [T, 0], [-T, 0], [0, T], [0, -T]]) {
-      const cx = x + ox, cy = y + oy;
-      if (cx + L < 0 || cx - L > T || cy + L < 0 || cy - L > T) continue;
-      d += `M${(cx - dx).toFixed(1)} ${(cy - dy).toFixed(1)}Q${(cx - (dy * bend) / L).toFixed(1)} ${(cy + (dx * bend) / L).toFixed(1)} ${(cx + dx).toFixed(1)} ${(cy + dy).toFixed(1)}`;
-    }
-  }
-  const noise = (id, freq, octaves, seed, k, off) => `<filter id="${id}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="${octaves}" seed="${seed}" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${k} ${off}"/></filter><rect width="${T}" height="${T}" filter="url(#${id})"/>`;
-  return svg(T, T, noise('m', 0.011, 3, 7, 1.05, -0.38) + noise('g', 1.1, 1, 3, 1.6, -0.75) +
-    `<path d="${d}" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" opacity=".55"/>`);
-}
-
 const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.65"><path d="M0 16c16 0 16 32 32 32s16-32 32-32M0 48c16 0 16-32 32-32s16 32 32 32"/><circle cx="32" cy="32" r="4"/><circle cx="0" cy="32" r="4"/><circle cx="64" cy="32" r="4"/></g>`);
 
-// name → { label, make(), size, strength (opacity of the pattern) }
+// name → { label, make() or src (a PNG made by tools/paper.py), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
-  parchment: { label: 'Parchment', make: parchment, size: '360px', strength: 0.18 },
+  parchment: { label: 'Parchment', src: 'assets/backgrounds/parchment.png', size: '512px', strength: 0.3 },
   stars: { label: 'Starfield', make: stars, size: '300px', strength: 0.5 },
   celestial: { label: 'Star chart', make: celestial, size: '600px', strength: 0.17 },
   topo: { label: 'Contours', make: topo, size: '480px', strength: 0.12 },
@@ -104,7 +84,8 @@ export const PATTERNS = {
 };
 
 const cache = {};
-const maskOf = (name) => (cache[name] ??= PATTERNS[name].make());
+const tiled = (name) => !!(PATTERNS[name]?.make || PATTERNS[name]?.src);
+const maskOf = (name) => PATTERNS[name].src || (cache[name] ??= PATTERNS[name].make());
 
 // CSS custom properties for a pattern (used for the page and for swatches).
 export const SCALE_MIN = 5, SCALE_MAX = 200;
@@ -113,7 +94,7 @@ const clampScale = (v) => Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round(+v 
 // CSS custom properties for a pattern at a given size (percent of its natural tile).
 export function patternStyle(name, scale = 100, opacity) {
   const p = PATTERNS[name];
-  if (!p?.make) return '';
+  if (!tiled(name)) return '';
   const px = parseFloat(p.size) * clampScale(scale) / 100;
   return `--bg-mask:url("${maskOf(name)}");--bg-size:${px.toFixed(2)}px;--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
 }
@@ -152,8 +133,8 @@ export function pickerHTML(current, { allowDefault = false } = {}) {
     ${opts.map(([k, p]) => `<button type="button" class="bg-swatch ${sel === k ? 'on' : ''}" data-bg="${k}"><span class="bg-prev" data-p="${k}" style='${patternStyle(k)}'></span><span>${p.label}</span></button>`).join('')}
     <label class="bg-swatch ${sel === 'image' ? 'on' : ''}" data-bg="image"><span class="bg-prev img" data-p="image"></span><span>Your image</span><input type="file" accept="image/*" hidden></label>
   </div>
-  <div class="bg-adjust" ${PATTERNS[sel]?.make || sel === 'image' ? '' : 'hidden'}>
-    <label class="bg-scale" data-k="scale" ${PATTERNS[sel]?.make ? '' : 'hidden'}>Size
+  <div class="bg-adjust" ${tiled(sel) || sel === 'image' ? '' : 'hidden'}>
+    <label class="bg-scale" data-k="scale" ${tiled(sel) ? '' : 'hidden'}>Size
       <input type="range" min="${SCALE_MIN}" max="${SCALE_MAX}" step="5" value="${clampScale(current?.scale ?? 100)}"><output></output></label>
     <label class="bg-scale" data-k="opacity">Opacity
       <input type="range" min="0" max="100" step="1" value="${clampOpacity(current?.opacity ?? defaultOpacity(sel))}"><output></output></label>
@@ -177,14 +158,14 @@ export function wirePicker(root, current, onPick, prepareImage) {
   const sync = () => {
     const name = bg?.pattern ?? 'default';
     picker.querySelectorAll('.bg-swatch').forEach((s) => s.classList.toggle('on', s.dataset.bg === name));
-    adjust.hidden = !(PATTERNS[name]?.make || name === 'image');
-    scaleRow.hidden = !PATTERNS[name]?.make;
+    adjust.hidden = !(tiled(name) || name === 'image');
+    scaleRow.hidden = !tiled(name);
     label();
   };
   // Picking a new background starts from its own default opacity.
   const choose = (next) => {
     bg = next;
-    if (bg) { opacity.value = defaultOpacity(bg.pattern); if (PATTERNS[bg.pattern]?.make) bg.scale = +scale.value; }
+    if (bg) { opacity.value = defaultOpacity(bg.pattern); if (tiled(bg.pattern)) bg.scale = +scale.value; }
     sync(); emit();
   };
   const imgPrev = picker.querySelector('.bg-prev.img');
@@ -202,7 +183,7 @@ export function wirePicker(root, current, onPick, prepareImage) {
     scale.value = 100;
     opacity.value = defaultOpacity(bg.pattern);
     delete bg.opacity;
-    if (PATTERNS[bg.pattern]?.make) bg.scale = 100;
+    if (tiled(bg.pattern)) bg.scale = 100;
     label(); emit();
   });
   picker.querySelector('input[type=file]').addEventListener('change', async (e) => {
