@@ -156,11 +156,11 @@ export function renderOneDriveCard() {
       <p><button class="btn primary" id="syncNowBtn">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="disconnectBtn">Disconnect</button></p>`;
   }
   el.innerHTML = `<h2>OneDrive sync</h2>${main}
-    <details ${cid ? '' : 'open'}><summary>Microsoft app registration</summary>
+    ${auth.builtInClientId ? '' : `<details ${cid ? '' : 'open'}><summary>Microsoft app registration</summary>
       <label>Application (client) ID<input id="cidInput" value="${esc(cid)}" placeholder="00000000-0000-0000-0000-000000000000"></label>
       <p class="small">Redirect URI to register (platform: <b>Single-page application</b>):<br><code class="copy">${esc(auth.redirectUri())}</code> <button class="btn small quiet" id="copyRuri">Copy</button></p>
       <button class="btn small" id="saveCid">Save client ID</button>
-    </details>`;
+    </details>`}`;
   $('#connectBtn')?.addEventListener('click', () => auth.signIn().catch((e) => toast(e.message)));
   $('#syncNowBtn')?.addEventListener('click', () => sync.sync());
   $('#disconnectBtn')?.addEventListener('click', async () => {
@@ -170,13 +170,13 @@ export function renderOneDriveCard() {
     await store.resetSyncBase();
     sync.refreshStatus();
   });
-  $('#saveCid').onclick = () => {
+  $('#saveCid')?.addEventListener('click', () => {
     auth.setClientId($('#cidInput').value);
     toast('Saved');
     sync.refreshStatus();
     renderOneDriveCard();
-  };
-  $('#copyRuri').onclick = () => navigator.clipboard?.writeText(auth.redirectUri()).then(() => toast('Copied'));
+  });
+  $('#copyRuri')?.addEventListener('click', () => navigator.clipboard?.writeText(auth.redirectUri()).then(() => toast('Copied')));
 }
 
 async function exportBackup() {

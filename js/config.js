@@ -1,8 +1,8 @@
 // OneDrive / Microsoft sign-in configuration.
 //
 // Paste the "Application (client) ID" of your Azure app registration here
-// (see README.md → "Set up OneDrive sync"). It can also be entered at runtime
-// on the Settings page, which overrides this value for that device.
+// (see README.md → "OneDrive sync"). Leave it empty to have each device enter
+// its own on the Settings page instead.
 export const CLIENT_ID = 'aaec4fa5-f6e4-4251-8998-177a2fedc48b';
 
 // "common" allows both personal Microsoft accounts and work/school accounts.

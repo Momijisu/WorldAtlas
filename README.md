@@ -43,7 +43,7 @@ One-time setup with Microsoft:
 2. **App registrations → New registration**:
    - Supported account types: *any organizational directory and personal Microsoft accounts*
    - Redirect URI: platform **Single-page application**, URL = the app's address with the trailing `/` (Settings shows it with a Copy button)
-3. Copy the **Application (client) ID** into `js/config.js` and push. You can also paste it in Settings on each device.
+3. Copy the **Application (client) ID** into `js/config.js` and push. (With no ID there, Settings asks each device for one.)
 4. In the app, **Settings → Connect OneDrive**.
 
 The app asks for `Files.ReadWrite.AppFolder`, which only reaches `OneDrive/Apps/WorldAtlas`, and `User.Read` for your name. No other permissions are needed.

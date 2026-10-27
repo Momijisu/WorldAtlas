@@ -7,7 +7,11 @@ const SCOPES = 'openid profile offline_access User.Read Files.ReadWrite.AppFolde
 const TOKENS_KEY = 'wa.tokens';
 const PENDING_KEY = 'wa.auth.pending';
 
-export const clientId = () => localStorage.getItem('wa.clientId') || CLIENT_ID;
+// The ID in config.js wins. Only a copy of the app without one lets each
+// device enter its own (Settings → Microsoft app registration).
+export const builtInClientId = !!CLIENT_ID;
+if (builtInClientId) localStorage.removeItem('wa.clientId');
+export const clientId = () => CLIENT_ID || localStorage.getItem('wa.clientId') || '';
 export const setClientId = (id) => (id ? localStorage.setItem('wa.clientId', id.trim()) : localStorage.removeItem('wa.clientId'));
 export const redirectUri = () => location.origin + location.pathname;
 const endpoint = (p) => `https://login.microsoftonline.com/${AUTHORITY}/oauth2/v2.0/${p}`;
