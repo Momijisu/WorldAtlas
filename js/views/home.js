@@ -1,6 +1,7 @@
 // Library (all worlds), world overview, world settings and the "new article" picker.
 import * as store from '../store.js';
 import * as sync from '../sync.js';
+import * as auth from '../auth.js';
 import { TYPES, GROUPS } from '../store.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
@@ -20,7 +21,7 @@ export function viewWorlds() {
         <a class="card world-card" href="#/w/${w.id}">
           <div class="card-cover" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
-            <div class="eyebrow">${store.articlesOf(w.id).length} articles · ${store.mapsOf(w.id).length} maps</div>
+            <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${store.articlesOf(w.id).length} articles · ${store.mapsOf(w.id).length} maps</div>
             <h3>${esc(w.name)}</h3>
             <p>${esc(plain(w.description, 150))}</p>
           </div>
@@ -38,7 +39,7 @@ export function viewWorlds() {
   </section>`;
   $('#newWorld').onclick = () => worldDialog();
   $('#example')?.addEventListener('click', async () => {
-    const id = await exampleWorld(store);
+    const id = await exampleWorld(store, { demo: !auth.account() });
     location.hash = `#/w/${id}`;
   });
   hydrateImages();
@@ -78,6 +79,13 @@ export async function worldDialog(w) {
       };
       $('[data-rm]', m).onclick = (e) => { w.image = null; thumb.hidden = true; e.currentTarget.hidden = true; };
       $('[data-del]', m)?.addEventListener('click', async () => {
+        if (store.isDemo(w.id)) {
+          if (!(await confirmDialog('Remove the example world from this device?', 'Remove'))) return;
+          await store.removeDemo(w.id);
+          close();
+          location.hash = '#/';
+          return;
+        }
         if (!(await confirmDialog(`Delete “${w.name}” and all its articles and maps? This also deletes it on your other devices.`))) return;
         await store.deleteWorld(w.id);
         close();
@@ -113,6 +121,13 @@ export function viewWorld(wid) {
         </div>
       </div>
     </div>
+    ${store.isDemo(wid) ? `<div class="demo-banner">${icon('compass')}<div>
+      <b>This is an example world.</b> Look around, open the map, try the timeline and family tree, and edit anything you like. It stays on this device and isn’t synced.
+      <div class="actions left" style="margin-top:.7rem">
+        <button class="btn small primary" id="newOwnWorld">${icon('plus')} Start my own world</button>
+        <button class="btn small" id="keepDemo">Keep this as my own</button>
+        <button class="btn small quiet" id="removeDemo">Remove example</button>
+      </div></div></div>` : ''}
     ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
     <div id="todayPrompt" class="today-prompt"></div>
     ${flourish()}
@@ -132,6 +147,17 @@ export function viewWorld(wid) {
   };
   if (promptsEnabled()) showPrompt(todaysPrompt(wid));
   $('#editWorld').onclick = () => worldDialog(w);
+  $('#newOwnWorld')?.addEventListener('click', () => worldDialog());
+  $('#keepDemo')?.addEventListener('click', async () => {
+    if (!(await confirmDialog('Keep Aerthal as a normal world? It will sync to OneDrive like your other worlds.', 'Keep it', { title: 'Keep the example', danger: false }))) return;
+    await store.keepDemo(wid);
+    state.route();
+  });
+  $('#removeDemo')?.addEventListener('click', async () => {
+    if (!(await confirmDialog('Remove the example world from this device? You can bring it back from the start screen.', 'Remove'))) return;
+    await store.removeDemo(wid);
+    location.hash = '#/';
+  });
   $('#newArt').onclick = () => newArticleDialog(wid);
   $('#newArt2')?.addEventListener('click', (e) => { e.preventDefault(); newArticleDialog(wid); });
   hydrateImages();

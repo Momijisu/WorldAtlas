@@ -76,16 +76,16 @@ async function check(res, what) {
 const FILES = [
   {
     name: REMOTE_FILE,
-    collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()]])),
+    collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()].filter(store.syncable)])),
     merge: (json) => store.mergeRecords(json, { detectConflicts: true }),
-    hasLocal: () => RECORD_STORES.some((s) => store.data[s].size),
+    hasLocal: () => RECORD_STORES.some((s) => [...store.data[s].values()].some(store.syncable)),
     agreed: () => store.markSynced(),
   },
   {
     name: 'history.json',
-    collect: () => ({ history: [...store.data.history.values()] }),
+    collect: () => ({ history: [...store.data.history.values()].filter(store.syncable) }),
     merge: (json) => store.mergeHistory(json.history),
-    hasLocal: () => store.data.history.size > 0,
+    hasLocal: () => [...store.data.history.values()].some(store.syncable),
   },
 ];
 
@@ -121,8 +121,10 @@ async function syncFile(spec, dirty) {
 }
 
 async function syncImages() {
-  // Upload images created on this device.
+  // Upload images created on this device (except the local-only demo world's).
+  const demoImages = store.referencedImages({ demo: true });
   for (const id of await store.imageIds()) {
+    if (demoImages.has(id)) continue;
     const rec = await store.getImage(id);
     if (!rec || rec.uploaded) continue;
     const res = await auth.graph(`${ROOT}:/images/${id}:/content`, {

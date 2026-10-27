@@ -119,6 +119,7 @@ export async function mergeRecords(other, { detectConflicts = false } = {}) {
       if (ru > lu) incoming.push(r);
     }
     for (const l of data[s].values()) {
+      if (!syncable(l)) continue;
       const r = otherById.get(l.id);
       if (!r || (l.updatedAt || 0) > (r.updatedAt || 0)) localAhead = true;
     }
@@ -172,7 +173,7 @@ export async function mergeHistory(list = []) {
   await db.putMany('history', incoming);
   incoming.forEach((h) => data.history.set(h.id, h));
   for (const id of new Set(incoming.map((h) => h.articleId))) await pruneHistory(id);
-  return [...data.history.keys()].some((id) => !theirs.has(id));
+  return [...data.history.values()].some((h) => !theirs.has(h.id) && syncable(h));
 }
 
 // Restoring writes the snapshot as a new current version (and revives a deleted article).
@@ -279,12 +280,45 @@ export const getImage = (id) => db.get('images', id);
 export const putImage = (rec) => db.put('images', rec);
 export const imageIds = () => db.getAllKeys('images');
 
-export function referencedImages() {
+// Images used by live records; `demo` selects the demo world's instead of synced ones.
+export function referencedImages({ demo = false } = {}) {
   const ids = new Set();
-  for (const w of data.worlds.values()) if (live(w) && w.image) ids.add(w.image);
-  for (const a of data.articles.values()) if (live(a)) { if (a.image) ids.add(a.image); if (a.banner) ids.add(a.banner); }
-  for (const m of data.maps.values()) if (live(m) && m.image) ids.add(m.image);
+  const want = (o) => live(o) && syncable(o) !== demo;
+  for (const w of data.worlds.values()) if (want(w) && w.image) ids.add(w.image);
+  for (const a of data.articles.values()) if (want(a)) { if (a.image) ids.add(a.image); if (a.banner) ids.add(a.banner); }
+  for (const m of data.maps.values()) if (want(m) && m.image) ids.add(m.image);
   return ids;
+}
+
+// --- demo world -------------------------------------------------------------
+// The example world shown on a fresh install lives only on this device: it is
+// never uploaded, and removing it deletes it outright rather than leaving
+// deletion records to sync.
+
+export const isDemo = (wid) => !!data.worlds.get(wid)?.demo;
+export const syncable = (r) => !(r.demo || data.worlds.get(r.worldId)?.demo);
+
+export async function removeDemo(wid) {
+  if (!isDemo(wid)) return;
+  const images = [...referencedImages({ demo: true })];
+  for (const s of ['articles', 'maps', 'history']) {
+    const ids = [...data[s].values()].filter((r) => r.worldId === wid).map((r) => r.id);
+    ids.forEach((id) => data[s].delete(id));
+    await db.del(s, ids);
+  }
+  data.worlds.delete(wid);
+  await db.del('worlds', [wid]);
+  await db.del('images', images);
+  emit({ local: false, store: 'worlds' });
+}
+
+// Turn the demo into a normal world that syncs like any other.
+export async function keepDemo(wid) {
+  const w = data.worlds.get(wid);
+  if (!w?.demo) return;
+  const next = { ...w };
+  delete next.demo;
+  await save('worlds', next);
 }
 
 export function newArticle(worldId, type = 'article', extra = {}) {

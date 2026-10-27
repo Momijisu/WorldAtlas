@@ -282,3 +282,12 @@ details.guide summary .muted { font-weight: 400; }
 .import-warnings { border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: var(--r); padding: .6rem .9rem; margin: .8rem 0; }
 .import-warnings summary { color: var(--warn); text-transform: none; letter-spacing: 0; font: 500 .95rem var(--sans); }
 .import-warnings ul { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .9rem; color: var(--text-2); max-height: 220px; overflow-y: auto; }
+
+/* ---------- example world ---------- */
+.demo-banner {
+  display: flex; gap: .8rem; align-items: flex-start; margin: 1.4rem 0 0; padding: .9rem 1.1rem;
+  border: 1px solid var(--rule-strong); border-left: 3px solid var(--brass); border-radius: var(--r);
+  background: var(--ink-2); color: var(--text-2);
+}
+.demo-banner > .i { color: var(--brass); width: 1.4rem; height: 1.4rem; margin-top: .1rem; }
+.demo-banner b { color: var(--text); }

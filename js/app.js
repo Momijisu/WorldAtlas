@@ -5,6 +5,7 @@ import { TYPES } from './store.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
+import { exampleWorld } from './example.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';
 import { viewEditor } from './views/editor.js';
@@ -31,6 +32,7 @@ async function boot() {
   try { returned = await auth.handleRedirect(); } catch (e) { authError = e; }
   if (!returned && !authError && await auth.renewSessionIfNeeded()) return;
   await store.load();
+  await seedDemo();
   wireChrome();
   store.onChange((e) => {
     if (e.local) return;
@@ -56,6 +58,19 @@ async function boot() {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
   }
   navigator.storage?.persist?.();
+}
+
+// On a first visit with nothing saved, open a local-only example world so there
+// is something to explore. Not for signed-in devices (their worlds are on the
+// way from OneDrive), and never again once seeded or removed.
+async function seedDemo() {
+  try {
+    if (localStorage.getItem('wa.demoSeeded')) return;
+    localStorage.setItem('wa.demoSeeded', '1');
+  } catch { return; }
+  if (store.data.worlds.size || auth.account()) return;
+  const wid = await exampleWorld(store, { demo: true });
+  if (!location.hash || location.hash === '#/') history.replaceState(null, '', `#/w/${wid}`);
 }
 
 // Keep the install event so we can offer our own Install button, but don't
@@ -248,7 +263,7 @@ function renderSidebar(wid) {
   sidebar.innerHTML = `<nav>
     <a href="#/" class="back">${icon('arrow-left')} All worlds</a>
     <div class="world-title"><a href="#/w/${wid}">${esc(w.name)}</a></div>
-    <div class="world-sub eyebrow">${arts.length} articles · ${store.mapsOf(wid).length} maps</div>
+    <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} articles · ${store.mapsOf(wid).length} maps`}</div>
     ${nav(`#/w/${wid}`, 'compass', 'Overview')}
     ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
