@@ -581,3 +581,4 @@ code.copy { user-select: all; word-break: break-all; }
 .status-synced { color: var(--ok); }
 .status-error { color: var(--warn); }
 .rel-row .rel-from { font-size: .78rem; }
+option.opt-dim { color: var(--muted); }

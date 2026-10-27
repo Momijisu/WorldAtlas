@@ -384,7 +384,9 @@ export async function viewMap(wid, mid, q) {
       </select></label>
       <label class="new-layer" hidden>Layer name<input name="layerNew" placeholder="e.g. Trade routes"></label>`;
   };
-  const articleField = (layer, selected) => `<select name="articleId">${articleOptions(wid, selected, { only: isTemplateLayer(layer) ? familyOf(layer) : null })}</select>`;
+  // Articles already placed on this map are greyed (still selectable).
+  const onThisMap = () => new Set([...(cur().pins || []), ...(cur().regions || [])].map((it) => it.articleId).filter(Boolean));
+  const articleField = (layer, selected) => `<select name="articleId">${articleOptions(wid, selected, { only: isTemplateLayer(layer) ? familyOf(layer) : null, dim: onThisMap(), dimNote: 'on this map' })}</select>`;
   const wireLayer = (el, f) => {
     const refill = () => {
       const keep = f.articleId.value;

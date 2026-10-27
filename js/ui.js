@@ -66,11 +66,15 @@ export const sep = '<span class="sep">/</span>';
 
 // Searchable list of articles for <select> elements.
 // only: a list of templates to offer (the selected article is always kept).
-export function articleOptions(wid, selected, { exclude = new Set(), none = 'None', only = null } = {}) {
+// dim: articles to show greyed with a note (still selectable).
+export function articleOptions(wid, selected, { exclude = new Set(), none = 'None', only = null, dim = null, dimNote = '' } = {}) {
   const list = store.articlesOf(wid).filter((a) => !exclude.has(a.id) && (!only || only.includes(a.type) || a.id === selected))
     .sort((x, y) => x.title.localeCompare(y.title));
   return (none != null ? `<option value="">${esc(none)}</option>` : '') +
-    list.map((a) => `<option value="${a.id}" ${a.id === selected ? 'selected' : ''}>${esc(a.title)} · ${typeLabel(a.type)}</option>`).join('');
+    list.map((a) => {
+      const dimmed = dim?.has(a.id) && a.id !== selected;
+      return `<option value="${a.id}" ${a.id === selected ? 'selected' : ''}${dimmed ? ' class="opt-dim"' : ''}>${esc(a.title)} · ${typeLabel(a.type)}${dimmed ? ` (${dimNote})` : ''}</option>`;
+    }).join('');
 }
 
 export { icon };
