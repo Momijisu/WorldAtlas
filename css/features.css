@@ -272,3 +272,13 @@ details.guide summary .muted { font-weight: 400; }
 .about-list { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1.2rem; margin: 0 0 1rem; }
 .about-list dt { font: 500 .74rem/1.9 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .about-list dd { margin: 0; }
+
+/* ---------- import preview ---------- */
+.import-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); border-radius: var(--r); margin: .4rem 0 1rem; }
+.import-stats > div { padding: .7rem; text-align: center; }
+.import-stats > div + div { border-left: 1px solid var(--rule); }
+.import-stats b { display: block; font: 600 2rem/1 var(--display); color: var(--brass); }
+.import-stats span { font: 500 .7rem var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.import-warnings { border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: var(--r); padding: .6rem .9rem; margin: .8rem 0; }
+.import-warnings summary { color: var(--warn); text-transform: none; letter-spacing: 0; font: 500 .95rem var(--sans); }
+.import-warnings ul { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .9rem; color: var(--text-2); max-height: 220px; overflow-y: auto; }

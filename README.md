@@ -19,6 +19,7 @@ A personal worldbuilding wiki, inspired by World Anvil, that runs on your phone 
 - **Two themes**: Nocturne (dark) and Vellum (light parchment).
 - **Works offline and installs as an app.** Everything saves on the device first and syncs to OneDrive when you're online.
 - **Backup**: export everything, images and history included, to one JSON file, and import it again later.
+- **Import a world**: bring in a world written in a simple, title-based JSON format ([docs/IMPORT_FORMAT.md](docs/IMPORT_FORMAT.md)), for example one an AI assistant has prepared from your notes. You get a preview with warnings before anything is saved, and re-importing updates articles by title. You can also export a world in the same format, have an assistant extend it, and import the result. Settings has a "Copy instructions for an assistant" button.
 
 **Roadmap:** read-only shareable export (a "player view" with GM notes removed).
 
@@ -93,6 +94,7 @@ js/mapview.js         pan/zoom map viewer with pins and regions
 js/markdown.js        Markdown + [[wiki link]] rendering
 js/icons.js           icon set (Phosphor, MIT)
 js/config.js          your Azure client ID
+js/importer.js        simple import/export format (docs/IMPORT_FORMAT.md)
 js/version.js         app version (shown in Settings, names the offline cache)
 sw.js                 service worker (offline cache)
 fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (SIL OFL)
