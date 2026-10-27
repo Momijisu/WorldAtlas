@@ -468,14 +468,19 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 .modal-body { padding: .6rem 1.3rem 1.3rem; }
 .form .actions { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
 @keyframes fade { from { opacity: 0; } }
-.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+.type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
 .type-choice {
-  display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 1rem .5rem;
+  display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 1rem .5rem; min-width: 0;
   border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  color: var(--text); text-decoration: none !important; font: 600 1.1rem var(--display);
+  color: var(--text); text-decoration: none !important; font: 600 1.1rem var(--display); text-align: center;
 }
 .type-choice .i { width: 1.8rem; height: 1.8rem; color: var(--brass); }
 .type-choice:hover { background: var(--ink-3); }
+@media (max-width: 560px) {
+  .type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .type-choice { flex-direction: row; justify-content: flex-start; gap: .55rem; padding: .8rem .7rem; font-size: 1.05rem; text-align: left; }
+  .type-choice .i { width: 1.35rem; height: 1.35rem; }
+}
 
 #toast {
   position: fixed; left: 50%; bottom: calc(1.4rem + env(safe-area-inset-bottom)); z-index: 200;
