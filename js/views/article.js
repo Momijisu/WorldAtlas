@@ -5,7 +5,7 @@ import { render, renderInline } from '../markdown.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { relationsOf, REL_TYPES, REL_GROUPS, hasFamily } from '../relations.js';
 import { $, esc, timeAgo } from '../util.js';
-import { view, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
+import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 
@@ -52,6 +52,7 @@ export function viewArticle(wid, id) {
     <div class="article-grid">
       <div class="article-main">
         ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Written for the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
+        <details class="toc" id="toc" hidden open><summary>${icon('list-bullets')} Contents</summary><ol></ol></details>
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
         ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}
         ${a.gmNotes ? `<details class="secret"><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary><div class="prose no-dropcap">${render(a.gmNotes, wid)}</div></details>` : ''}
@@ -80,4 +81,39 @@ export function viewArticle(wid, id) {
   </article>`;
   $('#addChild').onclick = () => newArticleDialog(wid, `?parent=${a.id}`);
   hydrateImages();
+  contents();
+}
+
+// Contents box: lists the article's headings once there are a few, and
+// highlights the one being read. Links scroll rather than change the hash,
+// which the router owns.
+function contents() {
+  const box = $('#toc');
+  const heads = [...view.querySelectorAll('.article-main > .prose :is(h1, h2, h3), .article-main > .section-head h2')];
+  if (heads.filter((h) => h.closest('.prose')).length < 2) return;
+  const used = new Set();
+  const top = Math.min(...heads.map((h) => +h.tagName[1]));
+  box.querySelector('ol').innerHTML = heads.map((h, i) => {
+    let id = 'h-' + (h.textContent.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || i);
+    while (used.has(id)) id += '-' + i;
+    used.add(id);
+    h.id = id;
+    return `<li class="toc-l${+h.tagName[1] - top}"><a href="#" data-to="${id}">${esc(h.textContent)}</a></li>`;
+  }).join('');
+  box.hidden = false;
+  if (matchMedia('(max-width: 860px)').matches && heads.length > 6) box.open = false;
+  box.addEventListener('click', (e) => {
+    const link = e.target.closest('[data-to]');
+    if (!link) return;
+    e.preventDefault();
+    document.getElementById(link.dataset.to)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const links = new Map([...box.querySelectorAll('[data-to]')].map((l) => [l.dataset.to, l]));
+  const io = new IntersectionObserver((entries) => {
+    for (const en of entries) if (en.isIntersecting) {
+      for (const l of links.values()) l.classList.toggle('on', l.dataset.to === en.target.id);
+    }
+  }, { rootMargin: '0px 0px -70% 0px' });
+  heads.forEach((h) => io.observe(h));
+  state.cleanup = () => io.disconnect();
 }

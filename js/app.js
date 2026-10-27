@@ -7,6 +7,7 @@ import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground } from './backgrounds.js';
+import { wirePreviews } from './preview.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';
 import { viewEditor } from './views/editor.js';
@@ -35,6 +36,7 @@ async function boot() {
   await store.load();
   await seedDemo();
   wireChrome();
+  wirePreviews();
   store.onChange((e) => {
     if (e.local) return;
     if (hasUnsaved()) toast('Changes arrived from another device');
