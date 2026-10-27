@@ -301,6 +301,8 @@ details.guide summary .muted { font-weight: 400; }
 .bg-prev::after { content: ""; position: absolute; inset: 0; background: var(--brass); opacity: min(1, calc(var(--bg-strength, 0) * 2.5)); -webkit-mask: var(--bg-mask) repeat 0 0 / calc(var(--bg-size) * .5); mask: var(--bg-mask) repeat 0 0 / calc(var(--bg-size) * .5); }
 .bg-prev[data-p="plain"]::after, .bg-prev.img::after { display: none; }
 .bg-prev.img:not([style]) { background-image: repeating-linear-gradient(45deg, var(--ink-3) 0 6px, var(--ink-2) 6px 12px); }
-.bg-scale { display: flex; align-items: center; gap: .7rem; margin: .7rem 0 .2rem; font-size: .9rem; color: var(--text-2); }
+.bg-adjust { margin: .7rem 0 .2rem; }
+.bg-adjust .btn { margin-top: .2rem; }
+.bg-scale { display: grid; grid-template-columns: 4.5rem 1fr 3.2em; align-items: center; gap: .6rem; margin: 0 0 .3rem; font-size: .9rem; color: var(--text-2); }
 .bg-scale input[type="range"] { flex: 1; min-height: 0; padding: 0; border: 0; background: transparent; accent-color: var(--brass); }
 .bg-scale output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }

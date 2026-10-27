@@ -108,7 +108,7 @@ body::after {
 body[data-bg]:not([data-bg="plain"])::after { display: block; }
 body[data-bg="image"]::after {
   -webkit-mask: none; mask: none; opacity: 1;
-  background: linear-gradient(color-mix(in srgb, var(--ink-0) 78%, transparent), color-mix(in srgb, var(--ink-0) 90%, transparent)), var(--wallpaper) center / cover no-repeat;
+  background: linear-gradient(color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent), color-mix(in srgb, var(--ink-0) calc(100% - var(--wall-op, 16%)), transparent)), var(--wallpaper) center / cover no-repeat;
 }
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }

@@ -111,12 +111,16 @@ export const SCALE_MIN = 5, SCALE_MAX = 200;
 const clampScale = (v) => Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round(+v || 100)));
 
 // CSS custom properties for a pattern at a given size (percent of its natural tile).
-export function patternStyle(name, scale = 100) {
+export function patternStyle(name, scale = 100, opacity) {
   const p = PATTERNS[name];
   if (!p?.make) return '';
   const px = parseFloat(p.size) * clampScale(scale) / 100;
-  return `--bg-mask:url("${maskOf(name)}");--bg-size:${px.toFixed(2)}px;--bg-strength:${p.strength};`;
+  return `--bg-mask:url("${maskOf(name)}");--bg-size:${px.toFixed(2)}px;--bg-strength:${opacity == null ? p.strength : opacity / 100};`;
 }
+
+// Default opacity (percent) for a background: the pattern's own strength, or 16% for an image.
+export const defaultOpacity = (name) => (name === 'image' ? 16 : Math.round((PATTERNS[name]?.strength ?? 0.1) * 100));
+const clampOpacity = (v) => Math.min(100, Math.max(0, Math.round(+v)));
 
 export const deviceDefault = () => { try { return JSON.parse(localStorage.getItem('wa.bg') || 'null') || { pattern: 'plain' }; } catch { return { pattern: 'plain' }; } };
 export const setDeviceDefault = (bg) => { try { localStorage.setItem('wa.bg', JSON.stringify(bg)); } catch { /* storage unavailable */ } };
@@ -134,7 +138,9 @@ export async function showBackground(bg) {
   const url = name === 'image' && bg.image ? await store.imageURL(bg.image) : null;
   if (name === 'image' && !url) { body.dataset.bg = 'plain'; return; }
   body.dataset.bg = name;
-  body.style.cssText = name === 'image' ? `--wallpaper:url("${url}")` : patternStyle(name, bg.scale);
+  body.style.cssText = name === 'image'
+    ? `--wallpaper:url("${url}");--wall-op:${clampOpacity(bg.opacity ?? defaultOpacity('image'))}%`
+    : patternStyle(name, bg.scale, bg.opacity == null ? null : clampOpacity(bg.opacity));
 }
 
 // A picker of swatches. `current` is { pattern, image }; onPick(bg) is called on change.
@@ -146,24 +152,40 @@ export function pickerHTML(current, { allowDefault = false } = {}) {
     ${opts.map(([k, p]) => `<button type="button" class="bg-swatch ${sel === k ? 'on' : ''}" data-bg="${k}"><span class="bg-prev" data-p="${k}" style='${patternStyle(k)}'></span><span>${p.label}</span></button>`).join('')}
     <label class="bg-swatch ${sel === 'image' ? 'on' : ''}" data-bg="image"><span class="bg-prev img" data-p="image"></span><span>Your image</span><input type="file" accept="image/*" hidden></label>
   </div>
-  <label class="bg-scale" ${PATTERNS[sel]?.make ? '' : 'hidden'}>Pattern size
-    <input type="range" min="${SCALE_MIN}" max="${SCALE_MAX}" step="5" value="${clampScale(current?.scale ?? 100)}">
-    <output>${clampScale(current?.scale ?? 100)}%</output>
-    <button type="button" class="btn small quiet" data-reset-scale>Reset</button>
-  </label>`;
+  <div class="bg-adjust" ${PATTERNS[sel]?.make || sel === 'image' ? '' : 'hidden'}>
+    <label class="bg-scale" data-k="scale" ${PATTERNS[sel]?.make ? '' : 'hidden'}>Size
+      <input type="range" min="${SCALE_MIN}" max="${SCALE_MAX}" step="5" value="${clampScale(current?.scale ?? 100)}"><output></output></label>
+    <label class="bg-scale" data-k="opacity">Opacity
+      <input type="range" min="0" max="100" step="1" value="${clampOpacity(current?.opacity ?? defaultOpacity(sel))}"><output></output></label>
+    <button type="button" class="btn small quiet" data-reset-bg>Reset size and opacity</button>
+  </div>`;
 }
 
 // Wire a picker rendered by pickerHTML(). onPick receives { pattern, image? } or null for "device default".
 export function wirePicker(root, current, onPick, prepareImage) {
   const picker = root.querySelector('.bg-picker');
-  const scaleBox = root.querySelector('.bg-scale');
-  const range = scaleBox.querySelector('input');
-  const out = scaleBox.querySelector('output');
+  const adjust = root.querySelector('.bg-adjust');
+  const scaleRow = adjust.querySelector('[data-k="scale"]');
+  const scale = scaleRow.querySelector('input');
+  const opacity = adjust.querySelector('[data-k="opacity"] input');
   let bg = current ? { ...current } : null; // null = device default
   const emit = () => { onPick(bg ? { ...bg } : null); showBackground(bg); };
+  const label = () => {
+    scaleRow.querySelector('output').textContent = scale.value + '%';
+    opacity.nextElementSibling.textContent = opacity.value + '%';
+  };
   const sync = () => {
-    picker.querySelectorAll('.bg-swatch').forEach((s) => s.classList.toggle('on', s.dataset.bg === (bg?.pattern ?? 'default')));
-    scaleBox.hidden = !PATTERNS[bg?.pattern]?.make;
+    const name = bg?.pattern ?? 'default';
+    picker.querySelectorAll('.bg-swatch').forEach((s) => s.classList.toggle('on', s.dataset.bg === name));
+    adjust.hidden = !(PATTERNS[name]?.make || name === 'image');
+    scaleRow.hidden = !PATTERNS[name]?.make;
+    label();
+  };
+  // Picking a new background starts from its own default opacity.
+  const choose = (next) => {
+    bg = next;
+    if (bg) { opacity.value = defaultOpacity(bg.pattern); if (PATTERNS[bg.pattern]?.make) bg.scale = +scale.value; }
+    sync(); emit();
   };
   const imgPrev = picker.querySelector('.bg-prev.img');
   const showImage = async (id) => { const url = id && await store.imageURL(id); if (url) imgPrev.style.backgroundImage = `url("${url}")`; };
@@ -171,23 +193,24 @@ export function wirePicker(root, current, onPick, prepareImage) {
   picker.addEventListener('click', (e) => {
     const sw = e.target.closest('.bg-swatch');
     if (!sw || sw.dataset.bg === 'image') return; // the image swatch opens the file picker instead
-    bg = sw.dataset.bg === 'default' ? null : { pattern: sw.dataset.bg, scale: +range.value };
-    sync(); emit();
+    choose(sw.dataset.bg === 'default' ? null : { pattern: sw.dataset.bg });
   });
-  range.addEventListener('input', () => {
-    out.textContent = range.value + '%';
-    if (bg && PATTERNS[bg.pattern]?.make) { bg.scale = +range.value; emit(); }
-  });
-  scaleBox.querySelector('[data-reset-scale]').addEventListener('click', () => {
-    range.value = 100; range.dispatchEvent(new Event('input'));
+  scale.addEventListener('input', () => { if (bg) { bg.scale = +scale.value; label(); emit(); } });
+  opacity.addEventListener('input', () => { if (bg) { bg.opacity = +opacity.value; label(); emit(); } });
+  adjust.querySelector('[data-reset-bg]').addEventListener('click', () => {
+    if (!bg) return;
+    scale.value = 100;
+    opacity.value = defaultOpacity(bg.pattern);
+    delete bg.opacity;
+    if (PATTERNS[bg.pattern]?.make) bg.scale = 100;
+    label(); emit();
   });
   picker.querySelector('input[type=file]').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const id = await store.addImage(await prepareImage(file, 2400));
     await showImage(id);
-    bg = { pattern: 'image', image: id };
-    sync(); emit();
+    choose({ pattern: 'image', image: id });
   });
   sync();
 }
