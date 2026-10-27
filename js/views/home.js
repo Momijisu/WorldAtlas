@@ -3,6 +3,7 @@ import * as store from '../store.js';
 import * as sync from '../sync.js';
 import * as auth from '../auth.js';
 import { TYPES, GROUPS } from '../store.js';
+import { templateCounts } from '../templates.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
@@ -126,8 +127,6 @@ export function viewWorld(wid) {
   const w = store.world(wid);
   setTitle(w.name);
   const arts = store.articlesOf(wid);
-  const counts = {};
-  for (const a of arts) counts[a.type] = (counts[a.type] || 0) + 1;
   const recent = [...arts].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
@@ -155,7 +154,7 @@ export function viewWorld(wid) {
     </div>
     ${flourish()}
     <div class="index-grid">
-      ${Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k])).join('')}
+      ${templateCounts(arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
       ${cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length)}
       ${cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '')}
       ${cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length)}

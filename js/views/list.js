@@ -1,15 +1,22 @@
 // Category / tag listings and search.
 import * as store from '../store.js';
 import { TYPES } from '../store.js';
+import { familyOf, parentOf } from '../templates.js';
 import { $, esc } from '../util.js';
 import { view, setTitle, hydrateImages, articleRows, pageHead, icon, worldCrumb, sep } from '../ui.js';
 
 export function viewList(wid, { type, tag }) {
   const all = store.articlesOf(wid);
   let list, title, newType = 'article', ic = 'books';
+  let family = [], kind = 'all'; // a template with sub-templates lists them all, with chips to narrow
   if (tag) { list = all.filter((a) => (a.tags || []).includes(tag)); title = '#' + tag; ic = 'tag'; }
   else if (type === 'conflicts') { list = all.filter((a) => a.conflict); title = 'Conflicts to resolve'; ic = 'warning'; }
-  else if (type && type !== 'all' && Object.hasOwn(TYPES, type)) { list = all.filter((a) => a.type === type); title = TYPES[type].plural; newType = type; ic = TYPES[type].icon; }
+  else if (type && type !== 'all' && Object.hasOwn(TYPES, type)) {
+    const p = parentOf(type);
+    family = familyOf(p);
+    kind = type === p ? 'all' : type;
+    list = all.filter((a) => family.includes(a.type)); title = TYPES[p].plural; newType = type; ic = TYPES[p].icon;
+  }
   else { list = all; title = 'All articles'; }
   setTitle(title);
   const sortKey = localStorage.getItem('wa.sort') || 'title';
@@ -18,8 +25,10 @@ export function viewList(wid, { type, tag }) {
     ${pageHead({
       eyebrow: `${worldCrumb(wid)} ${sep} ${icon(ic)} ${tag ? 'Tag' : 'Codex'}`,
       title: esc(title),
-      actions: `<a class="btn primary" href="#/w/${wid}/new/${newType}">${icon('plus')} New ${TYPES[newType].label.toLowerCase()}</a>`,
+      actions: `<a class="btn primary" id="newOfType" href="#/w/${wid}/new/${newType}">${icon('plus')} New ${TYPES[newType].label.toLowerCase()}</a>`,
     })}
+    ${family.length > 1 ? `<div class="chips" id="kinds">${[['all', 'All', list.length], ...family.map((k) => [k, TYPES[k].plural, list.filter((a) => a.type === k).length])]
+      .filter(([, , n]) => n).map(([k, label, n]) => `<button type="button" class="chip" data-k="${k}">${esc(label)} <small>${n}</small></button>`).join('')}</div>` : ''}
     <div class="toolbar">
       <input type="search" id="filter" placeholder="Filter ${list.length} article${list.length === 1 ? '' : 's'}…">
       <div class="seg" id="sort">
@@ -38,12 +47,22 @@ export function viewList(wid, { type, tag }) {
   const draw = () => {
     const f = $('#filter').value.trim().toLowerCase();
     for (const b of $('#sort').children) b.classList.toggle('on', b.dataset.s === sort);
-    const shown = list.filter((a) => !f || a.title.toLowerCase().includes(f) || (a.summary || '').toLowerCase().includes(f)).sort(sorters[sort]);
-    $('#listOut').innerHTML = shown.length ? articleRows(shown, wid)
+    const shown = list.filter((a) => kind === 'all' || a.type === kind).filter((a) => !f || a.title.toLowerCase().includes(f) || (a.summary || '').toLowerCase().includes(f)).sort(sorters[sort]);
+    $('#kinds')?.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.k === kind));
+    $('#listOut').innerHTML = shown.length ? articleRows(shown, wid, null, { listType: kind === 'all' ? family[0] || type : kind })
       : `<div class="empty-state small"><p>${list.length ? 'No matches.' : 'Nothing written here yet.'}</p></div>`;
     hydrateImages($('#listOut'));
   };
   $('#filter').oninput = draw;
+  $('#kinds')?.addEventListener('click', (e) => {
+    const c = e.target.closest('.chip');
+    if (!c) return;
+    kind = c.dataset.k;
+    const nt = kind === 'all' ? family[0] : kind;
+    $('#newOfType').href = `#/w/${wid}/new/${nt}`;
+    $('#newOfType').lastChild.textContent = ` New ${TYPES[nt].label.toLowerCase()}`;
+    draw();
+  });
   $('#sort').onclick = (e) => {
     const b = e.target.closest('button');
     if (!b) return;

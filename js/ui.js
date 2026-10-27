@@ -1,5 +1,6 @@
 // Shared UI state and helpers used by every view.
 import * as store from './store.js';
+import { rowLabel } from './templates.js';
 import { posCSS } from './focus.js';
 import { TYPES } from './store.js';
 import { icon } from './icons.js';
@@ -30,13 +31,14 @@ export async function hydrateImages(root = view) {
   }
 }
 
-export function articleRows(list, wid, meta) {
+// listType: the template a list is of, so its rows needn't repeat it.
+export function articleRows(list, wid, meta, { listType } = {}) {
   if (!list.length) return '';
-  return `<ul class="rows">${list.map((a) => `
+  return `<ul class="rows">${list.map((a, _, __, label = rowLabel(a, listType)) => `
     <li><a href="#/w/${wid}/a/${a.id}" class="row-link">
       ${a.image ? `<img class="row-thumb" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="row-thumb icon">${typeIcon(a.type)}</span>`}
       <span class="row-text"><span class="row-title">${esc(a.title)}${a.conflict ? `<span class="conflict-flag" title="Edited on two devices">${icon('warning')} Conflict</span>` : ''}</span>
-      <span class="row-sub"><b>${typeLabel(a.type)}</b>${a.summary ? esc(plain(a.summary, 130)) : ''}</span></span>
+      <span class="row-sub">${label ? `<b>${esc(label)}</b>` : ''}${a.summary ? esc(plain(a.summary, 130)) : ''}</span></span>
       ${meta ? `<span class="row-meta">${meta(a)}</span>` : ''}
     </a></li>`).join('')}</ul>`;
 }

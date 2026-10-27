@@ -28,7 +28,7 @@ export const TYPES = {
     ]),
   species: T('Species', 'Species', 'paw-print', 'people',
     'A people, creature, plant or animal.', [
-      ['Biology', ['Lifespan', 'Height', 'Weight', 'Diet']],
+      ['Biology', ['Type', 'Lifespan', 'Height', 'Weight', 'Diet']],
       ['Habitat', ['Habitat', 'Range', 'Population']],
       ['Society', ['Language', 'Intelligence', 'Relations']],
     ]),
@@ -162,6 +162,45 @@ export const TYPES = {
   article: T('Article', 'Other articles', 'file-text', 'other',
     'Anything that doesn’t fit another template.', []),
 };
+
+// Sub-templates keep their own infobox fields but are listed, counted and
+// filed under their parent (Settlements and Buildings are kinds of Location).
+const PARENTS = { settlement: 'location', building: 'location', conflict: 'event' };
+for (const [k, p] of Object.entries(PARENTS)) TYPES[k].parent = p;
+
+export const parentOf = (type) => TYPES[type]?.parent || type;
+export const childrenOf = (type) => Object.keys(TYPES).filter((k) => TYPES[k].parent === type);
+export const familyOf = (type) => [type, ...childrenOf(type)];
+
+// [type, template, count] for each top-level template used by these
+// articles; a parent's count includes its sub-templates.
+export function templateCounts(articles) {
+  const n = {};
+  for (const a of articles) { const p = parentOf(a.type); n[p] = (n[p] || 0) + 1; }
+  return Object.entries(TYPES).filter(([k, t]) => !t.parent && n[k]).map(([k, t]) => [k, t, n[k]]);
+}
+
+// The infobox field that says what kind of thing an article is (a Building's
+// Type, a Character's Occupation). Lists show it instead of the template name.
+const KIND_FIELDS = {
+  character: ['Occupation', 'Title'], species: ['Type'], profession: ['Type'], title: ['Type'],
+  location: ['Type'], settlement: ['Type'], building: ['Type'], organization: ['Type'],
+  event: ['Type'], conflict: ['Type'], plot: ['Status'], myth: ['Type'], spell: ['School'],
+  law: ['Type'], condition: ['Type'], technology: ['Type'], item: ['Type'], vehicle: ['Type'],
+  material: ['Type'], tradition: ['Type'], language: ['Family'],
+};
+
+export function kindOf(a) {
+  for (const f of KIND_FIELDS[a.type] || []) {
+    const v = String(a.fields?.[f] ?? '').replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_, t, l) => l || t).replace(/[*_`#>]/g, '').trim();
+    if (v) return v.length > 40 ? v.slice(0, 39) + '…' : v;
+  }
+  return '';
+}
+
+// Label for an article in a list: its kind if filled in; otherwise its
+// template's name, unless the list is already of that template.
+export const rowLabel = (a, listType) => kindOf(a) || (a.type === listType ? '' : (TYPES[a.type] || TYPES.article).label);
 
 // An article's infobox values grouped by its template's sections; fields not
 // in the template go under "Other". Only non-empty values are included.

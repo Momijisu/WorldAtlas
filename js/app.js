@@ -2,6 +2,7 @@ import * as store from './store.js';
 import * as auth from './auth.js';
 import * as sync from './sync.js';
 import { TYPES } from './store.js';
+import { templateCounts } from './templates.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
@@ -276,8 +277,6 @@ function renderSidebar(wid) {
   }
   const w = store.world(wid);
   const arts = store.articlesOf(wid);
-  const counts = {};
-  for (const a of arts) counts[a.type] = (counts[a.type] || 0) + 1;
   sidebar.innerHTML = `<nav>
     <a href="#/" class="back">${icon('arrow-left')} All worlds</a>
     <div class="world-title"><a href="#/w/${wid}">${esc(w.name)}</a></div>
@@ -293,7 +292,7 @@ function renderSidebar(wid) {
     ${nav(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length || '', `data-prefix="#/w/${wid}/m/"`)}
     ${nav(`#/w/${wid}/graph`, 'graph', 'Relationships')}
     <div class="nav-title">Codex</div>
-    ${Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, counts[k])).join('') || '<p class="nav-empty">Articles you write are listed here by template.</p>'}
+    ${templateCounts(arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || '<p class="nav-empty">Articles you write are listed here by template.</p>'}
     <div class="nav-sep"></div>
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
     ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}
