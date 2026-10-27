@@ -67,6 +67,8 @@ const REL_ALIASES = {
   worships: ['worships', 'follower of', 'devotee of'], worshippedBy: ['worshipped by', 'worshiped by'],
   created: ['created', 'creator', 'creator of', 'made', 'founded', 'founder of'], createdBy: ['created by', 'made by', 'founded by'],
   owns: ['owns', 'owner', 'owner of'], ownedBy: ['owned by'],
+  locatedIn: ['located in', 'located', 'lies in', 'situated in', 'found in', 'within'],
+  locationOf: ['location of', 'contains', 'home to', 'site of'],
   related: ['related', 'related to', 'associated with', 'connected to'],
 };
 const relLookup = new Map();

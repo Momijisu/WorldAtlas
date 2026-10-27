@@ -29,6 +29,8 @@ export const REL_TYPES = {
   createdBy:  { label: 'Created by',       inverse: 'created',    group: 'affiliation' },
   owns:       { label: 'Owner of',         inverse: 'ownedBy',    group: 'affiliation' },
   ownedBy:    { label: 'Owned by',         inverse: 'owns',       group: 'affiliation' },
+  locatedIn:  { label: 'Located in',       inverse: 'locationOf', group: 'other' },
+  locationOf: { label: 'Location of',      inverse: 'locatedIn',  group: 'other' },
   related:    { label: 'Related to',       inverse: 'related',    group: 'other' },
 };
 

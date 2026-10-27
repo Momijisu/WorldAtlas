@@ -128,7 +128,7 @@ Relationships read from the article's side: on *Queen Ysolde*, `{ "type": "child
 | Bonds | `friend`, `ally`, `mentor`, `student` |
 | Conflict | `rival`, `enemy` |
 | Affiliation | `member`, `hasMember`, `leader`, `ledBy`, `rules`, `ruledBy`, `serves`, `servedBy`, `worships`, `worshippedBy`, `created`, `createdBy`, `owns`, `ownedBy` |
-| Other | `related` |
+| Other | `locatedIn`, `locationOf`, `related` |
 
 Phrases like "father", "married to", "member of" and "founded by" also work.
 
