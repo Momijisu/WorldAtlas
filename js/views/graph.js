@@ -3,6 +3,7 @@
 import * as store from '../store.js';
 import { posCSS } from '../focus.js';
 import { TYPES } from '../store.js';
+import { familyOf } from '../templates.js';
 import { REL_TYPES, REL_GROUPS, worldEdges, relationsOf, hasFamily } from '../relations.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, typeLabel, hydrateImages, worldCrumb, sep } from '../ui.js';
 import { esc, $, $$ } from '../util.js';
@@ -23,6 +24,7 @@ export function viewGraph(wid, q) {
     loose: prefs.loose ?? false,
     groups: new Set(prefs.groups || Object.keys(REL_GROUPS)),
     types: new Set(prefs.types || Object.keys(TYPES)),
+    panel: prefs.panel ?? innerWidth >= 1000,
   };
 
   const head = pageHead({
@@ -37,27 +39,18 @@ export function viewGraph(wid, q) {
     return;
   }
 
-  const typesPresent = Object.keys(TYPES).filter((t) => allArticles.some((a) => a.type === t));
+  // Filter panel rows: kinds grouped like the sidebar (Settlements under Locations).
+  const countOf = (t) => allArticles.filter((a) => a.type === t).length;
+  const parents = Object.keys(TYPES).filter((t) => !TYPES[t].parent && familyOf(t).some(countOf));
+  const edgeCount = (g) => relEdges.filter((e) => e.group === g).length;
+  const row = (attr, label, count, extra = '', cls = '') => `<label class="check layer-row ${cls}"><input type="checkbox" ${attr}>${extra}<span>${label}</span><span class="count">${count}</span></label>`;
   view.innerHTML = `<section class="page viz-page graph-page">${head}
     ${focusId ? `<div class="graph-focus">${icon('funnel')}<span>Showing connections within two steps of <a href="#/w/${wid}/a/${focusId}">${esc(store.article(focusId).title)}</a></span>
       <a class="btn small quiet" href="#/w/${wid}/graph">${icon('x')} Show everything</a></div>` : ''}
     <div class="graph-tools">
       <div class="graph-search"><input type="search" id="gSearch" placeholder="Find a person, place, faction…" list="gTitles" aria-label="Find in graph">
         <datalist id="gTitles">${allArticles.map((a) => `<option value="${esc(a.title)}">`).join('')}</datalist></div>
-      <div class="seg" role="group" aria-label="Display options">
-        <button type="button" data-opt="links" title="Also draw [[wiki links]] between articles">${icon('link-simple')} Wiki links</button>
-        <button type="button" data-opt="loose" title="Show articles without any connection">${icon('circle')} Unconnected</button>
-      </div>
-      <button type="button" class="btn small quiet" id="gFilterToggle">${icon('funnel')} Filters</button>
-    </div>
-    <div class="graph-filters" id="gFilters">
-      <div class="gf-row"><span class="field-label">Bonds</span><div class="chips">
-        ${Object.entries(REL_GROUPS).map(([g, label]) => `<button type="button" class="chip" data-group="${g}"><span class="swatch" style="background:var(--edge-${g})"></span>${label}</button>`).join('')}
-        <span class="chip legend-link" title="Dashed lines are [[wiki links]]"><span class="swatch dash"></span>Wiki link</span>
-      </div></div>
-      <div class="gf-row"><span class="field-label">Kinds</span><div class="chips">
-        ${typesPresent.map((t) => `<button type="button" class="chip" data-type="${t}">${typeIcon(t)}${TYPES[t].plural}</button>`).join('')}
-      </div></div>
+      <button type="button" class="btn small" id="gFilterToggle" aria-controls="gLayers">${icon('funnel')} Filters<span class="gl-off" id="gOff"></span></button>
     </div>
     <div class="viz-wrap graph-wrap">
       <div class="viz-box" id="gBox"><svg id="gSvg" class="graph-svg"><g id="gView"><g id="gEdges"></g><g id="gLabels"></g><g id="gNodes"></g></g></svg></div>
@@ -67,6 +60,16 @@ export function viewGraph(wid, q) {
         <button class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button>
       </div>
       <div class="graph-empty" id="gEmpty" hidden>Nothing matches these filters.</div>
+      <aside class="map-panel graph-layers" id="gLayers" hidden>
+        <div class="map-panel-head"><span class="field-label">Filters</span><button type="button" class="icon-btn sm" data-close aria-label="Close">${icon('x')}</button></div>
+        <div class="gl-sec"><span class="field-label">Bonds</span><span class="gl-all"><button type="button" data-all="groups">All</button><button type="button" data-none="groups">None</button></span></div>
+        ${Object.entries(REL_GROUPS).map(([g, label]) => row(`data-group="${g}"`, label, edgeCount(g), `<span class="gl-dot" style="background:var(--edge-${g})"></span>`)).join('')}
+        ${row('data-opt="links"', 'Wiki links', linkEdges.length, '<span class="gl-dot dash"></span>')}
+        <div class="gl-sec"><span class="field-label">Kinds</span><span class="gl-all"><button type="button" data-all="types">All</button><button type="button" data-none="types">None</button></span></div>
+        ${parents.map((p) => row(`data-type="${p}"`, TYPES[p].plural, familyOf(p).reduce((n, t) => n + countOf(t), 0), typeIcon(p))
+          + (familyOf(p).length > 1 ? familyOf(p).slice(1).filter(countOf).map((t) => row(`data-type="${t}"`, TYPES[t].plural, countOf(t), typeIcon(t), 'sub')).join('') : '')).join('')}
+        ${row('data-opt="loose"', 'Unconnected articles', '', icon('circle'), 'gl-loose')}
+      </aside>
       <aside class="graph-info" id="gInfo" hidden></aside>
     </div>
   </section>`;
@@ -83,9 +86,20 @@ export function viewGraph(wid, q) {
   let alpha = 0, raf = 0, interacted = false;
 
   const syncControls = () => {
-    $$('[data-opt]').forEach((b) => b.classList.toggle('on', !!opt[b.dataset.opt]));
-    $$('[data-group]').forEach((b) => b.classList.toggle('on', opt.groups.has(b.dataset.group)));
-    $$('[data-type]').forEach((b) => b.classList.toggle('on', opt.types.has(b.dataset.type)));
+    $$('[data-opt]').forEach((c) => { c.checked = !!opt[c.dataset.opt]; });
+    $$('[data-group]').forEach((c) => { c.checked = opt.groups.has(c.dataset.group); });
+    $$('[data-type]').forEach((c) => {
+      const fam = TYPES[c.dataset.type].parent ? [c.dataset.type] : familyOf(c.dataset.type);
+      const on = fam.filter((t) => opt.types.has(t)).length;
+      c.checked = on === fam.length;
+      c.indeterminate = on > 0 && on < fam.length;
+    });
+    $('#gLayers').hidden = !opt.panel;
+    $('#gFilterToggle').classList.toggle('on', opt.panel);
+    // How many filters are switched off, shown on the Filters button.
+    const off = Object.keys(REL_GROUPS).filter((g) => !opt.groups.has(g)).length
+      + parents.flatMap(familyOf).filter((t) => countOf(t) && !opt.types.has(t)).length;
+    $('#gOff').textContent = off ? ` · ${off} off` : '';
   };
 
   function build() {
@@ -246,9 +260,11 @@ export function viewGraph(wid, q) {
     const xs = nodes.map((n) => n.p.x), ys = nodes.map((n) => n.p.y);
     const minX = Math.min(...xs) - 70, maxX = Math.max(...xs) + 70, minY = Math.min(...ys) - 50, maxY = Math.max(...ys) + 60;
     // leave room for the side panel when it is open on wide screens
-    const avail = !info.hidden && r.width >= 700 ? r.width - info.offsetWidth - 20 : r.width;
+    const wide = r.width >= 700;
+    const left = wide && opt.panel ? $('#gLayers').offsetWidth + 20 : 0; // the filter panel, on the left
+    const avail = (!info.hidden && wide ? r.width - info.offsetWidth - 20 : r.width) - left;
     tf.s = Math.max(0.2, Math.min(1.4, Math.min(avail / (maxX - minX), r.height / (maxY - minY))));
-    tf.x = avail / 2 - ((minX + maxX) / 2) * tf.s;
+    tf.x = left + avail / 2 - ((minX + maxX) / 2) * tf.s;
     tf.y = r.height / 2 - ((minY + maxY) / 2) * tf.s;
     applyTf();
   }
@@ -406,13 +422,23 @@ export function viewGraph(wid, q) {
   }
 
   // ---- controls
-  $$('[data-opt]').forEach((b) => b.onclick = () => { opt[b.dataset.opt] = !opt[b.dataset.opt]; savePrefs(opt); syncControls(); build(); });
-  $$('[data-group]').forEach((b) => b.onclick = () => { toggle(opt.groups, b.dataset.group); savePrefs(opt); syncControls(); build(); });
-  $$('[data-type]').forEach((b) => b.onclick = () => { toggle(opt.types, b.dataset.type); savePrefs(opt); syncControls(); build(); });
-  $('#gFilterToggle').onclick = (e) => {
-    const open = $('#gFilters').classList.toggle('open');
-    e.currentTarget.classList.toggle('on', open);
-  };
+  const changed = () => { savePrefs(opt); syncControls(); build(); };
+  $$('[data-opt]').forEach((c) => c.onchange = () => { opt[c.dataset.opt] = c.checked; changed(); });
+  $$('[data-group]').forEach((c) => c.onchange = () => { if (c.checked) opt.groups.add(c.dataset.group); else opt.groups.delete(c.dataset.group); changed(); });
+  // A parent kind switches its sub-kinds with it.
+  $$('[data-type]').forEach((c) => c.onchange = () => {
+    const fam = TYPES[c.dataset.type].parent ? [c.dataset.type] : familyOf(c.dataset.type);
+    fam.forEach((t) => (c.checked ? opt.types.add(t) : opt.types.delete(t)));
+    changed();
+  });
+  $$('[data-all], [data-none]').forEach((b) => b.onclick = () => {
+    const key = b.dataset.all || b.dataset.none;
+    opt[key] = new Set(b.dataset.all ? (key === 'groups' ? Object.keys(REL_GROUPS) : Object.keys(TYPES)) : []);
+    changed();
+  });
+  const setPanel = (open) => { opt.panel = open; savePrefs(opt); syncControls(); if (!interacted) fit(); };
+  $('#gFilterToggle').onclick = () => setPanel(!opt.panel);
+  $('#gLayers [data-close]').onclick = () => setPanel(false);
   const search = $('#gSearch');
   const find = () => {
     const t = search.value.trim().toLowerCase();
@@ -458,13 +484,12 @@ function wikiEdges(wid, relEdges) {
 }
 
 const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
-function toggle(set, v) { if (set.has(v)) set.delete(v); else set.add(v); }
 
 function loadPrefs() {
   try { return JSON.parse(localStorage.getItem('wa.graph') || '{}'); } catch { return {}; }
 }
 function savePrefs(opt) {
   try {
-    localStorage.setItem('wa.graph', JSON.stringify({ links: opt.links, loose: opt.loose, groups: [...opt.groups], types: [...opt.types] }));
+    localStorage.setItem('wa.graph', JSON.stringify({ links: opt.links, loose: opt.loose, groups: [...opt.groups], types: [...opt.types], panel: opt.panel }));
   } catch { /* ignore */ }
 }

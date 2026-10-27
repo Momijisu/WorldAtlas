@@ -99,22 +99,22 @@
 .graph-tools { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .6rem; }
 .graph-search { flex: 1; min-width: 200px; }
 .graph-search input { min-height: 36px; }
-.graph-filters { display: none; gap: .2rem 1.4rem; margin-bottom: .6rem; flex-wrap: wrap; }
-.graph-filters.open { display: flex; }
-@media (min-width: 1000px) {
-  .graph-filters { display: flex; }
-  #gFilterToggle { display: none; }
-}
-.gf-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-.gf-row .field-label { margin: 0; }
-.gf-row .chips { margin: 0; }
-.graph-filters .chip { padding: .22rem .6rem; font-size: .8rem; }
-.graph-filters .chip .i { width: 1em; height: 1em; }
-.chip:not(.on) .swatch { opacity: .35; }
 .chip:not(.on) { color: var(--muted); }
-.chip.legend-link { cursor: default; border-style: dashed; }
-.chip.legend-link:hover { border-color: var(--rule-strong); }
-.swatch.dash { width: 16px; height: 0; border-radius: 0; border-top: 2px dashed var(--edge-link); }
+#gFilterToggle.on { border-color: var(--brass); color: var(--brass); }
+.gl-off { color: var(--muted); font-weight: 400; }
+/* Filter panel (uses the map panel styles): bonds and kinds as checkbox rows. */
+.graph-layers { width: 250px; }
+.graph-layers .layer-row { display: flex; align-items: center; gap: .5rem; padding: .38rem 0; }
+.graph-layers .layer-row .i { width: 1.05em; height: 1.05em; color: var(--brass); flex-shrink: 0; }
+.graph-layers .layer-row.sub { padding-left: 1.4rem; font-size: .9rem; border-top-style: dashed; }
+.graph-layers .layer-row:has(input:not(:checked):not(:indeterminate)) { color: var(--muted); }
+.gl-sec { display: flex; align-items: baseline; justify-content: space-between; margin: .8rem 0 .2rem; }
+.gl-sec .field-label { margin: 0; }
+.gl-all button { border: 0; background: none; padding: 0 0 0 .6rem; font: 500 .78rem var(--sans); color: var(--link); cursor: pointer; }
+.gl-all button:hover { text-decoration: underline; }
+.gl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.gl-dot.dash { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed var(--edge-link); }
+.gl-loose { margin-top: .5rem; }
 
 .graph-svg { width: 100%; height: 100%; display: block; }
 .g-edge { fill: none; stroke-width: 1.6; stroke-linecap: round; opacity: .85; transition: opacity .15s; }
@@ -171,3 +171,4 @@
   .viz-page > .page-head h1 { font-size: 1.9rem; }
   .viz-legend { right: .6rem; }
 }
+@media (max-width: 700px) { .graph-layers { width: auto; } }
