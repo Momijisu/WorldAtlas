@@ -71,7 +71,7 @@ const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.65
 // name → { label, make() or src (a PNG made by tools/paper.py), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
-  parchment: { label: 'Parchment', src: 'assets/backgrounds/parchment.png', size: '512px', strength: 0.3 },
+  parchment: { label: 'Parchment', src: 'assets/backgrounds/parchment.png', size: '512px', strength: 0.2 },
   stars: { label: 'Starfield', make: stars, size: '300px', strength: 0.5 },
   celestial: { label: 'Star chart', make: celestial, size: '600px', strength: 0.17 },
   topo: { label: 'Contours', make: topo, size: '480px', strength: 0.12 },
@@ -85,7 +85,9 @@ export const PATTERNS = {
 
 const cache = {};
 const tiled = (name) => !!(PATTERNS[name]?.make || PATTERNS[name]?.src);
-const maskOf = (name) => PATTERNS[name].src || (cache[name] ??= PATTERNS[name].make());
+// Image tiles get an absolute URL: a url() inside a custom property resolves
+// against the stylesheet that uses it (css/), not the page.
+const maskOf = (name) => (cache[name] ??= PATTERNS[name].src ? new URL(PATTERNS[name].src, document.baseURI).href : PATTERNS[name].make());
 
 // CSS custom properties for a pattern (used for the page and for swatches).
 export const SCALE_MIN = 5, SCALE_MAX = 200;

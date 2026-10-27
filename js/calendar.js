@@ -49,15 +49,6 @@ export function dayNumber(cal, { y, m, d }) {
   return y * yearLength(cal) + monthOffset(cal, m ?? 0) + ((d ?? 1) - 1);
 }
 
-export function fromDayNumber(cal, n) {
-  const len = yearLength(cal);
-  const y = Math.floor(n / len);
-  let rest = n - y * len;
-  let m = 0;
-  while (m < cal.months.length - 1 && rest >= cal.months[m].days) { rest -= cal.months[m].days; m++; }
-  return { y, m, d: rest + 1 };
-}
-
 const mod = (a, n) => ((a % n) + n) % n;
 export const weekdayOf = (cal, n) => mod(n + cal.epochWeekday, cal.weekdays.length);
 

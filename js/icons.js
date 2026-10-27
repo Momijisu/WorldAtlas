@@ -4,4 +4,3 @@ const P = {"list":"<path d=\"M222,128a6,6,0,0,1-6,6H40a6,6,0,0,1,0-12H216A6,6,0,
 export const icon = (name, cls = '') =>
   `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${P[name] || P.circle}</svg>`;
 
-export const ICON_NAMES = Object.keys(P);
