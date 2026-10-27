@@ -85,6 +85,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             ${dropzoneEmpty('a portrait')}
             <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="imgFile"></label>
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
+            <button type="button" class="btn small quiet" id="portraitFromBanner" hidden>${icon('image')} Use header image</button>
             <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag the picture to choose what shows in thumbnails. The infobox shows it whole.</p>
           </div>
         </div>
@@ -95,6 +96,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             ${dropzoneEmpty('a header image')}
             <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="bannerFile"></label>
             <button type="button" class="btn small quiet" id="bannerRm" ${a.banner ? '' : 'hidden'}>Remove</button>
+            <button type="button" class="btn small quiet" id="bannerFromPortrait" hidden>${icon('image')} Use portrait</button>
             <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
           </div>
         </div>
@@ -267,24 +269,36 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const bThumb = $('.banner-thumb', f);
   $$('.image-field', f).forEach((z) => wireDropzone(z));
   const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: 2.4 });
-  $('#bannerFile').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    a.banner = await store.addImage(await prepareImage(file, 2400));
-    a.bannerPos = null;
-    bThumb.src = await store.imageURL(a.banner); bThumb.hidden = false; $('#bannerHint').hidden = false; $('#bannerRm').hidden = false; dirty = true;
-    bFocus.refresh();
+  // Portrait and header image. Either can reuse the other's picture (the same
+  // stored image, so nothing is imported twice).
+  const pics = {
+    image: { thumb, hint: '#imgHint', rm: '#imgRm', focus: iFocus, max: undefined },
+    banner: { thumb: bThumb, hint: '#bannerHint', rm: '#bannerRm', focus: bFocus, max: 2400 },
   };
-  $('#bannerRm').onclick = () => { a.banner = null; a.bannerPos = null; bThumb.hidden = true; $('#bannerHint').hidden = true; $('#bannerRm').hidden = true; dirty = true; };
-  $('#imgFile').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    a.image = await store.addImage(await prepareImage(file));
-    a.imagePos = null;
-    thumb.src = await store.imageURL(a.image); thumb.hidden = false; $('#imgHint').hidden = false; $('#imgRm').hidden = false; dirty = true;
-    iFocus.refresh();
+  const syncShare = () => {
+    $('#bannerFromPortrait').hidden = !a.image || a.banner === a.image;
+    $('#portraitFromBanner').hidden = !a.banner || a.image === a.banner;
   };
-  $('#imgRm').onclick = () => { a.image = null; a.imagePos = null; thumb.hidden = true; $('#imgHint').hidden = true; $('#imgRm').hidden = true; dirty = true; };
+  const setPic = async (key, id) => {
+    const p = pics[key];
+    a[key] = id;
+    a[key + 'Pos'] = null;
+    if (id) p.thumb.src = await store.imageURL(id);
+    p.thumb.hidden = $(p.hint).hidden = $(p.rm).hidden = !id;
+    p.focus.refresh();
+    syncShare();
+    dirty = true;
+  };
+  for (const [key, input] of [['image', '#imgFile'], ['banner', '#bannerFile']]) {
+    $(input).onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) await setPic(key, await store.addImage(await prepareImage(file, pics[key].max)));
+    };
+    $(pics[key].rm).onclick = () => setPic(key, null);
+  }
+  $('#bannerFromPortrait').onclick = () => setPic('banner', a.image);
+  $('#portraitFromBanner').onclick = () => setPic('image', a.banner);
+  syncShare();
 
   // Markdown helpers
   const body = f.body;
