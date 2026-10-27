@@ -57,8 +57,10 @@ export const worldCrumb = (wid) => `<a href="#/w/${wid}">${esc(store.world(wid)?
 export const sep = '<span class="sep">/</span>';
 
 // Searchable list of articles for <select> elements.
-export function articleOptions(wid, selected, { exclude = new Set(), none = 'None' } = {}) {
-  const list = store.articlesOf(wid).filter((a) => !exclude.has(a.id)).sort((x, y) => x.title.localeCompare(y.title));
+// only: a list of templates to offer (the selected article is always kept).
+export function articleOptions(wid, selected, { exclude = new Set(), none = 'None', only = null } = {}) {
+  const list = store.articlesOf(wid).filter((a) => !exclude.has(a.id) && (!only || only.includes(a.type) || a.id === selected))
+    .sort((x, y) => x.title.localeCompare(y.title));
   return (none != null ? `<option value="">${esc(none)}</option>` : '') +
     list.map((a) => `<option value="${a.id}" ${a.id === selected ? 'selected' : ''}>${esc(a.title)} · ${typeLabel(a.type)}</option>`).join('');
 }

@@ -4,6 +4,8 @@ import * as store from '../store.js';
 import { posCSS } from '../focus.js';
 import { mountMap } from '../mapview.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
+import { TYPES } from '../store.js';
+import { familyOf } from '../templates.js';
 import { plain } from '../markdown.js';
 import { view, state, setTitle, pageHead, icon, hydrateImages, articleOptions, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
@@ -27,6 +29,26 @@ function mapTrail(wid, mid) {
 }
 
 const itemTitle = (it) => it.label || store.article(it.articleId)?.title || store.map(it.mapId)?.name || '';
+
+// A layer is a template key (pins for Settlements, Characters…), a name the
+// user made up, or '' for General.
+const isTemplateLayer = (l) => !!l && Object.hasOwn(TYPES, l);
+const layerName = (l) => (isTemplateLayer(l) ? TYPES[l].plural : l || 'General');
+
+// Layers typed by hand before layers were templates ("Settlements",
+// "character") become the matching template layer. Returns null if none change.
+function templateLayers(m) {
+  const byName = new Map(Object.entries(TYPES).flatMap(([k, t]) => [[k, k], [t.label.toLowerCase(), k], [t.plural.toLowerCase(), k]]));
+  let changed = false;
+  const fix = (it) => {
+    const k = it.layer && !isTemplateLayer(it.layer) && byName.get(it.layer.trim().toLowerCase());
+    if (!k) return it;
+    changed = true;
+    return { ...it, layer: k };
+  };
+  const next = { ...m, pins: (m.pins || []).map(fix), regions: (m.regions || []).map(fix) };
+  return changed ? next : null;
+}
 
 function layersOf(m) {
   const names = new Set();
@@ -118,7 +140,9 @@ function mapDialog(wid, m) {
 // ---------------------------------------------------------------- map page
 
 export async function viewMap(wid, mid, q) {
-  const m = store.map(mid);
+  const migrated = templateLayers(store.map(mid));
+  if (migrated) store.save('maps', migrated);
+  const m = migrated || store.map(mid);
   setTitle(m.name);
   const trail = mapTrail(wid, mid);
   let editing = false;
@@ -182,7 +206,7 @@ export async function viewMap(wid, mid, q) {
     info.innerHTML = `<button class="icon-btn sm close" aria-label="Close">${icon('x')}</button>
       ${a?.image ? `<img data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : ''}
       <div class="info-body">
-        <div class="eyebrow">${a ? `${typeIcon(a.type)} ${typeLabel(a.type)}` : kind === 'region' ? `${icon('polygon')} Region` : `${icon(it.icon || 'map-pin')} Place`}${it.layer ? ` <span class="sep">/</span> ${esc(it.layer)}` : ''}</div>
+        <div class="eyebrow">${a ? `${typeIcon(a.type)} ${typeLabel(a.type)}` : kind === 'region' ? `${icon('polygon')} Region` : `${icon(it.icon || 'map-pin')} Place`}${it.layer ? ` <span class="sep">/</span> ${esc(layerName(it.layer))}` : ''}</div>
         <div class="info-title">${esc(itemTitle(it))}</div>
         ${a?.summary ? `<p>${esc(plain(a.summary, 200))}</p>` : ''}
         <div class="info-actions">
@@ -225,7 +249,7 @@ export async function viewMap(wid, mid, q) {
         ctl.setDraft(draft);
         renderEditBar();
       } else {
-        pinDialog({ id: uid(), ...pt, articleId: '', mapId: '', label: '', color: SWATCHES[0], icon: 'map-pin', layer: '' }, true);
+        pinDialog({ id: uid(), ...pt, articleId: '', mapId: '', label: '', color: SWATCHES[0], icon: 'map-pin', layer: lastLayer }, true);
       }
     },
   });
@@ -266,7 +290,7 @@ export async function viewMap(wid, mid, q) {
       if (act === 'finish') {
         const points = draft;
         draft = [];
-        regionDialog({ id: uid(), points, color: SWATCHES[1], label: '', articleId: '', mapId: '', layer: '' }, true);
+        regionDialog({ id: uid(), points, color: SWATCHES[1], label: '', articleId: '', mapId: '', layer: lastLayer }, true);
       }
       ctl.setDraft(draft);
       renderEditBar();
@@ -295,7 +319,7 @@ export async function viewMap(wid, mid, q) {
     panel.innerHTML = `<div class="map-panel-head"><span class="field-label">Layers</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
       ${layers.length ? layers.map((l) => `<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
-          <span>${l ? esc(l) : 'General'}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
+          <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
         </label>`).join('') : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
     $$('[data-layer]', panel).forEach((cb) => cb.onchange = () => {
       if (cb.checked) hidden.delete(cb.dataset.layer); else hidden.add(cb.dataset.layer);
@@ -313,11 +337,11 @@ export async function viewMap(wid, mid, q) {
       ...(cur().pins || []).map((p) => ({ it: p, kind: 'pin' })),
       ...(cur().regions || []).map((r) => ({ it: r, kind: 'region' })),
     ].map((x) => ({ ...x, title: itemTitle(x.it) || 'Untitled' }))
-      .filter((x) => !q || x.title.toLowerCase().includes(q) || (x.it.layer || '').toLowerCase().includes(q))
+      .filter((x) => !q || x.title.toLowerCase().includes(q) || (x.it.layer ? layerName(x.it.layer) : '').toLowerCase().includes(q))
       .sort((a, b) => a.title.localeCompare(b.title));
     $('#placesList').innerHTML = items.length ? items.map((x, i) => `<li><button data-i="${i}">
         ${x.kind === 'region' ? icon('polygon') : icon(x.it.icon || 'map-pin')}
-        <span>${esc(x.title)}</span>${x.it.layer ? `<small>${esc(x.it.layer)}</small>` : ''}</button></li>`).join('')
+        <span>${esc(x.title)}</span>${x.it.layer ? `<small>${esc(layerName(x.it.layer))}</small>` : ''}</button></li>`).join('')
       : `<li class="muted small pad">${q ? 'No matches.' : 'No places on this map yet.'}</li>`;
     $$('#placesList [data-i]').forEach((b) => b.onclick = () => {
       const x = items[+b.dataset.i];
@@ -346,7 +370,40 @@ export async function viewMap(wid, mid, q) {
   // ---- dialogs
   const mapOptions = (selected) => `<option value="">None</option>` + store.mapsOf(wid).filter((x) => x.id !== mid)
     .map((x) => `<option value="${x.id}" ${x.id === selected ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
-  const layerList = () => `<datalist id="layerNames">${layersOf(cur()).filter(Boolean).map((l) => `<option value="${esc(l)}">`).join('')}</datalist>`;
+  // Layer picker: General, a template, or one of this map's own layers. Choosing
+  // a template narrows the linked-article list to it.
+  const layerField = (value) => {
+    const own = layersOf(cur()).filter((l) => l && !isTemplateLayer(l));
+    if (value && !isTemplateLayer(value) && !own.includes(value)) own.push(value);
+    return `<label>Layer <small>also narrows the article list</small><select name="layer">
+        <option value="" ${value ? '' : 'selected'}>General</option>
+        <optgroup label="Templates">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${value === k ? 'selected' : ''}>${esc(t.plural)}</option>`).join('')}</optgroup>
+        ${own.length ? `<optgroup label="This map’s layers">${own.map((l) => `<option value="${esc(l)}" ${value === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>` : ''}
+        <option value="__new">New layer…</option>
+      </select></label>
+      <label class="new-layer" hidden>Layer name<input name="layerNew" placeholder="e.g. Trade routes"></label>`;
+  };
+  const articleField = (layer, selected) => `<select name="articleId">${articleOptions(wid, selected, { only: isTemplateLayer(layer) ? familyOf(layer) : null })}</select>`;
+  const wireLayer = (el, f) => {
+    const refill = () => {
+      const keep = f.articleId.value;
+      f.articleId.outerHTML = articleField(f.layer.value, keep);
+      f.articleId.onchange = follow;
+    };
+    // An article picked while the layer is General puts the place on that template's layer.
+    const follow = () => {
+      const a = store.article(f.articleId.value);
+      if (a && !f.layer.value) { f.layer.value = a.type; refill(); }
+    };
+    f.layer.onchange = () => {
+      $('.new-layer', el).hidden = f.layer.value !== '__new';
+      if (f.layer.value === '__new') f.layerNew.focus();
+      refill();
+    };
+    f.articleId.onchange = follow;
+  };
+  let lastLayer = ''; // new places start on the layer last used
+  const readLayer = (f) => (lastLayer = f.layer.value === '__new' ? f.layerNew.value.trim() : f.layer.value);
   const colourField = (value) => `<div class="field-label">Colour</div>
     <div class="swatches">${SWATCHES.map((c) => `<button type="button" class="swatch ${c === value ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="${c}"></button>`).join('')}
       <input type="color" name="color" value="${esc(value || SWATCHES[0])}" title="Custom colour"></div>`;
@@ -361,12 +418,10 @@ export async function viewMap(wid, mid, q) {
   function pinDialog(pin, isNew = false) {
     modal(isNew ? 'Add a place' : 'Edit place', `
       <form class="form" id="pf">
-        <label>Linked article<select name="articleId">${articleOptions(wid, pin.articleId)}</select></label>
+        ${layerField(pin.layer || '')}
+        <label>Linked article${articleField(pin.layer, pin.articleId)}</label>
         <label>Opens map <small>e.g. a city map from a pin on the continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
-        <div class="row">
-          <label>Label <small>defaults to the article</small><input name="label" value="${esc(pin.label || '')}"></label>
-          <label>Layer<input name="layer" list="layerNames" value="${esc(pin.layer || '')}" placeholder="General">${layerList()}</label>
-        </div>
+        <label>Label <small>defaults to the article</small><input name="label" value="${esc(pin.label || '')}"></label>
         <div class="field-label">Marker</div>
         <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
         ${colourField(pin.color)}
@@ -377,6 +432,7 @@ export async function viewMap(wid, mid, q) {
       </form>`, {
       onMount: (el, close) => {
         const f = $('#pf', el);
+        wireLayer(el, f);
         let chosen = pin.icon || 'map-pin';
         $$('[data-icon]', el).forEach((b) => b.onclick = () => {
           chosen = b.dataset.icon;
@@ -391,7 +447,7 @@ export async function viewMap(wid, mid, q) {
           e.preventDefault();
           if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Add a label or link an article or map');
           const next = { ...pin, articleId: f.articleId.value, mapId: f.mapId.value, label: f.label.value.trim(),
-            layer: f.layer.value.trim(), icon: chosen, color: f.color.value };
+            layer: readLayer(f), icon: chosen, color: f.color.value };
           const pins = cur().pins || [];
           await persist({ pins: isNew ? [...pins, next] : pins.map((p) => (p.id === pin.id ? next : p)) });
           close();
@@ -404,9 +460,9 @@ export async function viewMap(wid, mid, q) {
     modal(isNew ? 'New region' : 'Edit region', `
       <form class="form" id="rf">
         <label>Label<input name="label" value="${esc(reg.label || '')}" placeholder="e.g. The Ashen Wastes"></label>
-        <label>Linked article<select name="articleId">${articleOptions(wid, reg.articleId)}</select></label>
+        ${layerField(reg.layer || '')}
+        <label>Linked article${articleField(reg.layer, reg.articleId)}</label>
         <label>Opens map<select name="mapId">${mapOptions(reg.mapId)}</select></label>
-        <label>Layer<input name="layer" list="layerNames" value="${esc(reg.layer || '')}" placeholder="General">${layerList()}</label>
         ${colourField(reg.color || SWATCHES[1])}
         <div class="actions">
           ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete</button><span class="spacer"></span>`}
@@ -416,13 +472,14 @@ export async function viewMap(wid, mid, q) {
       onMount: (el, close) => {
         const f = $('#rf', el);
         wireColour(el, f);
+        wireLayer(el, f);
         $('[data-del]', el)?.addEventListener('click', async () => {
           await persist({ regions: (cur().regions || []).filter((r) => r.id !== reg.id) }); close();
         });
         f.onsubmit = async (e) => {
           e.preventDefault();
           const next = { ...reg, label: f.label.value.trim(), articleId: f.articleId.value, mapId: f.mapId.value,
-            layer: f.layer.value.trim(), color: f.color.value };
+            layer: readLayer(f), color: f.color.value };
           const regions = cur().regions || [];
           await persist({ regions: isNew ? [...regions, next] : regions.map((r) => (r.id === reg.id ? next : r)) });
           close();

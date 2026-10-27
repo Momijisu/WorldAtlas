@@ -238,14 +238,14 @@ export async function exampleWorld(store, { demo = false } = {}) {
     await store.save('maps', {
       id: uid(), worldId: wid, name: 'The Kingdom of Vael', image: mapImage,
       pins: [
-        P(varenhold, 745, 505, 'castle-turret', 'Settlements'),
-        P(ostmouth, 560, 735, 'anchor', 'Settlements'),
-        P(marrowgate, 470, 455, 'house', 'Settlements'),
-        P(highcairn, 1390, 255, 'church', 'Settlements'),
+        P(varenhold, 745, 505, 'castle-turret', 'settlement'),
+        P(ostmouth, 560, 735, 'anchor', 'settlement'),
+        P(marrowgate, 470, 455, 'house', 'settlement'),
+        P(highcairn, 1390, 255, 'church', 'settlement'),
       ],
       regions: [
-        { id: uid(), points: ring(1070, 660, 130, 105), color: '#4a5233', label: '', articleId: gloamwood.id, layer: 'Wilds' },
-        { id: uid(), points: ring(850, 290, 250, 70), color: '#5b4630', label: '', articleId: spine.id, layer: 'Wilds' },
+        { id: uid(), points: ring(1070, 660, 130, 105), color: '#4a5233', label: '', articleId: gloamwood.id, layer: 'location' },
+        { id: uid(), points: ring(850, 290, 250, 70), color: '#5b4630', label: '', articleId: spine.id, layer: 'location' },
       ],
     });
   }
