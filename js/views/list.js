@@ -44,16 +44,32 @@ export function viewList(wid, { type, tag }) {
     updated: (a, b) => b.updatedAt - a.updatedAt,
     created: (a, b) => b.createdAt - a.createdAt,
   };
+  // Typing a title that doesn't exist offers to create it: in this list's
+  // template, or (on mixed lists) via the template picker. An article with that
+  // title elsewhere is linked instead.
+  const createRow = (title) => {
+    const existing = store.byTitle(wid, title);
+    if (existing) {
+      return list.includes(existing) ? '' : `<div class="create-row">${icon('arrow-right')} <a href="#/w/${wid}/a/${existing.id}">“${esc(existing.title)}”</a> already exists as a ${esc(TYPES[existing.type].label.toLowerCase())}.</div>`;
+    }
+    const t = family.length ? (kind === 'all' ? family[0] : kind) : null;
+    return `<div class="create-row"><a class="btn small" id="createFromFilter" href="#/w/${wid}/new/${t || 'article'}?title=${encodeURIComponent(title)}"${t ? '' : ` data-create="${esc(title)}"`}>${icon('plus')} Create “${esc(title)}”${t ? ` as a ${esc(TYPES[t].label.toLowerCase())}` : ''}</a></div>`;
+  };
   const draw = () => {
-    const f = $('#filter').value.trim().toLowerCase();
+    const raw = $('#filter').value.trim().replace(/[[\]|]/g, '');
+    const f = raw.toLowerCase();
     for (const b of $('#sort').children) b.classList.toggle('on', b.dataset.s === sort);
     const shown = list.filter((a) => kind === 'all' || a.type === kind).filter((a) => !f || a.title.toLowerCase().includes(f) || (a.summary || '').toLowerCase().includes(f)).sort(sorters[sort]);
     $('#kinds')?.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.k === kind));
-    $('#listOut').innerHTML = shown.length ? articleRows(shown, wid, null, { listType: kind === 'all' ? family[0] || type : kind })
-      : `<div class="empty-state small"><p>${list.length ? 'No matches.' : 'Nothing written here yet.'}</p></div>`;
+    const exact = shown.some((a) => a.title.toLowerCase() === f);
+    $('#listOut').innerHTML = (shown.length ? articleRows(shown, wid, null, { listType: kind === 'all' ? family[0] || type : kind })
+      : `<div class="empty-state small"><p>${!list.length && !raw ? 'Nothing written here yet.' : 'No matches.'}</p></div>`)
+      + (raw && !exact && type !== 'conflicts' ? createRow(raw) : '');
     hydrateImages($('#listOut'));
   };
   $('#filter').oninput = draw;
+  // Enter creates the article when nothing matches.
+  $('#filter').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#listOut .row-link')) $('#createFromFilter')?.click(); });
   $('#kinds')?.addEventListener('click', (e) => {
     const c = e.target.closest('.chip');
     if (!c) return;

@@ -582,3 +582,5 @@ code.copy { user-select: all; word-break: break-all; }
 .status-error { color: var(--warn); }
 .rel-row .rel-from { font-size: .78rem; }
 option.opt-dim { color: var(--muted); }
+.create-row { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .8rem .4rem; color: var(--text-2); }
+.empty-state + .create-row { justify-content: center; }
