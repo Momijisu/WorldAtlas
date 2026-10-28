@@ -24,7 +24,23 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   let items = { pins: [], regions: [], hidden: new Set() };
   let draft = null;
 
+  // Keep the map in view: bigger than the frame, its edges can't come more
+  // than EDGE px inside; smaller, it stays wholly inside the frame.
+  const EDGE = 48;
+  const keepInView = () => {
+    const r = container.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const axis = (v, size, view) => (size <= view ? Math.min(Math.max(v, 0), view - size) : Math.min(Math.max(v, view - size - EDGE), EDGE));
+    x = axis(x, w * s, r.width);
+    y = axis(y, h * s, r.height);
+  };
+  // Zooming out stops a little below "fit the whole map".
+  const minScale = () => {
+    const r = container.getBoundingClientRect();
+    return r.width && r.height ? Math.min(r.width / w, r.height / h) * 0.8 : 0.03;
+  };
   const apply = () => {
+    keepInView();
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
     stage.style.setProperty('--inv', 1 / s);
   };
@@ -37,7 +53,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     apply();
   };
   const zoomAt = (cx, cy, factor) => {
-    const ns = Math.max(0.03, Math.min(s * factor, 16));
+    const ns = Math.max(minScale(), Math.min(s * factor, 16));
     x = cx - (cx - x) * (ns / s);
     y = cy - (cy - y) * (ns / s);
     s = ns;
