@@ -9,6 +9,7 @@ import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
 import { wireFocus } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
+import { scriptsFor } from '../scripts.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
@@ -69,6 +70,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <button type="button" data-md="quote" title="Quote">${icon('quotes')}</button>
           <button type="button" data-md="link" title="Link to article">${icon('link-simple')}</button>
           <button type="button" data-md="hr" title="Divider">${icon('minus')}</button>
+          <span class="md-script"><button type="button" id="scriptBtn" title="Handwriting or a world font" aria-haspopup="true">${icon('feather')}<span class="hide-sm">Script</span></button>
+            <span class="script-menu" id="scriptMenu" hidden></span></span>
           <span class="spacer"></span>
           <button type="button" id="previewBtn">${icon('eye')}&nbsp;Preview</button>
         </div>
@@ -303,6 +306,21 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // Markdown helpers
   const body = f.body;
   $$('[data-md]').forEach((b) => { b.onclick = () => mdCommand(body, b.dataset.md); });
+  // Script menu: handwriting and the world's fonts, each shown in itself.
+  const menu = $('#scriptMenu');
+  $('#scriptBtn').onclick = (e) => {
+    e.stopPropagation();
+    menu.innerHTML = scriptsFor(wid).map((sc) => `<button type="button" data-script="${esc(sc.name)}"><span style="font-family:${esc(sc.family)}">${esc(sc.label)}</span><small>${esc(sc.name)}</small></button>`).join('')
+      + '<p class="small muted">Add fonts for runes in World settings.</p>';
+    menu.hidden = !menu.hidden;
+  };
+  menu.onclick = (e) => {
+    const b = e.target.closest('[data-script]');
+    if (!b) return;
+    menu.hidden = true;
+    scriptCommand(body, b.dataset.script);
+  };
+  f.addEventListener('click', (e) => { if (!e.target.closest('.md-script')) menu.hidden = true; });
   $('#previewBtn').onclick = (e) => {
     const pv = $('.md-preview', f);
     const on = pv.hidden;
@@ -383,6 +401,27 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     toast('Saved');
     location.hash = `#/w/${wid}/a/${a.id}`;
   };
+}
+
+// Selected words on one line become {{Name|words}}; anything else becomes a
+// :::Name block on its own lines.
+function scriptCommand(ta, name) {
+  const { selectionStart: s, selectionEnd: e, value: v } = ta;
+  const sel = v.slice(s, e);
+  let insert, cs, ce;
+  if (sel && !sel.includes('\n')) {
+    insert = `{{${name}|${sel}}}`;
+    cs = s + name.length + 3; ce = cs + sel.length;
+  } else {
+    const before = s && v[s - 1] !== '\n' ? '\n\n' : (s && v[s - 2] !== '\n' ? '\n' : '');
+    const inner = sel || 'Written text';
+    insert = `${before}:::${name}\n${inner}\n:::\n`;
+    cs = s + before.length + name.length + 4; ce = cs + inner.length;
+  }
+  ta.value = v.slice(0, s) + insert + v.slice(e);
+  ta.focus();
+  ta.setSelectionRange(cs, ce);
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function mdCommand(ta, cmd) {

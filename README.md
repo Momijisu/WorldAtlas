@@ -15,6 +15,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - Revision history with line diffs, restore, and recovery of deleted articles
 - A writing guide for each template, and 353 writing prompts, some naming your own articles
 - GM notes that stay collapsed while reading
+- Handwritten passages (`:::cursive` blocks) and your own fonts per world for runes and invented alphabets
 - Merge resolver for articles edited on two devices before they synced
 - Import from a simple JSON format ([docs/IMPORT_FORMAT.md](docs/IMPORT_FORMAT.md)), e.g. one an AI assistant made from your notes
 - Full backup to a single file
@@ -87,11 +88,12 @@ js/importer.js        import/export format
 js/mapview.js         map pan/zoom, pins and regions
 js/markdown.js        Markdown and [[link]] rendering
 js/preview.js         hover previews for article links
+js/scripts.js         handwriting and world fonts (:::Name blocks, {{Name|text}})
 js/icons.js           Phosphor icons (MIT)
 js/config.js          Microsoft client ID
 js/version.js         app version
 sw.js                 service worker
-fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (OFL)
+fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (OFL); QE Cursive and QE Print (handwriting)
 vendor/               marked, DOMPurify
 ```
 

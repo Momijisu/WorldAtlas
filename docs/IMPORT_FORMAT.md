@@ -97,7 +97,7 @@ Only `title` is required.
 | `title` | Unique name. Other articles refer to it by this. |
 | `type` | One of `character`, `species`, `culture`, `profession`, `title`, `location`, `settlement`, `building`, `organization`, `religion`, `event`, `conflict`, `plot`, `myth`, `spell`, `law` (natural law / magic system), `condition`, `technology`, `item`, `vehicle`, `material`, `tradition`, `language`, `lore`, `article`. Synonyms such as NPC, city, castle, faction, war, quest, legend, disease, ship or festival also work. Anything else becomes `article`. |
 | `summary` | A line or two for lists and link previews. |
-| `body` | Markdown. Link with `[[Title]]` or `[[Title|shown text]]`. |
+| `body` | Markdown. Link with `[[Title]]` or `[[Title|shown text]]`. Handwritten passages (letters, notes) go in a `:::cursive` … `:::` block (or `:::print`). |
 | `secrets` | GM notes in Markdown, collapsed when reading. Alias: `gmNotes`. |
 | `parent` | Title of the article this belongs to, e.g. a district's city. |
 | `tags` | A list, or a comma-separated string. |

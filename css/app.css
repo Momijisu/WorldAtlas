@@ -14,6 +14,8 @@
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Alegreya Sans"; src: url(../fonts/alegreya-sans-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "QE Cursive"; src: url(../fonts/qe-cursive.woff2) format("woff2"); font-display: swap; }
+@font-face { font-family: "QE Print"; src: url(../fonts/qe-print.woff2) format("woff2"); font-display: swap; }
 /* Light text (Settings → Appearance → Text weight): the same families with
    each weight served by the next lighter cut. */
 @font-face { font-family: "Cormorant Light"; src: url(../fonts/cormorant-garamond-latin-400-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
@@ -490,6 +492,13 @@ details.secret-edit textarea { margin-top: .7rem; }
 .md-toolbar { display: flex; flex-wrap: wrap; gap: 1px; padding: 3px; background: var(--ink-2); border: 1px solid var(--rule-strong); border-bottom: 0; border-radius: var(--r) var(--r) 0 0; }
 .md-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; min-width: 34px; height: 32px; border: 0; border-radius: 2px; background: transparent; color: var(--text-2); font: 500 .88rem var(--sans); cursor: pointer; padding: 0 .5rem; }
 .md-toolbar button:hover, .md-toolbar button.on { background: var(--ink-4); color: var(--text); }
+.md-script { position: relative; }
+.script-menu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; min-width: 240px; padding: .3rem; display: grid; gap: 2px;
+  background: var(--ink-2); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--shadow); }
+.md-toolbar .script-menu button { justify-content: space-between; height: auto; padding: .4rem .6rem; text-align: left; }
+.script-menu button span { font-size: 1.35rem; color: var(--text); }
+.script-menu button small { color: var(--muted); font-size: .75rem; }
+.script-menu p { margin: .3rem .5rem .2rem; }
 textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif); min-height: 340px; padding: .9rem 1rem; }
 .md-preview { border: 1px solid var(--rule-strong); border-radius: 0 0 var(--r) var(--r); padding: 1rem 1.2rem; min-height: 340px; background: var(--ink-1); }
 .kv { display: grid; grid-template-columns: 2fr 3fr auto; gap: .35rem; margin-bottom: .35rem; }
@@ -582,5 +591,17 @@ code.copy { user-select: all; word-break: break-all; }
 .status-error { color: var(--warn); }
 .rel-row .rel-from { font-size: .78rem; }
 option.opt-dim { color: var(--muted); }
+/* Scripts (js/scripts.js): handwriting and a world's own fonts. */
+.script-block { margin: 1.2em 0; padding: .9em 1.2em; background: color-mix(in srgb, var(--ink-2) 70%, transparent); border: 1px solid var(--rule); border-radius: var(--r); font-size: 1.12em; line-height: 1.5; }
+.script-block.hand { font-size: 1.45em; line-height: 1.35; letter-spacing: .01em; }
+.script-block > :first-child { margin-top: 0; }
+.script-block > :last-child { margin-bottom: 0; }
+.script-inline { font-size: 1.1em; margin: 0 .12em; }
+.script-inline.hand { font-size: 1.35em; line-height: 1; }
+.font-list { display: grid; gap: .4rem; margin-bottom: .5rem; }
+.font-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+.font-row input { min-height: 34px; }
+.font-sample { font-size: 1.3rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.script.unknown { outline: 1px dashed var(--warn); outline-offset: 2px; }
 .create-row { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .8rem .4rem; color: var(--text-2); }
 .empty-state + .create-row { justify-content: center; }

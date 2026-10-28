@@ -12,6 +12,7 @@ import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
 import { posCSS, wireFocus } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
+import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
 export function viewWorlds() {
@@ -69,6 +70,10 @@ export async function worldDialog(w) {
       </div>
       <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
+      <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
+      <div class="font-list" id="fontList"></div>
+      <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
+      <p class="small muted">In articles, write <code>:::Name</code> … <code>:::</code> for a passage, or <code>{{Name|text}}</code> inside a sentence. Handwriting is built in as <code>${Object.keys(HANDS).join('</code> and <code>')}</code>.</p>
       ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><span class="spacer"></span>`}
@@ -81,6 +86,27 @@ export async function worldDialog(w) {
       const f = $('#wf', m);
       const thumb = $('.thumb', m);
       const hint = $('.focus-hint', m);
+      // The world's own fonts, edited here and saved with the world.
+      const fonts = structuredClone(w.fonts || []);
+      const drawFonts = () => {
+        $('#fontList', m).innerHTML = fonts.map((ft, i) => `<div class="font-row">
+            <input value="${esc(ft.name)}" data-i="${i}" aria-label="Font name">
+            <span class="font-sample" style="font-family:'${fontFamily(ft)}', serif">Aa Bb Cc 123</span>
+            <button type="button" class="icon-btn sm" data-rm-font="${i}" aria-label="Remove font">${icon('x')}</button></div>`).join('');
+        fonts.forEach(loadFont);
+      };
+      drawFonts();
+      $('#fontList', m).addEventListener('input', (e) => { if (e.target.dataset.i) fonts[+e.target.dataset.i].name = cleanFontName(e.target.value); });
+      $('#fontList', m).addEventListener('click', (e) => { const b = e.target.closest('[data-rm-font]'); if (b) { fonts.splice(+b.dataset.rmFont, 1); drawFonts(); } });
+      $('#fontFile', m).onchange = async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        const ft = { id: uid(), name: cleanFontName(file.name.replace(/\.[^.]+$/, '').replace(/^[0-9a-f]{6,}-/i, '')) || 'Font', file: await store.addImage(new Blob([file], { type: file.type || 'font/ttf' })) };
+        if (!(await loadFont(ft))) return toast('That file isn’t a font this browser can read');
+        fonts.push(ft);
+        drawFonts();
+      };
       wireDropzone($('.image-field', m));
       const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: 2 });
       $('[data-cancel]', m).onclick = () => close();
@@ -114,6 +140,8 @@ export async function worldDialog(w) {
         if (!name) return toast('Give the world a name');
         // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
         const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, background: w.background };
+        next.fonts = fonts.filter((ft) => ft.name);
+        if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
         if (!next.background) delete next.background;
         await store.save('worlds', next);

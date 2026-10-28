@@ -9,6 +9,7 @@ import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground } from './backgrounds.js';
 import { wirePreviews } from './preview.js';
+import { loadWorldFonts } from './scripts.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';
 import { viewEditor } from './views/editor.js';
@@ -238,6 +239,7 @@ function show(wid, fn, { keepScroll = false } = {}) {
   document.body.classList.toggle('in-world', !!wid);
   renderSidebar(wid);
   applyBackground(wid);
+  if (wid) loadWorldFonts(wid);
   window.scrollTo(0, 0);
   fn();
   if (keepScroll) requestAnimationFrame(() => window.scrollTo(0, y));

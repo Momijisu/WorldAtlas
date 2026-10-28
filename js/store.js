@@ -293,7 +293,11 @@ export const imageIds = () => db.getAllKeys('images');
 export function referencedImages({ demo = false } = {}) {
   const ids = new Set();
   const want = (o) => live(o) && syncable(o) !== demo;
-  for (const w of data.worlds.values()) if (want(w)) { if (w.image) ids.add(w.image); if (w.background?.image) ids.add(w.background.image); }
+  for (const w of data.worlds.values()) if (want(w)) {
+    if (w.image) ids.add(w.image);
+    if (w.background?.image) ids.add(w.background.image);
+    for (const f of w.fonts || []) if (f.file) ids.add(f.file); // the world's own fonts
+  }
   for (const a of data.articles.values()) if (want(a)) { if (a.image) ids.add(a.image); if (a.banner) ids.add(a.banner); }
   for (const m of data.maps.values()) if (want(m) && m.image) ids.add(m.image);
   return ids;
