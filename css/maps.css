@@ -19,6 +19,14 @@
   .map-page .map-head .actions { width: 100%; justify-content: flex-start; }
 }
 
+.article-map { height: clamp(260px, 55vh, 520px); flex: none; margin-bottom: .6rem; }
+/* Embedded: one finger scrolls the page, two pan and zoom the map. */
+.article-map .map-box { touch-action: pan-y; }
+.article-map .map-box::after {
+  content: attr(data-hint); position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: rgba(0, 0, 0, .45); color: #f4ecdc; font: 500 1rem var(--sans); opacity: 0; transition: opacity .2s;
+}
+.article-map .map-box.show-hint::after { opacity: 1; }
 .map-wrap {
   position: relative; flex: 1; min-height: 280px; overflow: hidden;
   border: 1px solid var(--rule-strong); border-radius: var(--r);

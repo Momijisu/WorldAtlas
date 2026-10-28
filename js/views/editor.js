@@ -108,6 +108,11 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
           </div>
         </div>
+        ${store.mapsOf(wid).length ? `<div class="panel">
+          <label class="field-label" for="mapPick">Map <small>shown on this article</small></label>
+          <select id="mapPick" name="mapId"><option value="">None</option>${store.mapsOf(wid).sort((x, y) => x.name.localeCompare(y.name))
+            .map((m) => `<option value="${m.id}" ${a.mapId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
+        </div>` : ''}
         <div class="panel">
           <div class="field-label">Date <small>for the timeline and calendar</small></div>
           <div class="muted small" style="margin-bottom:.3rem">Date / start</div>
@@ -419,6 +424,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       start: s?.y ?? null, startM: s?.m ?? null, startD: s?.d ?? null,
       end: en?.y ?? null, endM: en?.m ?? null, endD: en?.d ?? null,
       dateLabel: f.dateLabel.value.trim(),
+      mapId: f.mapId ? f.mapId.value || null : a.mapId || null,
     });
     // Changed on another device while this was open: keep both versions.
     const cur = !isNew && store.article(a.id);

@@ -9,6 +9,8 @@ import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flou
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS } from '../focus.js';
+import { mountMap } from '../mapview.js';
+import { itemTitle } from './maps.js';
 
 export function viewArticle(wid, id) {
   const w = store.world(wid);
@@ -25,6 +27,7 @@ export function viewArticle(wid, id) {
   const date = articleDateText(cal, a);
   const rels = relationsOf(a);
   const versions = store.historyOf(a.id).length;
+  const map = a.mapId && store.map(a.mapId)?.worldId === wid ? store.map(a.mapId) : null;
 
   const relGroups = {};
   for (const r of rels) (relGroups[REL_TYPES[r.type].group] ||= []).push(r);
@@ -57,6 +60,10 @@ export function viewArticle(wid, id) {
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
         ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}
         ${a.gmNotes ? `<details class="secret"><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary><div class="prose no-dropcap">${render(a.gmNotes, wid)}</div></details>` : ''}
+        ${map ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Map</h2>
+          <a class="btn small" href="#/w/${wid}/m/${map.id}">${icon('arrow-square-out')} Open ${esc(map.name)}</a></div>
+          <div class="map-wrap article-map"><div class="map-box" id="articleMap" data-hint="${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} + scroll to zoom"></div>
+            <div class="viz-zoom"><button type="button" class="icon-btn" data-z="in" aria-label="Zoom in">${icon('plus')}</button><button type="button" class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button><button type="button" class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button></div></div>` : ''}
         ${rels.length ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Relationships</h2>
           <div class="actions">
             ${hasFamily(a) ? `<a class="btn small" href="#/w/${wid}/tree/${a.id}">${icon('tree-structure')} Family tree</a>` : ''}
@@ -83,6 +90,28 @@ export function viewArticle(wid, id) {
   $('#addChild').onclick = () => newArticleDialog(wid, `?parent=${a.id}`);
   hydrateImages();
   contents();
+  if (map) embedMap(wid, map);
+}
+
+// The article's map, embedded: pan, zoom, and pins/regions that open their article or map.
+async function embedMap(wid, map) {
+  const box = $('#articleMap');
+  const src = await store.imageURL(map.image);
+  if (!box?.isConnected) return; // left the page meanwhile
+  if (!src) { box.innerHTML = '<p class="muted pad">This map’s image hasn’t downloaded yet.</p>'; return; }
+  const go = (it) => {
+    if (it.articleId && store.article(it.articleId)) location.hash = `#/w/${wid}/a/${it.articleId}`;
+    else if (it.mapId && store.map(it.mapId)) location.hash = `#/w/${wid}/m/${it.mapId}`;
+  };
+  const ctl = mountMap(box, { src, onPinClick: go, onRegionClick: go, embedded: true });
+  const labelled = (list) => (list || []).map((it) => ({ ...it, label: itemTitle(it) }));
+  ctl.setItems({ pins: labelled(map.pins), regions: labelled(map.regions) });
+  box.parentElement.querySelector('.viz-zoom').onclick = (e) => {
+    const z = e.target.closest('[data-z]')?.dataset.z;
+    if (z === 'in') ctl.zoom(1.4); else if (z === 'out') ctl.zoom(1 / 1.4); else if (z === 'fit') ctl.fit();
+  };
+  const prev = state.cleanup;
+  state.cleanup = () => { prev?.(); ctl.destroy(); };
 }
 
 // Contents box: lists the article's headings once there are a few, and

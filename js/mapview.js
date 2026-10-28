@@ -7,7 +7,8 @@ import { esc } from './util.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
-export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps, onDraftChange }) {
+// embedded: inside a page that scrolls, so the wheel zooms only with Ctrl/⌘.
+export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps, onDraftChange, embedded = false }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
@@ -196,7 +197,14 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       downTarget = null;
     }
   };
+  let hintTimer;
   const onWheel = (e) => {
+    if (embedded && !e.ctrlKey && !e.metaKey) {
+      container.classList.add('show-hint');
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => container.classList.remove('show-hint'), 1200);
+      return; // let the page scroll
+    }
     e.preventDefault();
     const r = container.getBoundingClientRect();
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));

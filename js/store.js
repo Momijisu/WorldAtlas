@@ -152,7 +152,7 @@ export async function resolveConflict(id, content) {
 // Every save of an article stores a snapshot. History syncs (append-only) via
 // its own OneDrive file and is pruned to the newest HISTORY_LIMIT per article.
 
-const CONTENT_KEYS = ['title', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'banner', 'bannerPos',
+const CONTENT_KEYS = ['title', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'banner', 'bannerPos', 'mapId',
   'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations'];
 export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, a[k] ?? null]));
 
@@ -338,7 +338,7 @@ export function newArticle(worldId, type = 'article', extra = {}) {
   return {
     id: uid(), worldId, type, title: '', parentId: null, tags: [], summary: '', body: '',
     fields: Object.fromEntries((TYPES[type]?.fields || []).map((f) => [f, ''])),
-    gmNotes: '', image: null, banner: null, start: null, startM: null, startD: null, end: null, endM: null, endD: null,
+    gmNotes: '', image: null, banner: null, mapId: null, start: null, startM: null, startD: null, end: null, endM: null, endD: null,
     dateLabel: '', relations: [], ...extra,
   };
 }

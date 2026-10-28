@@ -29,7 +29,7 @@ function mapTrail(wid, mid) {
   return trail;
 }
 
-const itemTitle = (it) => it.label || store.article(it.articleId)?.title || store.map(it.mapId)?.name || '';
+export const itemTitle = (it) => it.label || store.article(it.articleId)?.title || store.map(it.mapId)?.name || '';
 
 // A layer is a template key (pins for Settlements, Characters…), a name the
 // user made up, or '' for General.
