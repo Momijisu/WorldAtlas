@@ -17,7 +17,7 @@ const SHELL = [
   'fonts/alegreya-sans-latin-500-normal.woff2', 'fonts/alegreya-sans-latin-700-normal.woff2',
   'fonts/cormorant-garamond-latin-500-italic.woff2', 'fonts/cormorant-garamond-latin-500-normal.woff2',
   'fonts/cormorant-garamond-latin-600-normal.woff2', 'fonts/cormorant-garamond-latin-700-normal.woff2',
-  'fonts/qe-cursive.woff2', 'fonts/qe-print.woff2',
+  'fonts/cedarville-cursive-latin-400-normal.woff2', 'fonts/kalam-latin-400-normal.woff2',
   'fonts/cormorant-garamond-latin-400-normal.woff2', 'fonts/cormorant-garamond-latin-400-italic.woff2',
   'fonts/alegreya-latin-500-normal.woff2', 'fonts/alegreya-latin-500-italic.woff2',
   'fonts/alegreya-sans-latin-300-normal.woff2', 'fonts/alegreya-sans-latin-300-italic.woff2',

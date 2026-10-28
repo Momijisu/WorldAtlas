@@ -12,8 +12,8 @@ import * as store from './store.js';
 import { esc } from './util.js';
 
 export const HANDS = {
-  cursive: { label: 'Handwriting', family: '"QE Cursive", cursive' },
-  print: { label: 'Handwriting (print)', family: '"QE Print", cursive' },
+  cursive: { label: 'Handwriting', family: '"Cedarville Cursive", cursive' },
+  print: { label: 'Handwriting (print)', family: '"Kalam", cursive' },
 };
 
 const norm = (s) => String(s || '').trim().toLowerCase();

@@ -73,7 +73,7 @@ export async function worldDialog(w) {
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
       <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
-      <p class="small muted">In articles, write <code>:::Name</code> … <code>:::</code> for a passage, or <code>{{Name|text}}</code> inside a sentence. Handwriting is built in as <code>${Object.keys(HANDS).join('</code> and <code>')}</code>.</p>
+      <p class="small muted">In articles, write <code>:::Name</code> … <code>:::</code> for a passage, or <code>{{Name|text}}</code> inside a sentence. Handwriting is built in as <code>${Object.keys(HANDS).join('</code> and <code>')}</code>. Fonts you add stay with this world in your OneDrive; they aren’t published.</p>
       ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><span class="spacer"></span>`}

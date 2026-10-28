@@ -93,7 +93,7 @@ js/icons.js           Phosphor icons (MIT)
 js/config.js          Microsoft client ID
 js/version.js         app version
 sw.js                 service worker
-fonts/                Cormorant Garamond, Alegreya, Alegreya Sans (OFL); QE Cursive and QE Print (handwriting)
+fonts/                Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive, Kalam (OFL)
 vendor/               marked, DOMPurify
 ```
 
