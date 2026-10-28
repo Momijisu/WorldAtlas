@@ -230,6 +230,10 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   container.addEventListener('pointerup', onEnd);
   container.addEventListener('pointercancel', onEnd);
   container.addEventListener('wheel', onWheel, { passive: false });
+  // A drag on the map never scrolls the page, even in browsers that don't
+  // fully honour touch-action.
+  const noScroll = (e) => { if (e.cancelable) e.preventDefault(); };
+  container.addEventListener('touchmove', noScroll, { passive: false });
 
   let lastSize = '';
   const ro = new ResizeObserver(() => {
@@ -267,6 +271,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       apply();
     },
     destroy() {
+      container.removeEventListener('touchmove', noScroll);
       ro.disconnect();
       container.removeEventListener('wheel', onWheel);
     },

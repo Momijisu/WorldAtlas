@@ -20,8 +20,8 @@
 }
 
 .article-map { height: clamp(260px, 55vh, 520px); flex: none; margin-bottom: .6rem; }
-/* Embedded: one finger scrolls the page, two pan and zoom the map. */
-.article-map .map-box { touch-action: pan-y; }
+/* Embedded maps pan with one finger like the map page; swipe outside the
+   map to scroll the article. */
 .article-map .map-box::after {
   content: attr(data-hint); position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
   background: rgba(0, 0, 0, .45); color: #f4ecdc; font: 500 1rem var(--sans); opacity: 0; transition: opacity .2s;
@@ -35,7 +35,7 @@
     repeating-linear-gradient(90deg, transparent 0 39px, var(--rule) 39px 40px),
     var(--ink-1);
 }
-.map-box { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.map-box { position: absolute; inset: 0; overflow: hidden; touch-action: none; overscroll-behavior: contain; cursor: grab; user-select: none; -webkit-user-select: none; }
 .map-box:active { cursor: grabbing; }
 .map-box.editing { cursor: crosshair; }
 .map-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; box-shadow: 0 10px 40px rgba(0, 0, 0, .35); }
