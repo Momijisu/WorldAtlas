@@ -303,7 +303,7 @@ Reply with only a JSON object shaped like this:
     { "title": "...", "type": "character|species|culture|profession|title|location|settlement|building|organization|religion|event|conflict|plot|myth|spell|law|condition|technology|item|vehicle|material|tradition|language|lore|article",
       "summary": "one or two lines", "body": "Markdown, with [[Other Article Title]] links",
       "parent": "Title of the article this belongs to", "tags": ["..."],
-      "fields": { "Species": "...", "Occupation": "..." },
+      "fields": { "Type": "what kind of thing it is, e.g. Ruin, Port town, Guild", "Occupation": "for characters" },
       "date": "12 Frostmoot 1042", "endDate": "1060",
       "relationships": [{ "type": "parent|child|spouse|sibling|partner|friend|ally|mentor|student|rival|enemy|member|leader|rules|serves|worships|created|owns|locatedIn|related", "target": "Other Article Title", "note": "optional" }],
       "secrets": "GM-only notes" }
@@ -315,6 +315,10 @@ Rules:
 - Leave out "calendar" if my world has no custom calendar. Dates use its month names; a bare year is fine.
 - Only use facts from my material. Put anything uncertain in "secrets".
 - Split large topics into several linked articles.
+- Use the most specific type: settlement (towns, cities) and building (castles, ruins, temples) are kinds of location; conflict (wars, battles, feuds) is a kind of event.
+- Fill the "Type" field (a character's "Occupation") with a short label; lists show it next to the title.
+- Put letters, notes and inscriptions in the body as a handwritten block: a line ":::cursive" (or ":::print"), the text, then a line ":::".
+- A place's position: use "locatedIn" relationships (e.g. a town locatedIn its province), or "parent" to file it under that article.
 
 Here is my material:
 `;

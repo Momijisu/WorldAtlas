@@ -95,13 +95,13 @@ Only `title` is required.
 | Key | Meaning |
 |---|---|
 | `title` | Unique name. Other articles refer to it by this. |
-| `type` | One of `character`, `species`, `culture`, `profession`, `title`, `location`, `settlement`, `building`, `organization`, `religion`, `event`, `conflict`, `plot`, `myth`, `spell`, `law` (natural law / magic system), `condition`, `technology`, `item`, `vehicle`, `material`, `tradition`, `language`, `lore`, `article`. Synonyms such as NPC, city, castle, faction, war, quest, legend, disease, ship or festival also work. Anything else becomes `article`. |
+| `type` | One of `character`, `species`, `culture`, `profession`, `title`, `location`, `settlement`, `building`, `organization`, `religion`, `event`, `conflict`, `plot`, `myth`, `spell`, `law` (natural law / magic system), `condition`, `technology`, `item`, `vehicle`, `material`, `tradition`, `language`, `lore`, `article`. Synonyms such as NPC, city, castle, faction, war, quest, legend, disease, ship or festival also work. Anything else becomes `article`. `settlement` and `building` are listed under Locations, and `conflict` under Events; use the most specific one. |
 | `summary` | A line or two for lists and link previews. |
 | `body` | Markdown. Link with `[[Title]]` or `[[Title|shown text]]`. Handwritten passages (letters, notes) go in a `:::cursive` … `:::` block (or `:::print`). |
 | `secrets` | GM notes in Markdown, collapsed when reading. Alias: `gmNotes`. |
 | `parent` | Title of the article this belongs to, e.g. a district's city. |
 | `tags` | A list, or a comma-separated string. |
-| `fields` | Infobox as `{ "Field": "Value" }`. Values can contain `[[links]]`, and any field name works. Alias: `infobox`. |
+| `fields` | Infobox as `{ "Field": "Value" }`. Values can contain `[[links]]`, and any field name works. Alias: `infobox`. Lists show each article's kind from its `Type` field (`Occupation` or `Title` for characters, `School` for spells, `Status` for plots, `Family` for languages), so fill that in. |
 | `date` | When it happened or began. Alias: `start`. |
 | `endDate` | When it ended. Alias: `end`. |
 | `dateText` | Optional text shown instead of the date. |
@@ -149,4 +149,7 @@ To extend a world with an assistant, export it from **Settings → Import a worl
 3. Include `calendar` only if the world has its own, and write dates with its month names.
 4. Only use facts from the material. Put uncertainties in `secrets`.
 5. Split large topics into several linked articles, each with a short `summary`.
-6. Put short facts in `fields` and prose in `body`.
+6. Put short facts in `fields` and prose in `body`, and give each article a short `Type` (a character an `Occupation`).
+7. Use the most specific type: towns and cities are `settlement`, castles, ruins and temples are `building`, wars and battles are `conflict`.
+8. Write letters, notes and inscriptions as `:::cursive` … `:::` blocks in the body.
+9. Say where places are with `locatedIn` relationships, or file them under a `parent`.
