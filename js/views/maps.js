@@ -10,8 +10,9 @@ import { plain } from '../markdown.js';
 import { view, state, setTitle, pageHead, icon, hydrateImages, articleOptions, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
 
-export const PIN_ICONS = ['map-pin', 'castle-turret', 'house', 'tent', 'mountains', 'tree-evergreen', 'anchor', 'skull', 'star',
+export const PIN_ICONS = ['map-pin', 'castle-turret', 'house', 'tent', 'ruins', 'stairs', 'cave', 'mountains', 'tree-evergreen', 'anchor', 'skull', 'star',
   'crown', 'flag', 'sword', 'church', 'boat', 'flame', 'diamond', 'shield', 'compass'];
+const PIN_NAMES = { stairs: 'dungeon' }; // hover names where the icon's own name isn't the place
 const SWATCHES = ['#c4553b', '#c4a46a', '#5f8f6f', '#4f74a8', '#7d5a8c', '#3b3631', '#e9e1d1'];
 
 // The map(s) containing a pin/region that links to `mid` — first one wins.
@@ -426,7 +427,7 @@ export async function viewMap(wid, mid, q) {
         <label>Opens map <small>e.g. a city map from a pin on the continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
         <label>Label <small>defaults to the article</small><input name="label" value="${esc(pin.label || '')}"></label>
         <div class="field-label">Marker</div>
-        <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
+        <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${PIN_NAMES[n] || n.replace(/-/g, ' ')}" aria-label="${PIN_NAMES[n] || n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
         ${colourField(pin.color)}
         <div class="actions">
           ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')}</button><button type="button" class="btn" data-move>Move</button><span class="spacer"></span>`}
