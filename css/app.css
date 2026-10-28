@@ -640,11 +640,13 @@ option.opt-dim { color: var(--muted); }
 .script.unknown { outline: 1px dashed var(--warn); outline-offset: 2px; }
 .create-row { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .8rem .4rem; color: var(--text-2); }
 .empty-state + .create-row { justify-content: center; }
-/* Phones: an article's Sub-article, History and Edit sit on one line under
-   the title, all as quiet buttons; Edit keeps the accent colour. */
+/* An article's Sub-article, History and Edit are all quiet buttons; Edit
+   keeps the accent colour. On phones they sit on one line under the title. */
+.article-head .actions { flex-wrap: nowrap; gap: .15rem; }
+.article-head .actions .btn { white-space: nowrap; }
+.article-head .actions .btn.primary { background: transparent; border-color: transparent; color: var(--rubric); }
+.article-head .actions .btn.primary:hover { background: var(--ink-3); border-color: var(--rule-strong); }
 @media (max-width: 600px) {
-  .article-head .actions { flex-wrap: nowrap; justify-content: flex-start; gap: .15rem; width: 100%; margin-left: -.55rem; }
-  .article-head .actions .btn { padding-left: .55rem; padding-right: .55rem; white-space: nowrap; }
-  .article-head .actions .btn.primary { background: transparent; border-color: transparent; color: var(--rubric); }
-  .article-head .actions .btn.primary:hover { background: var(--ink-3); }
+  .article-head .actions { justify-content: flex-start; width: 100%; margin-left: -.55rem; }
+  .article-head .actions .btn { padding-left: .55rem; padding-right: .55rem; }
 }
