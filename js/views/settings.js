@@ -68,7 +68,12 @@ export function viewSettings() {
     </div>
     <div class="panel" id="importCard">
       <h2>Import a world</h2>
-      <p class="muted">Add articles from a WorldAtlas import file, for example one an AI assistant made from your notes. You’ll see a preview first. Re-importing updates articles with matching titles.</p>
+      <p class="muted">Add articles from a WorldAtlas import file. You’ll see a preview first. Re-importing updates articles with matching titles.</p>
+      <label class="import-into">Import into<select id="importInto">
+        <option value="auto">The world named in the file (or a new one)</option>
+        ${store.worlds().map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}
+        <option value="new">A new world</option>
+      </select></label>
       <div class="actions left">
         <label class="btn primary">${icon('upload-simple')} Import from file<input type="file" id="importWorldFile" accept=".json,.txt,application/json,text/plain" hidden></label>
         <button class="btn" id="pasteImport">${icon('file-text')} Paste text</button>
@@ -146,7 +151,7 @@ export function viewSettings() {
   wireAbout();
   $('#exportBtn').onclick = exportBackup;
   $('#importFile').onchange = (e) => { const file = e.target.files[0]; e.target.value = ''; if (file) importBackup(file); };
-  $('#importWorldFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) handleImportText(await f.text()); };
+  $('#importWorldFile').onchange = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) handleImportText(await f.text(), $('#importInto').value); };
   $('#pasteImport').onclick = pasteDialog;
   $('#copyAiPrompt').onclick = () => copyText(aiInstructions(), 'Instructions copied');
   const sel = () => $('#exportWorldSel').value;
@@ -336,13 +341,14 @@ function pasteDialog() {
     </form>`, {
     wide: true,
     onMount: (el, close) => {
-      $('#pf', el).onsubmit = (e) => { e.preventDefault(); const t = e.target.t.value; close(); handleImportText(t); };
+      $('#pf', el).onsubmit = (e) => { e.preventDefault(); const t = e.target.t.value; close(); handleImportText(t, $('#importInto')?.value); };
     },
   });
 }
 
 // Accepts raw JSON, JSON wrapped in a Markdown code fence, or a full backup.
-function handleImportText(text) {
+// into: 'auto' (the world named in the file), 'new', or a world id.
+function handleImportText(text, into = 'auto') {
   let json;
   try {
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -354,13 +360,24 @@ function handleImportText(text) {
   }
   if (json.app === 'WorldAtlas') return importBackupJSON(json);
   if (!isImportFormat(json)) return toast('No articles found in that text.', 5000);
-  previewImport(json);
+  previewImport(json, into);
 }
 
-function previewImport(json) {
+// "Adds 3 articles and updates 1 in this world; 2 already up to date."
+function importSummary(plan, existing) {
+  const arts = (k) => `${k} article${k === 1 ? '' : 's'}`;
+  const parts = [];
+  if (plan.create) parts.push(`adds ${arts(plan.create)}`);
+  if (plan.update) parts.push(`updates ${plan.create ? plan.update : arts(plan.update)}`);
+  let t = parts.length ? parts.join(' and ') + (existing ? ' in this world' : '') : 'nothing new to add';
+  if (plan.same) t += `; ${plan.same} already up to date`;
+  return t[0].toUpperCase() + t.slice(1) + '.';
+}
+
+function previewImport(json, into = 'auto') {
   const name = String(json.world?.name || '').trim();
   const sameName = store.worlds().find((w) => w.name.trim().toLowerCase() === name.toLowerCase());
-  let target = sameName?.id || '';
+  let target = into === 'new' ? '' : into !== 'auto' && store.world(into) ? into : sameName?.id || '';
   modal('Import preview', '<div id="ipv"></div>', {
     wide: true,
     onMount: (el, close) => {
@@ -368,8 +385,15 @@ function previewImport(json) {
         let plan;
         try { plan = planImport(json, target || null); } catch (e) { $('#ipv', el).innerHTML = `<p class="warn">Couldn’t read this import: ${esc(e.message)}</p>`; return; }
         const w = plan.warnings;
+        const destName = target ? store.world(target).name : (plan.isNewWorld ? plan.world.name : name || 'Imported world');
+        const n = plan.create + plan.update;
         $('#ipv', el).innerHTML = `
-          <label>Import into<select id="ipTarget">
+          <div class="import-dest">${icon('globe-hemisphere-west')}<div>
+            <div class="eyebrow">${target ? 'Importing into' : 'Importing into a new world'}</div>
+            <div class="import-dest-name">${esc(destName)}</div>
+            <div class="small muted">${importSummary(plan, !!target)}</div>
+          </div></div>
+          <label>Change where it goes<select id="ipTarget">
             <option value="">A new world: ${esc(plan.isNewWorld ? plan.world.name : name || 'Imported world')}</option>
             ${store.worlds().map((x) => `<option value="${x.id}" ${x.id === target ? 'selected' : ''}>Existing world: ${esc(x.name)}</option>`).join('')}
           </select></label>
@@ -385,7 +409,7 @@ function previewImport(json) {
           <p class="small muted">Updates can be undone from each article’s History.</p>
           <div class="actions">
             <button class="btn quiet" data-cancel>Cancel</button>
-            <button class="btn primary" id="ipGo" ${plan.create + plan.update ? '' : 'disabled'}>${icon('check')} Import ${plan.create + plan.update} article${plan.create + plan.update === 1 ? '' : 's'}</button>
+            <button class="btn primary" id="ipGo" ${n ? '' : 'disabled'}>${icon('check')} Import ${n} article${n === 1 ? '' : 's'} into ${esc(destName)}</button>
           </div>`;
         $('#ipTarget', el).onchange = (e) => { target = e.target.value; draw(); };
         $('[data-cancel]', el).onclick = () => close();

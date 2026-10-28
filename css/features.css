@@ -284,6 +284,10 @@ details.guide summary .muted { font-weight: 400; }
 .about-list dd { margin: 0; }
 
 /* ---------- import preview ---------- */
+.import-into { max-width: 26rem; }
+.import-dest { display: flex; gap: .8rem; align-items: center; padding: .8rem 1rem; margin-bottom: 1rem; background: var(--ink-3); border: 1px solid var(--rule-strong); border-left: 3px solid var(--brass); border-radius: var(--r); }
+.import-dest > .i { width: 1.8rem; height: 1.8rem; color: var(--brass); flex-shrink: 0; }
+.import-dest-name { font: 600 1.4rem/1.15 var(--display); margin: .1rem 0 .15rem; }
 .import-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); border-radius: var(--r); margin: .4rem 0 1rem; }
 .import-stats > div { padding: .7rem; text-align: center; }
 .import-stats > div + div { border-left: 1px solid var(--rule); }
