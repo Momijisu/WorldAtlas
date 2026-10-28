@@ -9,7 +9,7 @@ import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
 import { wireFocus } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
-import { scriptsFor } from '../scripts.js';
+import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
@@ -73,9 +73,14 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <span class="md-script"><button type="button" id="scriptBtn" title="Handwriting or a world font" aria-haspopup="true">${icon('feather')}<span class="hide-sm">Script</span></button>
             <span class="script-menu" id="scriptMenu" hidden></span></span>
           <span class="spacer"></span>
-          <button type="button" id="previewBtn">${icon('eye')}&nbsp;Preview</button>
+          <span class="seg md-mode" role="group" aria-label="Editing view">
+            <button type="button" data-mode="live" title="See formatting as you type">Live</button>
+            <button type="button" data-mode="markdown" title="Plain Markdown">Markdown</button>
+            <button type="button" data-mode="preview" title="Read-only preview">${icon('eye')}<span class="hide-sm">Preview</span></button>
+          </span>
         </div>
         <textarea name="body" rows="18" class="md ac-target" placeholder="**bold**, *italic*, ## heading, - list, [[Article link]]">${esc(a.body)}</textarea>
+        <div class="live-editor" id="liveBody" hidden></div>
         <div class="prose md-preview" hidden></div>
         <details class="secret-edit" ${a.gmNotes ? 'open' : ''}><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary>
           <textarea name="gmNotes" rows="5" class="ac-target" placeholder="Collapsed on the article page">${esc(a.gmNotes)}</textarea></details>
@@ -241,12 +246,12 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   if (guide) {
     try { guide.open = localStorage.getItem('wa.guideOpen') !== '0' && (isNew || !a.body); } catch { guide.open = isNew; }
     guide.addEventListener('toggle', () => { try { localStorage.setItem('wa.guideOpen', guide.open ? '1' : '0'); } catch { /* ignore */ } });
-    $('.guide-list', guide).onclick = (e) => {
+    $('.guide-list', guide).onclick = async (e) => {
       const b = e.target.closest('[data-g]');
       if (!b) return;
       const g = guidanceFor(f.type.value)[+b.dataset.g];
       const body = f.body;
-      if ($('.md-preview', f).hidden === false) $('#previewBtn').click();
+      if (mode === 'preview') await setMode(lastEditMode);
       const re = new RegExp('^#{1,4}\\s+' + g.h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'im');
       const m = body.value.match(re);
       let pos;
@@ -259,6 +264,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       }
       body.focus();
       body.setSelectionRange(pos, pos);
+      if (mode === 'live') { live.setValue(body.value, pos, pos); live.focus(); return; }
       const lineH = parseFloat(getComputedStyle(body).lineHeight) || 26;
       body.scrollTop = Math.max(0, body.value.slice(0, pos).split('\n').length * lineH - body.clientHeight / 2);
     };
@@ -321,13 +327,58 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     scriptCommand(body, b.dataset.script);
   };
   f.addEventListener('click', (e) => { if (!e.target.closest('.md-script')) menu.hidden = true; });
-  $('#previewBtn').onclick = (e) => {
-    const pv = $('.md-preview', f);
-    const on = pv.hidden;
-    pv.hidden = !on; body.hidden = on;
-    e.currentTarget.classList.toggle('on', on);
-    if (on) pv.innerHTML = render(body.value, wid);
+
+  // Editing views. Live shows formatting as you type (CodeMirror, loaded on
+  // first use); Markdown is the plain textarea; Preview is read-only. The
+  // textarea always holds the text: saving, the toolbar, the Script menu and
+  // the writing guide all work on it, and Live is kept in step with it.
+  let mode = 'markdown', lastEditMode = 'markdown', live = null, fromLive = false;
+  const liveBox = $('#liveBody'), pv = $('.md-preview', f);
+  const startLive = async () => {
+    const { createLiveEditor } = await import('../../vendor/live-editor.js');
+    live = createLiveEditor(liveBox, {
+      doc: body.value,
+      label: 'Article content',
+      titles: () => store.articlesOf(wid).filter((x) => x.id !== a.id).map((x) => x.title),
+      isKnown: (t) => !!store.byTitle(wid, t),
+      fontFor: (n) => familyFor(n, wid),
+      isHand: (n) => !!HANDS[n.toLowerCase()],
+      onUpdate: (u) => {
+        if (u.docChanged) {
+          fromLive = true;
+          body.value = live.getValue();
+          body.dispatchEvent(new Event('input', { bubbles: true }));
+          fromLive = false;
+        }
+        const s = live.getSelection();
+        body.setSelectionRange(s.from, s.to);
+      },
+    });
   };
+  // A toolbar or guide change to the textarea is copied into Live.
+  body.addEventListener('input', () => {
+    if (mode !== 'live' || fromLive || !live) return;
+    live.setValue(body.value, body.selectionStart, body.selectionEnd);
+    live.focus();
+  });
+  const setMode = async (m) => {
+    if (m === 'live' && !live) {
+      try { await startLive(); } catch (err) { console.error(err); toast('Live editing couldn’t load; using Markdown'); m = 'markdown'; }
+    }
+    if (m === 'live') live.setValue(body.value, body.selectionStart, body.selectionEnd);
+    mode = m;
+    if (m !== 'preview') { lastEditMode = m; try { localStorage.setItem('wa.editMode', m); } catch { /* private mode */ } }
+    body.hidden = m !== 'markdown';
+    liveBox.hidden = m !== 'live';
+    pv.hidden = m !== 'preview';
+    if (m === 'preview') pv.innerHTML = render(body.value, wid);
+    $$('.md-mode [data-mode]', f).forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
+    $$('[data-md], #scriptBtn', f).forEach((b) => { b.disabled = m === 'preview'; });
+  };
+  $('.md-mode', f).onclick = (e) => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); };
+  let saved = 'live';
+  try { saved = localStorage.getItem('wa.editMode') || 'live'; } catch { /* default */ }
+  setMode(saved === 'markdown' ? 'markdown' : 'live');
   $$('.ac-target', f).forEach((ta) => attachAutocomplete(ta, wid));
 
   $('#del')?.addEventListener('click', async () => {
@@ -472,6 +523,7 @@ function attachAutocomplete(ta, wid) {
     ta.dispatchEvent(new Event('input', { bubbles: true }));
   };
   const update = () => {
+    if (ta.hidden) return close(); // Live mode has its own suggestions
     const before = ta.value.slice(0, ta.selectionStart);
     const m = before.match(/\[\[([^\]|\n]*)$/);
     if (!m) return close();

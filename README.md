@@ -7,6 +7,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 ## Features
 
 - Articles from 25 templates (characters, settlements, spells, natural laws, conditions, conflicts, plots and more), each with an infobox grouped into sections, a portrait and a header image
+- Live editing: Markdown shown formatted as you type (or plain Markdown, or a preview)
 - `[[Wiki links]]` with autocomplete, hover previews, backlinks, and links that update when an article is renamed
 - A contents box on articles with several headings
 - Typed relationships, family trees and a relationship web
@@ -94,7 +95,7 @@ js/config.js          Microsoft client ID
 js/version.js         app version
 sw.js                 service worker
 fonts/                Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive, Kalam (OFL)
-vendor/               marked, DOMPurify
+vendor/               marked, DOMPurify, live-editor.js (CodeMirror 6, MIT; rebuild with tools/live-editor/build.sh)
 ```
 
 ## Releasing

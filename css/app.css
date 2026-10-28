@@ -500,6 +500,40 @@ details.secret-edit textarea { margin-top: .7rem; }
 .script-menu button small { color: var(--muted); font-size: .75rem; }
 .script-menu p { margin: .3rem .5rem .2rem; }
 textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif); min-height: 340px; padding: .9rem 1rem; }
+/* Live editing (vendor/live-editor.js): Markdown shown formatted as you type. */
+.live-editor { border: 1px solid var(--rule-strong); border-radius: 0 0 var(--r) var(--r); background: var(--ink-1); min-height: 340px; }
+.live-editor .cm-editor { min-height: 340px; outline: none; font: 400 1.08rem/1.7 var(--serif); color: var(--text); background: transparent; }
+.live-editor .cm-editor.cm-focused { box-shadow: 0 0 0 2px color-mix(in srgb, var(--brass) 45%, transparent); border-radius: 0 0 var(--r) var(--r); }
+.live-editor .cm-scroller { font-family: inherit; line-height: inherit; padding: .5rem 0; }
+.live-editor .cm-content { padding: .4rem 1.1rem 1.2rem; caret-color: var(--brass); }
+.live-editor .cm-line { padding: 0; }
+.live-editor .cm-cursor { border-left: 2px solid var(--brass); }
+.live-editor .cm-selectionBackground, .live-editor .cm-focused .cm-selectionBackground, .live-editor ::selection { background: color-mix(in srgb, var(--brass) 28%, transparent) !important; }
+.live-editor .cm-h1, .live-editor .cm-h2, .live-editor .cm-h3, .live-editor .cm-h4 { font-family: var(--display); font-weight: 600; line-height: 1.25; }
+.live-editor .cm-h1 { font-size: 2rem; padding-top: .5em !important; }
+.live-editor .cm-h2 { font-size: 1.65rem; padding-top: .55em !important; border-bottom: 1px solid var(--rule); }
+.live-editor .cm-h3 { font-size: 1.3rem; padding-top: .4em !important; color: var(--text-2); }
+.live-editor .cm-h4, .live-editor .cm-h5, .live-editor .cm-h6 { font-size: 1.1rem; color: var(--text-2); }
+.live-editor .cm-strong { font-weight: 700; }
+.live-editor .cm-em { font-style: italic; }
+.live-editor .cm-strike { text-decoration: line-through; color: var(--muted); }
+.live-editor .cm-icode { font: .9em var(--mono); background: var(--ink-3); border-radius: 2px; padding: 0 .2em; }
+.live-editor .cm-codeblock { font: .9rem/1.5 var(--mono); background: var(--ink-3); }
+.live-editor .cm-quote { border-left: 3px solid var(--brass); padding-left: 1rem !important; color: var(--text-2); font-style: italic; }
+.live-editor .cm-hr { border-bottom: 1px solid var(--rule-strong); line-height: .6; }
+.live-editor .cm-bullet { color: var(--brass); }
+.live-editor .cm-wikilink, .live-editor .cm-mdlink { color: var(--link); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent); text-underline-offset: 3px; }
+.live-editor .cm-wikilink.cm-missing { color: var(--missing); text-decoration-style: dashed; }
+.live-editor .cm-script { font-size: 1.15em; }
+.live-editor .cm-scriptline { background: color-mix(in srgb, var(--ink-2) 80%, transparent); padding-left: 1rem !important; }
+.live-editor .cm-scriptline.cm-hand { font-size: 1.35em; line-height: 1.4; }
+.live-editor .cm-fence { font: .78rem var(--sans); color: var(--muted); letter-spacing: .06em; background: color-mix(in srgb, var(--ink-2) 80%, transparent); padding-left: 1rem !important; }
+.live-editor .cm-unknown { outline: 1px dashed var(--warn); outline-offset: 1px; }
+.live-editor .cm-tooltip { background: var(--ink-2); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--shadow); color: var(--text); font: .95rem var(--sans); }
+.live-editor .cm-tooltip-autocomplete ul li[aria-selected] { background: var(--ink-4); color: var(--text); }
+.md-mode { margin-left: auto; }
+.md-mode button { height: 30px; }
+.md-toolbar button:disabled { opacity: .35; pointer-events: none; }
 .md-preview { border: 1px solid var(--rule-strong); border-radius: 0 0 var(--r) var(--r); padding: 1rem 1.2rem; min-height: 340px; background: var(--ink-1); }
 .kv { display: grid; grid-template-columns: 2fr 3fr auto; gap: .35rem; margin-bottom: .35rem; }
 .kv input, .kv select { min-height: 36px; padding: .35em .5em; font-size: 1rem; }

@@ -11,7 +11,7 @@ const SHELL = [
   'js/ui.js', 'js/util.js', 'js/version.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/conflict.js', 'js/views/editor.js',
   'js/views/graph.js', 'js/views/history.js', 'js/views/home.js', 'js/views/list.js', 'js/views/maps.js', 'js/views/prompts.js',
   'js/views/settings.js', 'js/views/timeline.js', 'js/views/tree.js', 'vendor/marked.min.js',
-  'vendor/purify.min.js', 'fonts/alegreya-latin-400-italic.woff2', 'fonts/alegreya-latin-400-normal.woff2',
+  'vendor/purify.min.js', 'vendor/live-editor.js', 'fonts/alegreya-latin-400-italic.woff2', 'fonts/alegreya-latin-400-normal.woff2',
   'fonts/alegreya-latin-700-italic.woff2', 'fonts/alegreya-latin-700-normal.woff2',
   'fonts/alegreya-sans-latin-400-italic.woff2', 'fonts/alegreya-sans-latin-400-normal.woff2',
   'fonts/alegreya-sans-latin-500-normal.woff2', 'fonts/alegreya-sans-latin-700-normal.woff2',
