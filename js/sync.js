@@ -330,15 +330,16 @@ async function retireLegacy() {
   }
 }
 
+// Folders are made by writing a file into them (the same path-based upload the
+// world folders use); OneDrive creates the folder on the way.
 async function ensureFolder(name) {
   const res = await auth.graph(pathURL(name));
   if (res.ok) return (await res.json()).id;
-  const made = await auth.graph(`${ROOT}/children`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }),
-  });
-  if (made.status === 409) return (await (await check(await auth.graph(pathURL(name)), 'Reading ' + name)).json()).id;
-  return (await (await check(made, 'Creating ' + name)).json()).id;
+  await check(await auth.graph(`${pathURL(`${name}/README.txt`)}:/content`, {
+    method: 'PUT', headers: { 'Content-Type': 'text/plain' },
+    body: 'Files from an older version of WorldAtlas, kept as a backup. Your worlds are now in the Worlds folder. You can delete this folder once you are happy everything is there.\n',
+  }), 'Creating ' + name);
+  return (await (await check(await auth.graph(pathURL(name)), 'Reading ' + name)).json()).id;
 }
 
 // Background scheduling: sync shortly after local edits, when the app comes
