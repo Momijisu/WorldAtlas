@@ -31,7 +31,7 @@ export function viewSettings() {
     <div class="panel">
       <h2>Install the app</h2>
       ${standalone ? `<p>${icon('check')} You’re using the installed app.</p>` : `
-        ${state.installPrompt ? `<p><button class="btn primary" id="installBtn">${icon('download-simple')} Install WorldAtlas</button></p>` : ''}
+        <p id="installRow" ${state.installPrompt ? '' : 'hidden'}><button class="btn primary" id="installBtn">${icon('download-simple')} Install WorldAtlas</button></p>
         <p class="muted">${ios
           ? `Tap <b>Share</b>${edge ? ' (in Edge, menu ⋯ → Share)' : ''} → <b>Add to Home Screen</b>. Before iOS 16.4, use Safari.`
           : android && edge

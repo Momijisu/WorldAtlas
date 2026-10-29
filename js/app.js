@@ -91,13 +91,20 @@ async function seedDemo() {
 
 // Keep the install event so we can offer our own Install button, but don't
 // preventDefault(): that would hide the browser's own install prompt/menu entry.
+// An offer that arrived before this module loaded was kept by index.html.
+if (window.waInstallPrompt) state.installPrompt = window.waInstallPrompt;
 addEventListener('beforeinstallprompt', (e) => { state.installPrompt = e; showInstallButton(); });
 addEventListener('appinstalled', () => { state.installPrompt = null; showInstallButton(); });
 
+// The top-bar button and the one in Settings show whenever an offer is waiting
+// (Settings may have been drawn before the offer arrived).
 function showInstallButton() {
-  const btn = document.getElementById('installTop');
-  if (btn) btn.hidden = !state.installPrompt;
+  for (const id of ['installTop', 'installRow']) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !state.installPrompt;
+  }
 }
+state.showInstallButton = showInstallButton;
 
 export async function promptInstall() {
   if (!state.installPrompt) return;
