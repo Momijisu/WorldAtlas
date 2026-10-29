@@ -120,8 +120,9 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       el.style.setProperty('--pin', p.color || '#c4553b');
       el.innerHTML = `<span class="pin-badge">${icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
       el.setAttribute('aria-label', p.label || 'Pin');
-      el.addEventListener('pointerdown', (e) => { if (!isDrawing?.()) e.stopPropagation(); });
-      el.addEventListener('click', (e) => { if (isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });
+      // Taps and drags on a pin are handled with the map's own pointer
+      // handling (a drag pans, a tap opens it); this is for the keyboard.
+      el.addEventListener('click', (e) => { if (e.detail || isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });
       pinLayer.appendChild(el);
     }
     (draft || []).forEach(([px, py], i) => {
@@ -202,8 +203,12 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       if (!moved && e.type === 'pointerup') {
         const r = container.getBoundingClientRect();
         const ix = (e.clientX - r.left - x) / s / w, iy = (e.clientY - r.top - y) / s / h;
+        const pinEl = downTarget?.closest?.('[data-pin]');
         const regionEl = downTarget?.closest?.('[data-region]');
-        if (regionEl && (regionTaps ? regionTaps() : !isDrawing?.())) {
+        if (pinEl && !isDrawing?.()) {
+          const pin = items.pins.find((q) => q.id === pinEl.dataset.pin);
+          if (pin) onPinClick?.(pin, pinEl);
+        } else if (regionEl && (regionTaps ? regionTaps() : !isDrawing?.())) {
           const reg = items.regions.find((g) => g.id === regionEl.dataset.region);
           if (reg) onRegionClick?.(reg, { x: ix, y: iy });
         } else if (ix >= 0 && ix <= 1 && iy >= 0 && iy <= 1) {

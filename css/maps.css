@@ -78,7 +78,7 @@
   cursor: move; touch-action: none; pointer-events: auto;
 }
 /* A bigger invisible target, so vertices are easy to grab with a finger. */
-.draft-dot::after { content: ""; position: absolute; inset: -10px; border-radius: 50%; }
+.draft-dot::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
 .draft-dot:hover { background: #fff; }
 
 /* pins */
