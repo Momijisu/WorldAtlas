@@ -110,7 +110,15 @@ export async function worldDialog(w) {
         drawFonts();
       };
       wireDropzone($('.image-field', m));
-      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: 2 });
+      // The cover preview has the shape of this world's page header: measured
+      // when that page is open behind the dialog, otherwise as it would be
+      // (the wide page's width, min-height 240px in css/app.css).
+      const coverRatio = () => {
+        const hero = document.querySelector('.world-home .hero');
+        if (hero?.offsetWidth && !isNew && state.wid === w.id) return hero.offsetWidth / hero.offsetHeight;
+        return Math.min(1400, $('#view')?.clientWidth || innerWidth) / 240;
+      };
+      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: coverRatio });
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
