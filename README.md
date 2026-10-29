@@ -64,7 +64,7 @@ Each device keeps a full copy in IndexedDB. OneDrive holds `atlas.json` (worlds,
 
 Sync runs shortly after each edit, when the app is reopened or comes back online, and every two minutes. Edits to different articles merge. If the same article changes on two devices before they sync, both versions are kept and the article is flagged for the merge resolver.
 
-Microsoft limits browser sign-ins to 24 hours. The app renews silently on launch; if that fails, the sync badge shows **Reconnect**.
+Microsoft limits browser sign-ins to 24 hours. The app renews in the background before then, in a hidden frame, so nothing interrupts you. Browsers that block third-party sign-in cookies (such as Safari) can't renew this way; there the sync badge shows **Reconnect**, and one tap signs you straight back in.
 
 ## Project layout
 

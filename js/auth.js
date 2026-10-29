@@ -35,12 +35,11 @@ export async function signIn({ silent = false } = {}) {
     client_id: clientId(), response_type: 'code', redirect_uri: redirectUri(), scope: SCOPES,
     code_challenge: challenge, code_challenge_method: 'S256', state,
   });
-  if (silent) {
-    q.set('prompt', 'none');
-    if (tokens?.account?.username) q.set('login_hint', tokens.account.username);
-  } else {
-    q.set('prompt', 'select_account');
-  }
+  // Reconnecting a known account skips the account picker (Microsoft signs
+  // straight back in if it can); a first connection lets you choose.
+  if (tokens?.account?.username) q.set('login_hint', tokens.account.username);
+  if (silent) q.set('prompt', 'none');
+  else if (!tokens?.account) q.set('prompt', 'select_account');
   location.assign(endpoint('authorize') + '?' + q);
 }
 
@@ -64,18 +63,54 @@ export async function handleRedirect() {
   return { returnHash: pending.hash, silent: pending.silent };
 }
 
-// Microsoft limits browser-app sign-in sessions to 24 hours. Near the end of
-// that window (or after it lapsed) we bounce through the Microsoft login page
-// with prompt=none at app launch: if the browser still has a Microsoft session
-// this returns straight away without asking anything. Returns true if redirecting.
-export async function renewSessionIfNeeded() {
-  if (!tokens?.account || !clientId() || !navigator.onLine) return false;
-  const expiring = !tokens.refresh_token || Date.now() - (tokens.session_at || 0) > 22 * 3600e3;
-  const lastTry = +localStorage.getItem('wa.silentAt') || 0;
-  if (!expiring || Date.now() - lastTry < 10 * 60e3) return false;
-  localStorage.setItem('wa.silentAt', Date.now());
-  await signIn({ silent: true });
-  return true;
+// Microsoft limits browser-app sign-in sessions to 24 hours. Before that runs
+// out we renew in the background, in a hidden frame with prompt=none: if the
+// browser still has a Microsoft session it answers at once and nothing is
+// shown. The frame comes back to this app's page, whose first script (in
+// index.html) hands the result to us and stops. Browsers that block
+// third-party sign-in cookies can't do this; they show Reconnect instead.
+const RENEW_AFTER = 20 * 3600e3;
+let renewing = null, lastFailedAt = 0;
+
+export const needsRenewal = () => !!(tokens?.account && clientId()
+  && (!tokens.refresh_token || Date.now() - (tokens.session_at || 0) > RENEW_AFTER));
+
+// Resolves true if the session was renewed.
+export function renewSilently() {
+  if (!tokens?.account || !clientId() || !navigator.onLine || Date.now() - lastFailedAt < 10 * 60e3) return Promise.resolve(false);
+  renewing ??= frameSignIn().then((ok) => { if (!ok) lastFailedAt = Date.now(); return ok; }).finally(() => { renewing = null; });
+  return renewing;
+}
+
+async function frameSignIn() {
+  const verifier = randomString(48);
+  const state = randomString(16);
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  const q = new URLSearchParams({
+    client_id: clientId(), response_type: 'code', redirect_uri: redirectUri(), scope: SCOPES,
+    code_challenge: challenge, code_challenge_method: 'S256', state, prompt: 'none',
+  });
+  if (tokens.account.username) q.set('login_hint', tokens.account.username);
+  const search = await new Promise((resolve) => {
+    const frame = document.createElement('iframe');
+    frame.style.display = 'none';
+    frame.setAttribute('aria-hidden', 'true');
+    const finish = (v) => { clearTimeout(timer); removeEventListener('message', onMessage); frame.remove(); resolve(v); };
+    const onMessage = (e) => {
+      if (e.origin === location.origin && e.source === frame.contentWindow && typeof e.data?.waAuth === 'string') finish(e.data.waAuth);
+    };
+    const timer = setTimeout(() => finish(null), 20000); // e.g. Microsoft wanted to show a page
+    addEventListener('message', onMessage);
+    frame.src = endpoint('authorize') + '?' + q;
+    document.body.appendChild(frame);
+  });
+  const p = new URLSearchParams(search || '');
+  if (!p.get('code') || p.get('state') !== state) return false;
+  try {
+    await tokenRequest({ grant_type: 'authorization_code', code: p.get('code'), code_verifier: verifier });
+    store({ ...tokens, session_at: Date.now() });
+    return true;
+  } catch { return false; }
 }
 
 async function tokenRequest(params) {

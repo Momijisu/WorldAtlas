@@ -2,6 +2,14 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
+  <script>
+    // Background sign-in renewal (js/auth.js) loads this page in a hidden frame:
+    // hand Microsoft's answer to the app and stop, instead of starting a second copy.
+    if (window.parent !== window && /[?&](code|error)=/.test(location.search)) {
+      parent.postMessage({ waAuth: location.search }, location.origin);
+      window.stop();
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>WorldAtlas</title>
   <meta name="description" content="A personal worldbuilding wiki that works offline and syncs through your OneDrive.">

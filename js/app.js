@@ -35,7 +35,6 @@ async function boot() {
   applyTheme();
   let authError = null, returned = null;
   try { returned = await auth.handleRedirect(); } catch (e) { authError = e; }
-  if (!returned && !authError && await auth.renewSessionIfNeeded()) return;
   await store.load();
   await seedDemo();
   wireChrome();
@@ -50,6 +49,11 @@ async function boot() {
   });
   sync.onStatus(renderSyncBadge);
   sync.start();
+  // Keep the OneDrive sign-in alive in the background (see auth.renewSilently).
+  const renew = async () => { if (auth.needsRenewal() && await auth.renewSilently()) sync.sync(); };
+  renew();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renew(); });
+  setInterval(renew, 60 * 60e3);
   route();
   if (authError) toast('Sign-in failed: ' + authError.message, 7000);
   else if (returned && !returned.silent) toast('Connected to OneDrive');
@@ -123,7 +127,8 @@ function wireChrome() {
   showInstallButton();
   $('#syncBtn').onclick = () => {
     const st = sync.getStatus().state;
-    if (st === 'off' || st === 'reauth' || st === 'error') location.hash = '#/settings';
+    if (st === 'reauth') auth.signIn().catch((e) => toast(e.message)); // straight back in, no picker
+    else if (st === 'off' || st === 'error') location.hash = '#/settings';
     else sync.sync();
   };
   // Links to articles that don't exist yet: ask which template to start from.

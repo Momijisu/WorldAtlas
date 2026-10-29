@@ -40,7 +40,10 @@ export function sync() {
 }
 
 async function run() {
-  if (!auth.isSignedIn()) return refreshStatus();
+  if (!auth.isSignedIn()) {
+    if (auth.account() && await auth.renewSilently()) return run();
+    return refreshStatus();
+  }
   if (!navigator.onLine) return setStatus('offline', 'Offline. Changes are saved on this device.');
   setStatus('syncing');
   try {
@@ -57,6 +60,8 @@ async function run() {
     setStatus(store.isDirty() ? 'pending' : 'synced');
   } catch (e) {
     console.error('Sync failed', e);
+    // A lapsed session: try renewing in the background before asking.
+    if (e instanceof auth.ReauthRequired && await auth.renewSilently()) { again = true; return; }
     if (e instanceof auth.ReauthRequired) setStatus('reauth', e.message);
     else if (!navigator.onLine) setStatus('offline', 'Offline. Changes are saved on this device.');
     else setStatus('error', e.message || String(e));
