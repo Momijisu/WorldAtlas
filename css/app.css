@@ -398,6 +398,7 @@ label.inline select { width: auto; }
 }
 .tag:hover { border-color: var(--brass); color: var(--brass); }
 .tag small { color: var(--muted); }
+.tag.more { cursor: pointer; background: none; border-style: dashed; color: var(--muted); }
 .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: 1rem; }
 .chip {
   display: inline-flex; align-items: center; gap: .35rem;

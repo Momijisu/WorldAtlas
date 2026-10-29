@@ -5,6 +5,8 @@ import { familyOf, parentOf } from '../templates.js';
 import { $, esc } from '../util.js';
 import { view, setTitle, hydrateImages, articleRows, pageHead, icon, worldCrumb, sep } from '../ui.js';
 
+const TOP_TAGS = 10;
+
 export function viewList(wid, { type, tag }) {
   const all = store.articlesOf(wid);
   let list, title, newType = 'article', ic = 'books';
@@ -20,7 +22,8 @@ export function viewList(wid, { type, tag }) {
   else { list = all; title = 'All articles'; }
   setTitle(title);
   const sortKey = localStorage.getItem('wa.sort') || 'title';
-  const tags = store.allTags(wid);
+  // The most used tags first; the rest behind a button.
+  const tags = store.allTags(wid).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   view.innerHTML = `<section class="page">
     ${pageHead({
       eyebrow: `${worldCrumb(wid)} ${sep} ${icon(ic)} ${tag ? 'Tag' : 'Codex'}`,
@@ -36,8 +39,12 @@ export function viewList(wid, { type, tag }) {
       </div>
     </div>
     <div id="listOut"></div>
-    ${!tag && tags.length ? `<div class="section-head"><h2>Tags</h2></div><div class="tags">${tags.map(([t, n]) => `<a class="tag" href="#/w/${wid}/tag/${encodeURIComponent(t)}">#${esc(t)} <small>${n}</small></a>`).join('')}</div>` : ''}
+    ${!tag && tags.length ? `<div class="section-head"><h2>Tags</h2></div><div class="tags" id="tagList">${tags.map(([t, n], i) => `<a class="tag" href="#/w/${wid}/tag/${encodeURIComponent(t)}"${i >= TOP_TAGS ? ' hidden' : ''}>#${esc(t)} <small>${n}</small></a>`).join('')}${tags.length > TOP_TAGS ? `<button type="button" class="tag more" id="allTags">All ${tags.length} tags</button>` : ''}</div>` : ''}
   </section>`;
+  $('#allTags')?.addEventListener('click', (e) => {
+    $('#tagList').querySelectorAll('.tag[hidden]').forEach((t) => { t.hidden = false; });
+    e.currentTarget.remove();
+  });
   let sort = sortKey;
   const sorters = {
     title: (a, b) => a.title.localeCompare(b.title),
