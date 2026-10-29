@@ -1,12 +1,16 @@
-// Two-way sync between IndexedDB and OneDrive (Apps/WorldAtlas/).
+// Two-way sync between IndexedDB and OneDrive (Apps/WorldAtlas/), one folder
+// per world:
 //
-// atlas.json holds every world/article/map record (including deletion
-// tombstones); history.json holds article versions. Records merge one by one:
-// the newer `updatedAt` wins, so edits to different articles on phone and PC
-// never clobber each other. Uploads use
-// the file's eTag (If-Match), so a concurrent write from another device makes
-// us re-download and merge instead of overwriting. Images are stored as
-// separate immutable files in images/.
+//   Worlds/<world name>/world.json    the world, its articles and maps
+//   Worlds/<world name>/history.json  its article versions
+//   Worlds/<world name>/images/<id>   its pictures and fonts
+//   deleted.json                      records of deleted worlds (their folders are removed)
+//   Legacy/                           the old single atlas.json layout, moved aside
+//
+// Records merge one by one: the newer `updatedAt` wins, so edits to different
+// articles on phone and PC never clobber each other. Uploads use the file's
+// eTag (If-Match), so a concurrent write from another device makes us
+// re-download and merge instead of overwriting. Images are immutable files.
 import * as auth from './auth.js';
 import * as store from './store.js';
 import { RECORD_STORES } from './db.js';
@@ -49,13 +53,17 @@ async function run() {
   try {
     const rev = store.meta.localRev;
     const dirty = store.isDirty();
-    for (const spec of FILES) {
-      let done = false;
-      for (let attempt = 0; attempt < 4 && !done; attempt++) done = await syncFile(spec, dirty);
-      if (!done) throw new Error(`OneDrive kept changing ${spec.name} during sync. Try again shortly.`);
-    }
+    const legacy = await mergeLegacy();
+    const spec = deletedSpec();
+    await withRetries('deleted.json', () => syncFile(spec, dirty && store.hasUnsynced(spec.scope)));
+    const folders = await listWorldFolders();
+    for (const wid of await worldsToSync(folders)) await syncWorld(wid, folders, dirty && store.hasUnsynced(isWorldRec(wid)));
     await store.saveMeta({ syncedRev: rev });
-    await syncImages();
+    let complete = true;
+    for (const wid of liveWorlds()) complete = (await syncImages(wid)) && complete;
+    await removeDeletedFolders(folders);
+    // The old layout is retired only once every world folder holds its pictures.
+    if (legacy && complete) await retireLegacy();
     await store.saveMeta({ lastSync: Date.now() });
     setStatus(store.isDirty() ? 'pending' : 'synced');
   } catch (e) {
@@ -77,36 +85,163 @@ async function check(res, what) {
   throw err;
 }
 
-// Each OneDrive file: what goes in it and how to merge a downloaded copy.
-const FILES = [
-  {
-    name: REMOTE_FILE,
-    collect: () => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()].filter(store.syncable)])),
-    merge: (json) => store.mergeRecords(json, { detectConflicts: true }),
-    hasLocal: () => RECORD_STORES.some((s) => [...store.data[s].values()].some(store.syncable)),
-    agreed: (body) => store.markSynced(Object.fromEntries(RECORD_STORES.flatMap((s) => body[s].map((r) => [r.id, r.updatedAt || 0])))),
-  },
-  {
-    name: 'history.json',
-    collect: () => ({ history: [...store.data.history.values()].filter(store.syncable) }),
-    merge: (json) => store.mergeHistory(json.history),
-    hasLocal: () => [...store.data.history.values()].some(store.syncable),
-  },
-];
+// ---- the files
 
-// Returns true when local and remote agree for this file, false on an eTag race.
+const isWorldRec = (wid) => (r) => r.id === wid || r.worldId === wid;
+const liveWorlds = () => [...store.data.worlds.values()].filter((w) => !w.deleted && store.syncable(w)).map((w) => w.id);
+const deletedWorlds = () => new Set([...store.data.worlds.values()].filter((w) => w.deleted && store.syncable(w)).map((w) => w.id));
+const recordsWhere = (keep) => Object.fromEntries(RECORD_STORES.map((s) => [s, [...store.data[s].values()].filter((r) => store.syncable(r) && keep(r))]));
+const snapshotOf = (body) => Object.fromEntries(RECORD_STORES.flatMap((s) => (body[s] || []).map((r) => [r.id, r.updatedAt || 0])));
+
+// A world's records: world.json in its folder.
+const worldSpec = (wid, path) => ({
+  path, key: `w:${wid}`,
+  collect: () => recordsWhere(isWorldRec(wid)),
+  merge: (json) => store.mergeRecords(json, { detectConflicts: true, scope: isWorldRec(wid) }),
+  hasLocal: () => true,
+  agreed: (body) => store.markSynced(snapshotOf(body)),
+});
+// A world's article versions: history.json in its folder.
+const historySpec = (wid, path) => ({
+  path, key: `h:${wid}`,
+  collect: () => ({ history: [...store.data.history.values()].filter((h) => store.syncable(h) && h.worldId === wid) }),
+  merge: (json) => store.mergeHistory(json.history, (h) => h.worldId === wid),
+  hasLocal: () => [...store.data.history.values()].some((h) => store.syncable(h) && h.worldId === wid),
+});
+// Deleted worlds and everything that was in them, so other devices delete them too.
+function deletedSpec() {
+  const gone = () => deletedWorlds();
+  const inGone = (r) => gone().has(r.id) || gone().has(r.worldId);
+  return {
+    path: 'deleted.json', key: 'deleted', scope: inGone,
+    collect: () => recordsWhere(inGone),
+    merge: (json) => store.mergeRecords(json, { scope: inGone }),
+    hasLocal: () => gone().size > 0,
+    agreed: (body) => store.markSynced(snapshotOf(body)),
+  };
+}
+
+// Folder name for a world: its name, made safe for OneDrive, kept unique.
+const safeName = (name) => String(name || '').replace(/[\\/:*?"<>|#%\u0000-\u001f]/g, '').replace(/\s+/g, ' ').replace(/^[\s.]+|[\s.]+$/g, '').slice(0, 60) || 'World';
+const folderMap = () => store.meta.folders || {};
+const saveFolders = (map) => store.saveMeta({ folders: map });
+
+// The folders in Worlds/ (name → true), or an empty set before the first world.
+async function listWorldFolders() {
+  const names = new Set();
+  let url = `${ROOT}:/Worlds:/children?$select=name,folder&$top=200`;
+  while (url) {
+    const res = await auth.graph(url);
+    if (res.status === 404) break;
+    const json = await (await check(res, 'Listing worlds')).json();
+    for (const it of json.value || []) if (it.folder) names.add(it.name);
+    url = json['@odata.nextLink'] || null;
+  }
+  return names;
+}
+
+// Live local worlds, plus folders we don't know yet (new on another device, or
+// renamed there): each folder's world.json says which world it is.
+async function worldsToSync(folders) {
+  const map = { ...folderMap() };
+  const known = new Set(Object.values(map));
+  for (const name of folders) {
+    if (known.has(name)) continue;
+    const json = await readJSON(`Worlds/${name}/world.json`);
+    const wid = json?.worlds?.[0]?.id;
+    if (!wid) continue;
+    if (deletedWorlds().has(wid)) continue;
+    await store.mergeRecords(json, { detectConflicts: true, scope: isWorldRec(wid) });
+    map[wid] = name;
+  }
+  await saveFolders(map);
+  return liveWorlds();
+}
+
+async function syncWorld(wid, folders, dirty) {
+  const map = { ...folderMap() };
+  const want = safeName(store.world(wid)?.name);
+  let name = map[wid];
+  if (!name || !folders.has(name)) {
+    // New here, or its folder was renamed/removed elsewhere: pick a free name.
+    name = uniqueName(want, folders, wid);
+  } else if (safeName(name.replace(/ \(\d+\)$/, '')) !== want) {
+    name = await renameFolder(name, uniqueName(want, folders, wid), folders);
+  }
+  map[wid] = name;
+  folders.add(name);
+  await saveFolders(map);
+  const changed = await withRetries(`${name}/world.json`, () => syncFile(worldSpec(wid, `Worlds/${name}/world.json`), dirty));
+  if (changed || dirty) await withRetries(`${name}/history.json`, () => syncFile(historySpec(wid, `Worlds/${name}/history.json`), dirty));
+}
+
+function uniqueName(want, folders, wid) {
+  const taken = new Set([...folders].map((n) => n.toLowerCase()));
+  const mine = folderMap()[wid];
+  if (mine) taken.delete(mine.toLowerCase());
+  let name = want;
+  for (let i = 2; taken.has(name.toLowerCase()); i++) name = `${want} (${i})`;
+  return name;
+}
+
+async function renameFolder(from, to, folders) {
+  if (from === to) return from;
+  const res = await auth.graph(`${ROOT}:/Worlds/${encodeURIComponent(from)}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: to }),
+  });
+  if (!res.ok) return from; // keep the old name; it still works
+  folders.delete(from);
+  folders.add(to);
+  return to;
+}
+
+// A deleted world's folder is removed once deleted.json records the deletion.
+async function removeDeletedFolders(folders) {
+  const map = { ...folderMap() };
+  for (const wid of deletedWorlds()) {
+    const name = map[wid];
+    if (!name) continue;
+    if (folders.has(name)) {
+      const res = await auth.graph(`${ROOT}:/Worlds/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) continue;
+    }
+    delete map[wid];
+  }
+  await saveFolders(map);
+}
+
+async function withRetries(what, fn) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const r = await fn();
+    if (r !== false) return r === 'changed';
+  }
+  throw new Error(`OneDrive kept changing ${what} during sync. Try again shortly.`);
+}
+
+const pathURL = (path) => `${ROOT}:/${path.split('/').map(encodeURIComponent).join('/')}`;
+
+async function readJSON(path) {
+  const res = await auth.graph(pathURL(path));
+  if (res.status === 404) return null;
+  const item = await (await check(res, 'Reading OneDrive')).json();
+  return (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + path)).json();
+}
+
+// Sync one file. Returns false on an eTag race (merge again), else 'changed'
+// if it was downloaded or uploaded, or 'same'.
 async function syncFile(spec, dirty) {
-  const metaRes = await auth.graph(`${ROOT}:/${spec.name}`);
-  let remoteETag = null;
-  let localAhead;
+  const eTags = store.meta.eTags || {};
+  const metaRes = await auth.graph(pathURL(spec.path));
+  let remoteETag = null, localAhead, changed = false;
   if (metaRes.status === 404) {
     localAhead = spec.hasLocal();
   } else {
     const item = await (await check(metaRes, 'Reading OneDrive')).json();
     remoteETag = item.eTag;
-    if (remoteETag !== store.meta.eTags[spec.name]) {
-      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + spec.name);
+    if (remoteETag !== eTags[spec.key]) {
+      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + spec.path);
       localAhead = await spec.merge(await content.json());
+      changed = true;
     } else {
       localAhead = dirty;
     }
@@ -114,46 +249,96 @@ async function syncFile(spec, dirty) {
   // Snapshot now: the upload (and the sync baseline) cover exactly this state.
   const body = spec.collect();
   if (localAhead) {
-    const res = await auth.graph(`${ROOT}:/${spec.name}:/content`, {
+    const res = await auth.graph(`${pathURL(spec.path)}:/content`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(remoteETag ? { 'If-Match': remoteETag } : { 'If-None-Match': '*' }) },
-      body: JSON.stringify({ app: 'WorldAtlas', version: 1, savedAt: Date.now(), ...body }),
+      body: JSON.stringify({ app: 'WorldAtlas', version: 2, savedAt: Date.now(), ...body }),
     });
     if (res.status === 412 || res.status === 409) return false; // someone else wrote first — merge again
-    remoteETag = (await (await check(res, 'Uploading ' + spec.name)).json()).eTag;
+    remoteETag = (await (await check(res, 'Uploading ' + spec.path)).json()).eTag;
+    changed = true;
   }
-  await store.saveMeta({ eTags: { ...store.meta.eTags, [spec.name]: remoteETag } });
+  await store.saveMeta({ eTags: { ...(store.meta.eTags || {}), [spec.key]: remoteETag } });
   await spec.agreed?.(body);
-  return true;
+  return changed ? 'changed' : 'same';
 }
 
-async function syncImages() {
-  // Upload images created on this device that synced records use (not the
-  // demo world's, a device-only wallpaper, or images from abandoned edits).
-  const used = store.referencedImages();
-  for (const id of await store.imageIds()) {
-    if (!used.has(id)) continue;
-    const rec = await store.getImage(id);
-    if (!rec || rec.uploaded) continue;
-    const res = await auth.graph(`${ROOT}:/images/${id}:/content`, {
-      method: 'PUT', headers: { 'Content-Type': rec.type }, body: rec.blob,
-    });
-    await check(res, 'Uploading image');
-    await store.putImage({ ...rec, uploaded: true });
-  }
-  // Download images referenced by records that we don't have yet.
+// A world's pictures and fonts: download the ones it uses that this device
+// lacks, then upload the ones its folder lacks. Returns false if any are still
+// missing everywhere (another device hasn't uploaded them yet).
+async function syncImages(wid) {
+  const name = folderMap()[wid];
+  if (!name) return true;
+  const used = store.referencedImages({ wid });
   const have = new Set(await store.imageIds());
-  let fetched = false;
-  for (const id of store.referencedImages()) {
+  let fetched = false, complete = true;
+  for (const id of used) {
     if (have.has(id)) continue;
-    const metaRes = await auth.graph(`${ROOT}:/images/${id}`);
-    if (metaRes.status === 404) continue; // not uploaded yet by the other device
+    // In the world's folder, or still in the old layout's images/.
+    let metaRes = await auth.graph(pathURL(`Worlds/${name}/images/${id}`));
+    if (metaRes.status === 404) metaRes = await auth.graph(pathURL(`images/${id}`));
+    if (metaRes.status === 404) { complete = false; continue; } // not uploaded yet by the other device
     const item = await (await check(metaRes, 'Reading image')).json();
     const blob = await (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading image')).blob();
-    await store.putImage({ id, blob, type: item.file?.mimeType || blob.type, uploaded: true });
+    // Found in the old images/ folder: not yet in the world's folder.
+    const inFolder = !item.parentReference?.path || item.parentReference.path.includes('/Worlds/');
+    await store.putImage({ id, blob, type: item.file?.mimeType || blob.type, uploaded: true, world: inFolder ? wid : null });
     fetched = true;
   }
   if (fetched) store.notify({ local: false, store: 'images' });
+  // Remembered by world, so renaming its folder doesn't upload everything again.
+  for (const id of used) {
+    const rec = await store.getImage(id);
+    if (!rec || rec.world === wid) continue;
+    const res = await auth.graph(`${pathURL(`Worlds/${name}/images/${id}`)}:/content`, {
+      method: 'PUT', headers: { 'Content-Type': rec.type }, body: rec.blob,
+    });
+    await check(res, 'Uploading image');
+    await store.putImage({ ...rec, uploaded: true, world: wid });
+  }
+  return complete;
+}
+
+// ---- the old single-file layout (atlas.json, history.json, images/ at the top)
+
+// Merge anything still in the old files: left from before the move to world
+// folders, or written by a device still on an older version. True if found.
+async function mergeLegacy() {
+  let found = false;
+  const atlas = await readJSON(REMOTE_FILE);
+  if (atlas) { await store.mergeRecords(atlas, { detectConflicts: true }); found = true; }
+  const history = await readJSON('history.json');
+  if (history) { await store.mergeHistory(history.history); found = true; }
+  return found;
+}
+
+// Once every world folder and its pictures are written, move the old files
+// into Legacy/ (dated, never deleted).
+async function retireLegacy() {
+  const legacyId = await ensureFolder('Legacy');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  for (const [name, base, ext] of [[REMOTE_FILE, 'atlas', '.json'], ['history.json', 'history', '.json'], ['images', 'images', '']]) {
+    for (let i = 1; ; i++) {
+      const res = await auth.graph(pathURL(name), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentReference: { id: legacyId }, name: `${base}-${stamp}${i > 1 ? `-${i}` : ''}${ext}` }),
+      });
+      if (res.status === 409 && i < 9) continue; // that name is taken in Legacy/: add a number
+      if (!res.ok && res.status !== 404) await check(res, 'Moving the old ' + name);
+      break;
+    }
+  }
+}
+
+async function ensureFolder(name) {
+  const res = await auth.graph(pathURL(name));
+  if (res.ok) return (await res.json()).id;
+  const made = await auth.graph(`${ROOT}/children`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }),
+  });
+  if (made.status === 409) return (await (await check(await auth.graph(pathURL(name)), 'Reading ' + name)).json()).id;
+  return (await (await check(made, 'Creating ' + name)).json()).id;
 }
 
 // Background scheduling: sync shortly after local edits, when the app comes

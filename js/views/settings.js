@@ -193,7 +193,7 @@ export function renderOneDriveCard() {
   $('#disconnectBtn')?.addEventListener('click', async () => {
     if (!(await confirmDialog('Disconnect OneDrive on this device? Your worlds stay here and in OneDrive.', 'Disconnect'))) return;
     auth.signOut();
-    await store.saveMeta({ eTags: {} });
+    await store.saveMeta({ eTags: {}, folders: {} });
     await store.resetSyncBase();
     sync.refreshStatus();
   });

@@ -90,6 +90,10 @@ export async function markSynced(snapshot) {
   await db.put('meta', { key: 'base', map: syncBase });
 }
 
+// Whether any of the records `keep` selects changed since they last synced.
+export const hasUnsynced = (keep) => db.RECORD_STORES.some((s) =>
+  [...data[s].values()].some((r) => syncable(r) && keep(r) && (syncBase[r.id] ?? -1) !== (r.updatedAt || 0)));
+
 export async function resetSyncBase() {
   syncBase = {};
   await db.put('meta', { key: 'base', map: syncBase });
@@ -102,7 +106,8 @@ const sameContent = (a, b) => JSON.stringify(contentOf(a)) === JSON.stringify(co
 // sides since the last sync keeps the local text and carries the other
 // version in `conflict` until the user resolves it (this syncs, so every
 // device sees the conflict). Returns true if local has anything `other` lacks.
-export async function mergeRecords(other, { detectConflicts = false } = {}) {
+// scope: which local records the other copy is meant to hold (e.g. one world's).
+export async function mergeRecords(other, { detectConflicts = false, scope = null } = {}) {
   let localAhead = false;
   let newConflicts = 0;
   for (const s of db.RECORD_STORES) {
@@ -128,7 +133,7 @@ export async function mergeRecords(other, { detectConflicts = false } = {}) {
       if (ru > lu) incoming.push(r);
     }
     for (const l of data[s].values()) {
-      if (!syncable(l)) continue;
+      if (!syncable(l) || (scope && !scope(l))) continue;
       const r = otherById.get(l.id);
       if (!r || (l.updatedAt || 0) > (r.updatedAt || 0)) localAhead = true;
     }
@@ -176,13 +181,13 @@ async function pruneHistory(articleId) {
 }
 
 // Merge history from another copy; returns true if local has versions `other` lacks.
-export async function mergeHistory(list = []) {
+export async function mergeHistory(list = [], scope = null) {
   const theirs = new Set(list.map((h) => h.id));
   const incoming = list.filter((h) => !data.history.has(h.id));
   await db.putMany('history', incoming);
   incoming.forEach((h) => data.history.set(h.id, h));
   for (const id of new Set(incoming.map((h) => h.articleId))) await pruneHistory(id);
-  return [...data.history.values()].some((h) => !theirs.has(h.id) && syncable(h));
+  return [...data.history.values()].some((h) => !theirs.has(h.id) && syncable(h) && (!scope || scope(h)));
 }
 
 // Restoring writes the snapshot as a new current version (and revives a deleted article).
@@ -290,9 +295,10 @@ export const putImage = (rec) => db.put('images', rec);
 export const imageIds = () => db.getAllKeys('images');
 
 // Images used by live records; `demo` selects the demo world's instead of synced ones.
-export function referencedImages({ demo = false } = {}) {
+// wid: only that world's images.
+export function referencedImages({ demo = false, wid = null } = {}) {
   const ids = new Set();
-  const want = (o) => live(o) && syncable(o) !== demo;
+  const want = (o) => live(o) && syncable(o) !== demo && (!wid || o.id === wid || o.worldId === wid);
   for (const w of data.worlds.values()) if (want(w)) {
     if (w.image) ids.add(w.image);
     if (w.background?.image) ids.add(w.background.image);

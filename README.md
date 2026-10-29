@@ -60,7 +60,17 @@ For local testing, add `http://localhost:8000/` as a redirect URI and run `pytho
 
 ## Syncing
 
-Each device keeps a full copy in IndexedDB. OneDrive holds `atlas.json` (worlds, articles, maps), `history.json` (versions) and `images/`.
+Each device keeps a full copy in IndexedDB. In OneDrive (`Apps/WorldAtlas/`) each world has its own folder, named after it:
+
+```
+Worlds/<world name>/world.json     the world, its articles and maps
+Worlds/<world name>/history.json   its article versions
+Worlds/<world name>/images/        its pictures and fonts
+deleted.json                       worlds you've deleted, so other devices remove them too
+Legacy/                            files from the older single-file layout, moved aside
+```
+
+Renaming a world renames its folder. To share a world, share its folder from OneDrive.
 
 Sync runs shortly after each edit, when the app is reopened or comes back online, and every two minutes. Edits to different articles merge. If the same article changes on two devices before they sync, both versions are kept and the article is flagged for the merge resolver.
 
