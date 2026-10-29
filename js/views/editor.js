@@ -7,7 +7,7 @@ import { REL_TYPES, REL_GROUPS } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
-import { wireFocus } from '../focus.js';
+import { wireFocus, BANNER_POS } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
@@ -282,7 +282,10 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; }, ratio: 1 });
   const bThumb = $('.banner-thumb', f);
   $$('.image-field', f).forEach((z) => wireDropzone(z));
-  const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: 2.4 });
+  // The header image's preview has the shape the article's header has on this
+  // screen: as wide as the page, clamp(220px, 38vw, 420px) tall (css/features.css).
+  const heroRatio = () => (f.clientWidth || 1000) / Math.min(420, Math.max(220, innerWidth * 0.38));
+  const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: heroRatio, fallback: BANNER_POS });
   // Portrait and header image. Either can reuse the other's picture (the same
   // stored image, so nothing is imported twice).
   const pics = {

@@ -1,7 +1,7 @@
 // Shared UI state and helpers used by every view.
 import * as store from './store.js';
 import { rowLabel } from './templates.js';
-import { posCSS } from './focus.js';
+import { posCSS, BANNER_POS } from './focus.js';
 import { TYPES } from './store.js';
 import { icon } from './icons.js';
 import { esc, $$ } from './util.js';
@@ -36,7 +36,7 @@ export const rowPicturesOn = () => { try { return localStorage.getItem('wa.rowPi
 const rowPicture = (a) => {
   const id = a.banner || a.image;
   if (!id || !rowPicturesOn()) return '';
-  return `<span class="row-bg" data-bg="${esc(id)}" style="background-position:${a.banner ? posCSS(a.bannerPos, [50, 35]) : posCSS(a.imagePos)}" aria-hidden="true"></span>`;
+  return `<span class="row-bg" data-bg="${esc(id)}" style="background-position:${a.banner ? posCSS(a.bannerPos, BANNER_POS) : posCSS(a.imagePos)}" aria-hidden="true"></span>`;
 };
 
 // listType: the template a list is of, so its rows needn't repeat it.

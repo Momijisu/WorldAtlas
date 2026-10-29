@@ -3,6 +3,7 @@
 // image id, and applied as background-position / object-position.
 
 export const DEFAULT_POS = [50, 50];
+export const BANNER_POS = [50, 35]; // article header images favour the upper part
 
 export const posCSS = (pos, fallback = DEFAULT_POS) => {
   const [x, y] = Array.isArray(pos) && pos.length === 2 ? pos : fallback;
@@ -12,16 +13,22 @@ export const posCSS = (pos, fallback = DEFAULT_POS) => {
 const clamp = (v) => Math.round(Math.min(100, Math.max(0, v)) * 10) / 10;
 
 // Make an <img> preview draggable to choose the focus. The preview is cropped
-// to `ratio` (width / height) like the real display. get()/set() read and
+// to `ratio` (width / height, or a function giving it) like the real display;
+// `fallback` is where an undragged picture sits there. get()/set() read and
 // write the [x, y] value.
-export function wireFocus(img, { get, set, ratio }) {
+export function wireFocus(img, { get, set, ratio, fallback = DEFAULT_POS }) {
   img.classList.add('focus-pick');
-  img.style.aspectRatio = String(ratio);
+  const shape = () => { img.style.aspectRatio = String(typeof ratio === 'function' ? ratio() : ratio); };
+  shape();
+  if (typeof ratio === 'function') {
+    const onResize = () => (img.isConnected ? shape() : removeEventListener('resize', onResize));
+    addEventListener('resize', onResize);
+  }
   img.draggable = false;
   img.tabIndex = 0;
   img.title = 'Drag to choose which part of the picture shows';
   img.setAttribute('aria-label', 'Image focus. Drag, or use the arrow keys, to move the picture.');
-  const show = () => { img.style.objectPosition = posCSS(get()); };
+  const show = () => { img.style.objectPosition = posCSS(get(), fallback); };
   show();
 
   // How far (px) the picture overflows the frame on each axis.
@@ -36,7 +43,7 @@ export function wireFocus(img, { get, set, ratio }) {
   img.addEventListener('pointerdown', (e) => {
     if (e.button > 0) return;
     img.setPointerCapture(e.pointerId);
-    drag = { x: e.clientX, y: e.clientY, pos: [...(get() || DEFAULT_POS)], over: overflow() };
+    drag = { x: e.clientX, y: e.clientY, pos: [...(get() || fallback)], over: overflow() };
     img.classList.add('dragging');
   });
   img.addEventListener('pointermove', (e) => {
@@ -55,9 +62,9 @@ export function wireFocus(img, { get, set, ratio }) {
     const d = { ArrowLeft: [5, 0], ArrowRight: [-5, 0], ArrowUp: [0, 5], ArrowDown: [0, -5] }[e.key];
     if (!d) return;
     e.preventDefault();
-    const [x, y] = get() || DEFAULT_POS;
+    const [x, y] = get() || fallback;
     set([clamp(x + d[0]), clamp(y + d[1])]);
     show();
   });
-  return { refresh: show };
+  return { refresh: () => { shape(); show(); } };
 }

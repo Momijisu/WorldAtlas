@@ -8,7 +8,7 @@ import { $, esc, timeAgo } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
-import { posCSS } from '../focus.js';
+import { posCSS, BANNER_POS } from '../focus.js';
 import { mountMap } from '../mapview.js';
 import { itemTitle } from './maps.js';
 
@@ -39,7 +39,7 @@ export function viewArticle(wid, id) {
         ${r.note ? `<br><span class="rel-note">${esc(r.note)}</span>` : ''}</span></a>`).join('')}</div>`).join('');
 
   view.innerHTML = `<article class="page article">
-    ${a.banner ? `<div class="article-hero" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, [50, 35])}"></div>` : ''}
+    ${a.banner ? `<div class="article-hero" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
     <div class="page-head article-head${a.banner ? ' over-hero' : ''}">
       <div>
         <div class="eyebrow"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` ${sep} <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')}</div>
