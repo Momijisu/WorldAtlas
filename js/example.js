@@ -24,8 +24,11 @@ export async function exampleWorld(store, { demo = false } = {}) {
   calendar.moons = [{ name: 'Selune', cycle: 30, offset: 3, color: '#d9cfb8' }, { name: 'Vey', cycle: 45, offset: 20, color: '#c4553b' }];
   calendar.currentYear = 1043;
   const cover = await assetImage(store, 'assets/demo/cover.svg');
+  // Header images for a couple of articles, to show how they look.
+  const varenholdBanner = await assetImage(store, 'assets/demo/varenhold.svg');
+  const gloamwoodBanner = await assetImage(store, 'assets/demo/gloamwood.svg');
   const world = {
-    id: wid, name: 'Aerthal', image: cover, calendar, background: { pattern: 'stars' }, ...(demo ? { demo: true } : {}),
+    id: wid, name: 'Aerthal', image: cover, calendar, ...(demo ? { demo: true } : {}),
     description: 'A shattered continent where the flying cities of the old **Skyward Empire** fell from the sky, and five kingdoms now squabble over the ruins. Start at [[Varenhold]], meet [[Queen Ysolde]], or open the map of [[Vael]].',
   };
   await store.save('worlds', world);
@@ -41,6 +44,7 @@ export async function exampleWorld(store, { demo = false } = {}) {
     tags: ['vael'],
   });
   const varenhold = A('settlement', 'Varenhold', {
+    banner: varenholdBanner, bannerPos: [50, 30],
     summary: 'The rain-slick capital of Vael, built on the bones of a Skyward citadel.',
     body: '## Overview\nVarenhold climbs a granite spur above the [[River Ost]]. Its upper city still floats a few feet off the ground, held up by the last working [[The Skyward Engines|Skyward engine]].\n\n## Districts\n- **The Lift**: noble estates on the floating stone, crowned by [[The Lift Palace]]\n- **Tallowmarket**: candlemakers, smugglers and the [[Lantern Guild]]\n- **The Drowns**: flood-prone docks\n\n> "Nothing in Varenhold is level, least of all its people." (a traveller’s saying)',
     fields: { Type: 'Capital city', Region: '[[Vael]]', Population: '~84,000', Founded: '312 AF', Ruler: '[[Queen Ysolde]]', Industries: 'Candles, river trade, stormglass cutting' },
@@ -81,6 +85,7 @@ export async function exampleWorld(store, { demo = false } = {}) {
     tags: ['vael', 'wilds'],
   });
   const gloamwood = A('location', 'Gloamwood', {
+    banner: gloamwoodBanner, bannerPos: [50, 70],
     summary: 'A misty eastern forest where travellers lose their way.',
     body: 'The mist never fully lifts. Locals say the [[Mistfox|mistfoxes]] lead the lost either home or further in, depending on the fox’s mood.',
     fields: { Type: 'Forest', Climate: 'Cold, misty', Dangers: 'Getting lost' },
