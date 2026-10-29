@@ -124,6 +124,12 @@
 .g-edge.g-affiliation { stroke: var(--edge-affiliation); }
 .g-edge.g-other { stroke: var(--edge-other); }
 .g-edge.link { stroke: var(--edge-link); stroke-dasharray: 3 5; stroke-width: 1.2; }
+/* Links between groups: fainter, so each group's own links stand out. */
+.g-edge.cross { opacity: .5; }
+.graph-svg.has-hl .g-edge.cross.hl { opacity: 1; }
+/* Groups: a soft blob (outline drawn with a wide rounded stroke) and a label. */
+.g-hull path { fill: var(--hc); stroke: var(--hc); stroke-width: 96px; stroke-linejoin: round; stroke-linecap: round; opacity: .075; }
+.g-hull-label { fill: var(--hc); font: 600 11px var(--sans); letter-spacing: .14em; text-transform: uppercase; text-anchor: middle; opacity: .85; pointer-events: none; }
 .g-node { cursor: pointer; }
 .g-node:focus { outline: none; }
 .g-node .g-halo { fill: transparent; stroke: none; }

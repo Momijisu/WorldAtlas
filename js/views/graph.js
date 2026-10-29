@@ -22,6 +22,7 @@ export function viewGraph(wid, q) {
   const opt = {
     links: prefs.links ?? false,
     loose: prefs.loose ?? false,
+    clusters: prefs.clusters ?? true,
     groups: new Set(prefs.groups || Object.keys(REL_GROUPS)),
     types: new Set(prefs.types || Object.keys(TYPES)),
     panel: prefs.panel ?? innerWidth >= 1000,
@@ -53,7 +54,7 @@ export function viewGraph(wid, q) {
       <button type="button" class="btn small" id="gFilterToggle" aria-controls="gLayers">${icon('funnel')} Filters<span class="gl-off" id="gOff"></span></button>
     </div>
     <div class="viz-wrap graph-wrap">
-      <div class="viz-box" id="gBox"><svg id="gSvg" class="graph-svg"><g id="gView"><g id="gEdges"></g><g id="gLabels"></g><g id="gNodes"></g></g></svg></div>
+      <div class="viz-box" id="gBox"><svg id="gSvg" class="graph-svg"><g id="gView"><g id="gHulls"></g><g id="gEdges"></g><g id="gLabels"></g><g id="gNodes"></g></g></svg></div>
       <div class="viz-zoom">
         <button class="icon-btn" data-z="in" aria-label="Zoom in">${icon('plus')}</button>
         <button class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button>
@@ -69,18 +70,19 @@ export function viewGraph(wid, q) {
         ${parents.map((p) => row(`data-type="${p}"`, TYPES[p].plural, familyOf(p).reduce((n, t) => n + countOf(t), 0), typeIcon(p))
           + (familyOf(p).length > 1 ? familyOf(p).slice(1).filter(countOf).map((t) => row(`data-type="${t}"`, TYPES[t].plural, countOf(t), typeIcon(t), 'sub')).join('') : '')).join('')}
         ${row('data-opt="loose"', 'Unconnected articles', '', icon('circle'), 'gl-loose')}
+        ${row('data-opt="clusters"', 'Group into clusters', '', icon('circles-three'))}
       </aside>
       <aside class="graph-info" id="gInfo" hidden></aside>
     </div>
   </section>`;
 
   const box = $('#gBox'), svg = $('#gSvg'), gView = $('#gView');
-  const gEdges = $('#gEdges'), gNodes = $('#gNodes'), gLabels = $('#gLabels');
+  const gEdges = $('#gEdges'), gNodes = $('#gNodes'), gLabels = $('#gLabels'), gHulls = $('#gHulls');
   const info = $('#gInfo');
 
   // Positions persist across filter changes for stability.
   const pos = new Map();
-  let nodes = [], edges = [], byId = new Map();
+  let nodes = [], edges = [], byId = new Map(), clusters = [];
   let selected = null;
   let tf = { s: 1, x: 0, y: 0 };
   let alpha = 0, raf = 0, interacted = false;
@@ -124,22 +126,29 @@ export function viewGraph(wid, q) {
       ids = keep;
       es = es.filter((e) => keep.has(e.from) && keep.has(e.to));
     }
-    nodes = [...ids].map((id) => {
-      if (!pos.has(id)) {
-        const ang = Math.random() * Math.PI * 2, rad = 60 + Math.random() * 220;
-        pos.set(id, { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad, vx: 0, vy: 0, fixed: false });
-      }
-      const p = pos.get(id);
-      if (id === focusId && !p.seeded) { p.x = 0; p.y = 0; p.seeded = true; }
-      return { id, a: store.article(id), p };
-    });
+    nodes = [...ids].map((id) => ({ id, a: store.article(id) }));
     byId = new Map(nodes.map((n) => [n.id, n]));
     const deg = new Map();
     edges = es.map((e) => {
       deg.set(e.from, (deg.get(e.from) || 0) + 1); deg.set(e.to, (deg.get(e.to) || 0) + 1);
       return { ...e, s: byId.get(e.from), t: byId.get(e.to) };
     });
-    nodes.forEach((n) => { n.deg = deg.get(n.id) || 0; });
+    nodes.forEach((n) => { n.deg = deg.get(n.id) || 0; n.w = labelWidth(n.a.title); });
+    // Groups of closely connected articles; each gets its own area.
+    clusters = opt.clusters ? findClusters(nodes, edges) : [];
+    nodes.forEach((n) => { n.c = -1; });
+    clusters.forEach((c, i) => c.members.forEach((n) => { n.c = i; }));
+    edges.forEach((e) => { e.cross = e.s.c !== e.t.c || e.s.c < 0; });
+    // New articles start near their group's place (groups spiral out from the centre).
+    nodes.forEach((n) => {
+      if (!pos.has(n.id)) {
+        const [ax, ay] = n.c >= 0 ? clusterAnchor(n.c) : [0, 0];
+        const ang = Math.random() * Math.PI * 2, rad = 30 + Math.random() * (n.c >= 0 ? 90 : 260);
+        pos.set(n.id, { x: ax + Math.cos(ang) * rad, y: ay + Math.sin(ang) * rad, vx: 0, vy: 0, fixed: false });
+      }
+      n.p = pos.get(n.id);
+      if (n.id === focusId && !n.p.seeded) { n.p.x = 0; n.p.y = 0; n.p.seeded = true; }
+    });
     // parallel edges between the same pair get a curve offset
     const pairCount = new Map();
     for (const e of edges) {
@@ -157,7 +166,7 @@ export function viewGraph(wid, q) {
   function draw() {
     gEdges.innerHTML = edges.map((e, i) => {
       const label = e.kind === 'rel' ? REL_TYPES[e.type].label : 'Mentions';
-      return `<path class="g-edge ${e.kind === 'link' ? 'link' : 'g-' + e.group}" data-i="${i}"><title>${esc(e.s.a.title)}: ${esc(label)} ${esc(e.t.a.title)}</title></path>`;
+      return `<path class="g-edge ${e.kind === 'link' ? 'link' : 'g-' + e.group}${e.cross && clusters.length ? ' cross' : ''}" data-i="${i}"><title>${esc(e.s.a.title)}: ${esc(label)} ${esc(e.t.a.title)}</title></path>`;
     }).join('');
     gNodes.innerHTML = nodes.map((n) => `
       <g class="g-node t-${n.a.type}${n.id === focusId ? ' focus' : ''}" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.a.title)}">
@@ -167,11 +176,37 @@ export function viewGraph(wid, q) {
         <text class="g-name" y="${R + 16}">${esc(truncate(n.a.title, 26))}</text>
       </g>`).join('');
     gLabels.innerHTML = '';
+    gHulls.innerHTML = clusters.map((c, i) => c.members.length < 3 ? '' : `
+      <g class="g-hull" style="--hc:${HULL_COLOURS[i % HULL_COLOURS.length]}"><path></path>
+        <text class="g-hull-label">around ${esc(truncate(c.hub.a.title, 30))}</text></g>`).join('');
     tick(true);
+  }
+
+  // A soft blob around each group: its members' outline drawn with a very wide
+  // rounded stroke, so it wraps them with padding.
+  function renderHulls() {
+    const gs = gHulls.children;
+    let k = 0;
+    clusters.forEach((c) => {
+      if (c.members.length < 3) return;
+      const g = gs[k++];
+      const pts = c.members.flatMap((n) => [[n.p.x, n.p.y], [n.p.x, n.p.y + R + 14]]);
+      const h = hull(pts);
+      g.firstElementChild.setAttribute('d', 'M' + h.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L') + 'Z');
+      const top = Math.min(...h.map((q) => q[1])), cx = h.reduce((t, q) => t + q[0], 0) / h.length;
+      const t = g.lastElementChild;
+      t.setAttribute('x', cx.toFixed(1)); t.setAttribute('y', (top - 44).toFixed(1));
+    });
   }
 
   function edgePath(e) {
     const { x: x1, y: y1 } = e.s.p, { x: x2, y: y2 } = e.t.p;
+    if (!e.idx && e.cross && clusters.length) {
+      // Links between groups bow gently, so they read as a separate layer.
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1;
+      const off = 0.14 * (e.from < e.to ? 1 : -1);
+      return `M${x1} ${y1}Q${mx - dy * off} ${my + dx * off} ${x2} ${y2}`;
+    }
     if (!e.idx) return `M${x1} ${y1}L${x2} ${y2}`;
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
     const off = 26 * Math.ceil(e.idx / 2) * (e.idx % 2 ? 1 : -1);
@@ -183,6 +218,7 @@ export function viewGraph(wid, q) {
     for (let i = 0; i < edges.length; i++) paths[i].setAttribute('d', edgePath(edges[i]));
     const gs = gNodes.children;
     for (let i = 0; i < nodes.length; i++) gs[i].setAttribute('transform', `translate(${nodes[i].p.x.toFixed(1)},${nodes[i].p.y.toFixed(1)})`);
+    renderHulls();
     renderLabels();
   }
 
@@ -199,34 +235,57 @@ export function viewGraph(wid, q) {
   }
 
   // ---- simulation
+  // Articles repel (more so between groups), relationships pull like springs
+  // (short within a group, long between groups), each group draws its members
+  // together, and names are kept from overlapping.
   function step() {
     const n = nodes.length;
-    const k = 150;
+    const k = 170;
     for (let i = 0; i < n; i++) {
-      const a = nodes[i].p;
+      const A = nodes[i], a = A.p;
       for (let j = i + 1; j < n; j++) {
-        const b = nodes[j].p;
+        const B = nodes[j], b = B.p;
         let dx = a.x - b.x, dy = a.y - b.y;
         let d2 = dx * dx + dy * dy;
         if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
-        if (d2 > 360000) continue;
-        const f = (k * k) / d2 * 0.9;
+        if (d2 > 490000) continue;
+        const apart = clusters.length && A.c !== B.c ? 1.6 : 1;
+        const f = (k * k) / d2 * 0.9 * apart;
         const d = Math.sqrt(d2);
-        const fx = (dx / d) * f, fy = (dy / d) * f;
-        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+        a.vx += (dx / d) * f; a.vy += (dy / d) * f; b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
       }
     }
     for (const e of edges) {
       const a = e.s.p, b = e.t.p;
       const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
-      const rest = e.kind === 'link' ? 210 : 165;
-      const f = (d - rest) * (e.kind === 'link' ? 0.02 : 0.05);
-      const fx = (dx / d) * f, fy = (dy / d) * f;
-      a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+      const between = e.cross && clusters.length;
+      const rest = between ? 280 : e.kind === 'link' ? 190 : 140;
+      const f = (d - rest) * (between ? 0.012 : e.kind === 'link' ? 0.02 : 0.05);
+      a.vx += (dx / d) * f; a.vy += (dy / d) * f; b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+    }
+    // Each group's members drift towards the group's middle.
+    for (const c of clusters) {
+      if (c.members.length < 2) continue;
+      let cx = 0, cy = 0;
+      for (const m of c.members) { cx += m.p.x; cy += m.p.y; }
+      cx /= c.members.length; cy /= c.members.length;
+      for (const m of c.members) { m.p.vx += (cx - m.p.x) * 0.02; m.p.vy += (cy - m.p.y) * 0.02; }
+    }
+    // Keep each article's dot-and-name box clear of its neighbours'.
+    for (let i = 0; i < n; i++) {
+      const A = nodes[i], a = A.p;
+      for (let j = i + 1; j < n; j++) {
+        const B = nodes[j], b = B.p;
+        const ox = (A.w + B.w) / 2 + 10 - Math.abs(a.x - b.x);
+        const oy = 2 * R + 30 - Math.abs(a.y - b.y);
+        if (ox <= 0 || oy <= 0) continue;
+        if (ox < oy) { const s = (a.x < b.x ? -1 : 1) * ox * 0.25; a.vx += s; b.vx -= s; }
+        else { const s = (a.y < b.y ? -1 : 1) * oy * 0.25; a.vy += s; b.vy -= s; }
+      }
     }
     for (const nd of nodes) {
       const p = nd.p;
-      p.vx -= p.x * 0.012; p.vy -= p.y * 0.012;
+      p.vx -= p.x * 0.008; p.vy -= p.y * 0.008;
       if (p.fixed) { p.vx = 0; p.vy = 0; continue; }
       const sp = Math.hypot(p.vx, p.vy), max = 30;
       if (sp > max) { p.vx *= max / sp; p.vy *= max / sp; }
@@ -258,7 +317,8 @@ export function viewGraph(wid, q) {
     const r = box.getBoundingClientRect();
     if (!nodes.length || !r.width) return;
     const xs = nodes.map((n) => n.p.x), ys = nodes.map((n) => n.p.y);
-    const minX = Math.min(...xs) - 70, maxX = Math.max(...xs) + 70, minY = Math.min(...ys) - 50, maxY = Math.max(...ys) + 60;
+    const pad = clusters.length ? 60 : 0; // room for group outlines and labels
+    const minX = Math.min(...xs) - 70 - pad, maxX = Math.max(...xs) + 70 + pad, minY = Math.min(...ys) - 50 - pad - (clusters.length ? 30 : 0), maxY = Math.max(...ys) + 60 + pad;
     // leave room for the side panel when it is open on wide screens
     const wide = r.width >= 700;
     const left = wide && opt.panel ? $('#gLayers').offsetWidth + 20 : 0; // the filter panel, on the left
@@ -490,6 +550,87 @@ function loadPrefs() {
 }
 function savePrefs(opt) {
   try {
-    localStorage.setItem('wa.graph', JSON.stringify({ links: opt.links, loose: opt.loose, groups: [...opt.groups], types: [...opt.types], panel: opt.panel }));
+    localStorage.setItem('wa.graph', JSON.stringify({ links: opt.links, loose: opt.loose, clusters: opt.clusters, groups: [...opt.groups], types: [...opt.types], panel: opt.panel }));
   } catch { /* ignore */ }
+}
+
+// ---- groups
+
+const HULL_COLOURS = ['#c4a46a', '#5f8f6f', '#4f74a8', '#a85c8a', '#c4553b', '#3f8c8c', '#7d5a8c', '#8fae5a', '#d9824a', '#6b8fb8'];
+const labelWidth = (title) => Math.max(2 * R + 8, Math.min(26, title.length) * 6.6);
+// Where group i sits to start with: a sunflower spiral, biggest groups in the middle.
+const clusterAnchor = (i) => { const r = 300 * Math.sqrt(i), t = i * 2.4; return [Math.cos(t) * r, Math.sin(t) * r]; };
+
+// Communities by the Louvain method: articles move to whichever neighbouring
+// group gains the most "modularity" (links inside groups beyond what chance
+// would give), then groups are merged the same way. Wiki links count less
+// than typed relationships. Returns [{ members, hub }] biggest first.
+function findClusters(nodes, edges) {
+  let ids = nodes.map((n) => n.id);
+  let links = edges.map((e) => [e.from, e.to, e.kind === 'link' ? 0.4 : 1]);
+  let groupOf = new Map(ids.map((id) => [id, id])); // article → current group
+  for (let level = 0; level < 3; level++) {
+    const moved = louvainPass(ids, links);
+    const comms = new Set(moved.values());
+    if (comms.size === ids.length) break; // nothing merged
+    for (const [id, g] of groupOf) groupOf.set(id, moved.get(g));
+    ids = [...comms];
+    const agg = new Map();
+    for (const [a, b, w] of links) {
+      const ca = moved.get(a), cb = moved.get(b);
+      const key = ca < cb ? ca + '|' + cb : cb + '|' + ca;
+      agg.set(key, (agg.get(key) || 0) + w);
+    }
+    links = [...agg].map(([k, w]) => { const [a, b] = k.split('|'); return [a, b, w]; });
+  }
+  const groups = new Map();
+  for (const n of nodes) { const g = groupOf.get(n.id); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(n); }
+  return [...groups.values()]
+    .filter((m) => m.length > 1 || m[0].deg > 0)
+    .map((members) => ({ members, hub: members.reduce((h, n) => (n.deg > h.deg ? n : h), members[0]) }))
+    .sort((a, b) => b.members.length - a.members.length);
+}
+
+function louvainPass(ids, links) {
+  const nb = new Map(ids.map((id) => [id, new Map()]));
+  let m2 = 0;
+  for (const [a, b, w] of links) {
+    if (a === b) { nb.get(a).set(a, (nb.get(a).get(a) || 0) + 2 * w); m2 += 2 * w; continue; }
+    nb.get(a).set(b, (nb.get(a).get(b) || 0) + w);
+    nb.get(b).set(a, (nb.get(b).get(a) || 0) + w);
+    m2 += 2 * w;
+  }
+  const comm = new Map(ids.map((id) => [id, id]));
+  if (!m2) return comm;
+  const k = new Map(ids.map((id) => [id, [...nb.get(id).values()].reduce((t, w) => t + w, 0)]));
+  const tot = new Map(ids.map((id) => [id, k.get(id)]));
+  const order = [...ids].sort();
+  for (let pass = 0, moved = true; moved && pass < 20; pass++) {
+    moved = false;
+    for (const id of order) {
+      const own = comm.get(id), ki = k.get(id);
+      tot.set(own, tot.get(own) - ki);
+      const toward = new Map();
+      for (const [m, w] of nb.get(id)) if (m !== id) toward.set(comm.get(m), (toward.get(comm.get(m)) || 0) + w);
+      let best = own, bestGain = (toward.get(own) || 0) - (tot.get(own) * ki) / m2;
+      for (const [c, w] of toward) {
+        const gain = w - (tot.get(c) * ki) / m2;
+        if (gain > bestGain + 1e-9 || (Math.abs(gain - bestGain) < 1e-9 && c < best)) { best = c; bestGain = gain; }
+      }
+      tot.set(best, tot.get(best) + ki);
+      if (best !== own) { comm.set(id, best); moved = true; }
+    }
+  }
+  return comm;
+}
+
+// Convex hull (monotone chain) of [x, y] points.
+function hull(pts) {
+  const p = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (p.length < 3) return p;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [], upper = [];
+  for (const q of p) { while (lower.length >= 2 && cross(lower.at(-2), lower.at(-1), q) <= 0) lower.pop(); lower.push(q); }
+  for (const q of p.reverse()) { while (upper.length >= 2 && cross(upper.at(-2), upper.at(-1), q) <= 0) upper.pop(); upper.push(q); }
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
 }
