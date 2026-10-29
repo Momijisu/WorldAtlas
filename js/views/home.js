@@ -15,6 +15,8 @@ import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
+const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 export function viewWorlds() {
   setTitle('');
   const ws = store.worlds();
@@ -26,7 +28,7 @@ export function viewWorlds() {
         <a class="card world-card" href="#/w/${w.id}">
           <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
-            <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${store.articlesOf(w.id).length} articles · ${store.mapsOf(w.id).length} maps</div>
+            <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}</div>
             <h3>${esc(w.name)}</h3>
             <p>${esc(plain(w.description, 150))}</p>
           </div>

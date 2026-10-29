@@ -85,8 +85,8 @@ async function seedDemo() {
     localStorage.setItem('wa.demoSeeded', '1');
   } catch { return; }
   if (store.data.worlds.size || auth.account()) return;
-  const wid = await exampleWorld(store, { demo: true });
-  if (!location.hash || location.hash === '#/') history.replaceState(null, '', `#/w/${wid}`);
+  // Created for newcomers to explore, but they start on the worlds page.
+  await exampleWorld(store, { demo: true });
 }
 
 // Keep the install event so we can offer our own Install button, but don't
@@ -287,7 +287,7 @@ function renderSidebar(wid) {
   sidebar.innerHTML = `<nav>
     <a href="#/" class="back">${icon('arrow-left')} All worlds</a>
     <div class="world-title"><a href="#/w/${wid}">${esc(w.name)}</a></div>
-    <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} articles · ${store.mapsOf(wid).length} maps`}</div>
+    <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} article${arts.length === 1 ? '' : 's'} · ${store.mapsOf(wid).length} map${store.mapsOf(wid).length === 1 ? '' : 's'}`}</div>
     ${nav(`#/w/${wid}`, 'compass', 'Overview')}
     ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
