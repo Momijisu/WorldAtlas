@@ -149,7 +149,15 @@ function wireChrome() {
   // Closing or reloading the tab can only use the browser's own warning (browsers don't allow custom ones).
   addEventListener('beforeunload', (e) => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; } });
   addEventListener('keydown', (e) => {
-    if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); $('#searchInput').focus(); }
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
+    if (e.key === '/' && !typing) { e.preventDefault(); $('#searchInput').focus(); }
+    // New article: N, Alt+N, or Ctrl/Cmd+N. Browsers keep Ctrl+N for a new
+    // window in ordinary tabs, so it only reaches us where they let it through.
+    const mod = e.ctrlKey || e.metaKey || e.altKey;
+    if (e.code === 'KeyN' && !e.shiftKey && (mod || !typing) && state.wid && !document.querySelector('#modal-root > *')) {
+      e.preventDefault();
+      newArticleDialog(state.wid);
+    }
   });
 }
 
