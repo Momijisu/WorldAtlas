@@ -22,8 +22,10 @@ export function viewList(wid, { type, tag }) {
   else { list = all; title = 'All articles'; }
   setTitle(title);
   const sortKey = localStorage.getItem('wa.sort') || 'title';
-  // The most used tags first; the rest behind a button.
-  const tags = store.allTags(wid).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  // Tags used in this list, most used first; the rest behind a button.
+  const tagCounts = new Map();
+  for (const a of list) for (const t of a.tags || []) tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+  const tags = [...tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   view.innerHTML = `<section class="page">
     ${pageHead({
       eyebrow: `${worldCrumb(wid)} ${sep} ${icon(ic)} ${tag ? 'Tag' : 'Codex'}`,

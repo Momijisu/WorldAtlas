@@ -262,12 +262,6 @@ export async function renameReferences(wid, oldTitle, newTitle) {
   }
 }
 
-export function allTags(wid) {
-  const counts = new Map();
-  for (const a of articlesOf(wid)) for (const t of a.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
-  return [...counts].sort((a, b) => a[0].localeCompare(b[0]));
-}
-
 // --- images -------------------------------------------------------------
 
 const urlCache = new Map();
