@@ -94,10 +94,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       if (r.label) {
         const [cx, cy] = centroid(r.points);
         const el = document.createElement('div');
-        el.className = `region-label region-label-${fill}`;
-        // A hidden region's name shows while it's hovered.
-        poly.addEventListener('pointerenter', () => el.classList.add('show'));
-        poly.addEventListener('pointerleave', () => el.classList.remove('show'));
+        el.className = 'region-label';
         el.style.left = cx * 100 + '%';
         el.style.top = cy * 100 + '%';
         el.textContent = r.label;

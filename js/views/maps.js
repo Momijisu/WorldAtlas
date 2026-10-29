@@ -18,8 +18,9 @@ const SWATCHES = [
   '#5f8f6f', '#3f6b45', '#8fae5a', '#3f8c8c', '#4f74a8', '#2f4c7a',
   '#7d5a8c', '#a85c8a', '#6b5444', '#3b3631', '#8c8c86', '#e9e1d1',
 ];
-// How a region is drawn: filled, just its outline, or nothing until hovered.
-const REGION_FILLS = { solid: 'Solid', outline: 'Outline', hidden: 'Hidden (show on hover)' };
+// How a region is drawn: filled, just its outline, or transparent (only its
+// name shows; the area is outlined while hovered). Stored as 'hidden'.
+const REGION_FILLS = { solid: 'Solid', outline: 'Outline', hidden: 'Transparent' };
 
 // The map(s) containing a pin/region that links to `mid` — first one wins.
 function parentMap(wid, mid) {

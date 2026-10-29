@@ -50,15 +50,13 @@
   pointer-events: visiblePainted; cursor: pointer; transition: fill .15s;
 }
 .region:hover { fill: color-mix(in srgb, var(--rc) 38%, transparent); }
-/* Outline: the map shows through. Hidden: nothing drawn until hovered (or
-   tapped, which opens its card); a faint outline while editing. */
+/* Outline: the map shows through. Transparent ('hidden'): only the name
+   shows; the area is outlined while hovered, and faintly while editing. */
 .region-outline { fill: transparent; stroke-width: 2.2; }
 .region-outline:hover { fill: color-mix(in srgb, var(--rc) 16%, transparent); }
 .region-hidden { fill: transparent; stroke: transparent; }
 .region-hidden:hover { fill: color-mix(in srgb, var(--rc) 16%, transparent); stroke: var(--rc); stroke-dasharray: 6 4; }
 .map-box.editing .region-hidden { stroke: color-mix(in srgb, var(--rc) 60%, transparent); }
-.region-label-hidden { opacity: 0; transition: opacity .15s; }
-.region-label-hidden.show, .map-box.editing .region-label-hidden { opacity: 1; }
 .map-box.editing .region { stroke-dasharray: 5 3; }
 .region-draft {
   fill: color-mix(in srgb, var(--brass) 18%, transparent);
