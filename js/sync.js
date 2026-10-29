@@ -34,7 +34,9 @@ export function refreshStatus() {
 
 let running = null;
 let again = false;
+let pausedUntil = 0; // after OneDrive throttles us
 export function sync() {
+  if (Date.now() < pausedUntil) return Promise.resolve();
   if (running) { again = true; return running; }
   running = run().finally(() => {
     running = null;
@@ -71,6 +73,13 @@ async function run() {
     // A lapsed session: try renewing in the background before asking.
     if (e instanceof auth.ReauthRequired && await auth.renewSilently()) { again = true; return; }
     if (e instanceof auth.ReauthRequired) setStatus('reauth', e.message);
+    else if (e instanceof auth.Throttled) {
+      // Not an error: pause, then pick up where we left off.
+      const wait = Math.max(60, e.seconds) * 1000;
+      pausedUntil = Date.now() + wait;
+      setTimeout(sync, wait + 500);
+      setStatus('pending', e.message);
+    }
     else if (!navigator.onLine) setStatus('offline', 'Offline. Changes are saved on this device.');
     else setStatus('error', e.message || String(e));
   }
@@ -126,15 +135,17 @@ const safeName = (name) => String(name || '').replace(/[\\/:*?"<>|#%\u0000-\u001
 const folderMap = () => store.meta.folders || {};
 const saveFolders = (map) => store.saveMeta({ folders: map });
 
-// The folders in Worlds/ (name → true), or an empty set before the first world.
-async function listWorldFolders() {
+// The folders in Worlds/, or an empty set before the first world.
+const listWorldFolders = () => listNames(`${ROOT}:/Worlds:/children?$select=name,folder&$top=200`, true);
+
+// Names of the items in a folder listing (only folders if foldersOnly).
+async function listNames(url, foldersOnly = false) {
   const names = new Set();
-  let url = `${ROOT}:/Worlds:/children?$select=name,folder&$top=200`;
   while (url) {
     const res = await auth.graph(url);
     if (res.status === 404) break;
-    const json = await (await check(res, 'Listing worlds')).json();
-    for (const it of json.value || []) if (it.folder) names.add(it.name);
+    const json = await (await check(res, 'Listing OneDrive')).json();
+    for (const it of json.value || []) if (!foldersOnly || it.folder) names.add(it.name);
     url = json['@odata.nextLink'] || null;
   }
   return names;
@@ -263,6 +274,8 @@ async function syncFile(spec, dirty) {
   return changed ? 'changed' : 'same';
 }
 
+const missingUntil = new Map(); // pictures not on OneDrive yet: when to look again
+
 // A world's pictures and fonts: download the ones it uses that this device
 // lacks, then upload the ones its folder lacks. Returns false if any are still
 // missing everywhere (another device hasn't uploaded them yet).
@@ -274,10 +287,11 @@ async function syncImages(wid) {
   let fetched = false, complete = true;
   for (const id of used) {
     if (have.has(id)) continue;
+    if ((missingUntil.get(id) || 0) > Date.now()) { complete = false; continue; } // looked recently
     // In the world's folder, or still in the old layout's images/.
     let metaRes = await auth.graph(pathURL(`Worlds/${name}/images/${id}`));
-    if (metaRes.status === 404) metaRes = await auth.graph(pathURL(`images/${id}`));
-    if (metaRes.status === 404) { complete = false; continue; } // not uploaded yet by the other device
+    if (metaRes.status === 404 && legacyImages) metaRes = await auth.graph(pathURL(`images/${id}`));
+    if (metaRes.status === 404) { complete = false; missingUntil.set(id, Date.now() + 30 * 60e3); continue; } // not uploaded yet by the other device
     const item = await (await check(metaRes, 'Reading image')).json();
     const blob = await (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading image')).blob();
     // Found in the old images/ folder: not yet in the world's folder.
@@ -303,13 +317,21 @@ async function syncImages(wid) {
 
 // Merge anything still in the old files: left from before the move to world
 // folders, or written by a device still on an older version. True if found.
+// One listing of the top folder says whether any of the old files exist.
+let legacyImages = false;
 async function mergeLegacy() {
+  const top = await listNames(`${ROOT}/children?$select=name&$top=200`);
+  legacyImages = top.has('images');
   let found = false;
-  const atlas = await readJSON(REMOTE_FILE);
-  if (atlas) { await store.mergeRecords(atlas, { detectConflicts: true }); found = true; }
-  const history = await readJSON('history.json');
-  if (history) { await store.mergeHistory(history.history); found = true; }
-  return found;
+  if (top.has(REMOTE_FILE)) {
+    const atlas = await readJSON(REMOTE_FILE);
+    if (atlas) { await store.mergeRecords(atlas, { detectConflicts: true }); found = true; }
+  }
+  if (top.has('history.json')) {
+    const history = await readJSON('history.json');
+    if (history) { await store.mergeHistory(history.history); found = true; }
+  }
+  return found || legacyImages;
 }
 
 // Once every world folder and its pictures are written, move the old files
