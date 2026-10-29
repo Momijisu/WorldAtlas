@@ -337,6 +337,23 @@ label.inline select { width: auto; }
 .card-body p { margin: 0 0 .7rem; color: var(--text-2); font-size: .95rem; }
 .card-body .eyebrow { font-size: .66rem; }
 
+/* World cards: the cover fills the card; name and counts sit over its lower
+   edge, and the description slides up on hover. */
+.world-card { position: relative; aspect-ratio: 4 / 3; justify-content: flex-end; isolation: isolate; }
+.world-card .card-cover { position: absolute; inset: 0; z-index: -2; aspect-ratio: auto; border: 0; font-size: 4rem; transition: transform .45s ease; }
+.world-card .card-cover:not(.has-img) > span { transform: translateY(-18%); opacity: .55; }
+.world-card::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--ink-0) 55%, transparent) 62%, color-mix(in srgb, var(--ink-0) 92%, transparent) 100%); }
+.world-card .card-body { padding: .9rem 1.1rem 1rem; }
+.world-card .card-body h3 { margin: 0; color: #f4ecdc; text-shadow: 0 1px 8px rgba(0, 0, 0, .6); }
+.world-card .card-body .eyebrow { color: color-mix(in srgb, #f4ecdc 75%, transparent); text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+.world-card .card-desc { margin: 0; max-height: 0; opacity: 0; overflow: hidden; color: #e3dacb; font-size: .92rem; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; transition: max-height .3s ease, opacity .25s ease, margin .3s ease; }
+.world-card:is(:hover, :focus-visible) .card-desc { max-height: 4.5em; opacity: 1; margin-top: .35rem; }
+.world-card:is(:hover, :focus-visible) .card-cover { transform: scale(1.04); }
+:root[data-theme="light"] .world-card::after { background: linear-gradient(180deg, transparent 35%, rgba(20, 16, 12, .5) 62%, rgba(20, 16, 12, .88) 100%); }
+@media (prefers-color-scheme: light) { :root[data-theme="auto"] .world-card::after { background: linear-gradient(180deg, transparent 35%, rgba(20, 16, 12, .5) 62%, rgba(20, 16, 12, .88) 100%); } }
+
 .index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
 .index-cell {
   display: flex; align-items: center; gap: .8rem; padding: .9rem 1rem;

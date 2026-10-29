@@ -41,11 +41,11 @@ export function viewWorlds() {
       ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
-          <div class="card-cover" style="aspect-ratio:${heroRatio().toFixed(3)}${w.image ? `;background-position:${posCSS(w.imagePos)}` : ''}" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
+          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
             <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}</div>
             <h3>${esc(w.name)}</h3>
-            <p>${esc(plain(w.description, 150))}</p>
+            ${w.description ? `<p class="card-desc">${esc(plain(w.description, 150))}</p>` : ''}
           </div>
         </a>`).join('')}</div>` : `
       <div class="empty-state">
