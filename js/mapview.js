@@ -86,14 +86,18 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       if (!visible(r) || !r.points || r.points.length < 3) continue;
       const poly = document.createElementNS(SVG, 'polygon');
       poly.setAttribute('points', r.points.map(([px, py]) => `${px * w},${py * h}`).join(' '));
-      poly.setAttribute('class', 'region');
+      const fill = ['outline', 'hidden'].includes(r.fill) ? r.fill : 'solid';
+      poly.setAttribute('class', `region region-${fill}`);
       poly.dataset.region = r.id;
       poly.style.setProperty('--rc', r.color || '#c4a46a');
       svg.appendChild(poly);
       if (r.label) {
         const [cx, cy] = centroid(r.points);
         const el = document.createElement('div');
-        el.className = 'region-label';
+        el.className = `region-label region-label-${fill}`;
+        // A hidden region's name shows while it's hovered.
+        poly.addEventListener('pointerenter', () => el.classList.add('show'));
+        poly.addEventListener('pointerleave', () => el.classList.remove('show'));
         el.style.left = cx * 100 + '%';
         el.style.top = cy * 100 + '%';
         el.textContent = r.label;

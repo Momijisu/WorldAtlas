@@ -13,7 +13,13 @@ import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../u
 export const PIN_ICONS = ['map-pin', 'castle-turret', 'house', 'tent', 'ruins', 'stairs', 'cave', 'mountains', 'tree-evergreen', 'anchor', 'skull', 'star',
   'crown', 'flag', 'sword', 'church', 'boat', 'flame', 'diamond', 'shield', 'compass'];
 const PIN_NAMES = { stairs: 'dungeon' }; // hover names where the icon's own name isn't the place
-const SWATCHES = ['#c4553b', '#c4a46a', '#5f8f6f', '#4f74a8', '#7d5a8c', '#3b3631', '#e9e1d1'];
+const SWATCHES = [
+  '#c4553b', '#a8322d', '#d9824a', '#c4a46a', '#e3c45b', '#8a6a35',
+  '#5f8f6f', '#3f6b45', '#8fae5a', '#3f8c8c', '#4f74a8', '#2f4c7a',
+  '#7d5a8c', '#a85c8a', '#6b5444', '#3b3631', '#8c8c86', '#e9e1d1',
+];
+// How a region is drawn: filled, just its outline, or nothing until hovered.
+const REGION_FILLS = { solid: 'Solid', outline: 'Outline', hidden: 'Hidden (show on hover)' };
 
 // The map(s) containing a pin/region that links to `mid` — first one wins.
 function parentMap(wid, mid) {
@@ -467,13 +473,17 @@ export async function viewMap(wid, mid, q) {
         ${layerField(reg.layer || '')}
         <label>Linked article${articleField(reg.layer, reg.articleId)}</label>
         <label>Opens map<select name="mapId">${mapOptions(reg.mapId)}</select></label>
-        ${colourField(reg.color || SWATCHES[1])}
+        <div class="field-label">Style</div>
+        <div class="seg region-fill">${Object.entries(REGION_FILLS).map(([k, l]) => `<button type="button" data-fill="${k}" class="${(reg.fill || 'solid') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+        ${colourField(reg.color || SWATCHES[3])}
         <div class="actions">
           ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete</button><span class="spacer"></span>`}
           <button class="btn primary">${isNew ? 'Add region' : 'Save'}</button>
         </div>
       </form>`, {
       onMount: (el, close) => {
+        let fill = reg.fill || 'solid';
+        $$('[data-fill]', el).forEach((b) => b.onclick = () => { fill = b.dataset.fill; $$('[data-fill]', el).forEach((x) => x.classList.toggle('on', x === b)); });
         const f = $('#rf', el);
         wireColour(el, f);
         wireLayer(el, f);
@@ -483,7 +493,7 @@ export async function viewMap(wid, mid, q) {
         f.onsubmit = async (e) => {
           e.preventDefault();
           const next = { ...reg, label: f.label.value.trim(), articleId: f.articleId.value, mapId: f.mapId.value,
-            layer: readLayer(f), color: f.color.value };
+            layer: readLayer(f), color: f.color.value, fill };
           const regions = cur().regions || [];
           await persist({ regions: isNew ? [...regions, next] : regions.map((r) => (r.id === reg.id ? next : r)) });
           close();
