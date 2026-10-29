@@ -335,7 +335,7 @@ export async function viewMap(wid, mid, q) {
       saveHidden(mid, hidden);
       refresh();
     });
-    panel.querySelector('[data-close]').onclick = () => { panel.hidden = true; $('#layersBtn').classList.remove('on'); };
+    panel.querySelector('[data-close]').onclick = () => { panel.hidden = true; $('#layersBtn').classList.remove('on'); rememberLayers(false); };
   }
   renderLayers();
 
@@ -370,7 +370,13 @@ export async function viewMap(wid, mid, q) {
     $(btnId).classList.toggle('on', !p.hidden);
     if (!p.hidden) { $(other).hidden = true; $(otherBtn).classList.remove('on'); }
     if (!p.hidden && id === '#placesPanel') $('#placesQ').focus();
+    if (id === '#layersPanel') rememberLayers(!p.hidden);
   };
+  // The Layers panel opens with the map unless it was closed last time.
+  const rememberLayers = (open) => { try { localStorage.setItem('wa.map.layers', open ? 'open' : 'closed'); } catch { /* private mode */ } };
+  let layersOpen = true;
+  try { layersOpen = localStorage.getItem('wa.map.layers') !== 'closed'; } catch { /* default open */ }
+  if (layersOpen) { $('#layersPanel').hidden = false; $('#layersBtn').classList.add('on'); }
   $('#layersBtn').onclick = () => togglePanel('#layersPanel', '#layersBtn', '#placesPanel', '#placesBtn');
   $('#placesBtn').onclick = () => togglePanel('#placesPanel', '#placesBtn', '#layersPanel', '#layersBtn');
   $('#settingsBtn').onclick = () => mapDialog(wid, cur());

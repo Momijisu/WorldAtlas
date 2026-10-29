@@ -15,6 +15,21 @@ import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
 import { promptCard, wirePromptCard } from './prompts.js';
 
+// The world page header's shape (width / height) on this device, recorded
+// whenever a world page shows, so world cards and the cover preview crop the
+// cover exactly as the header does. Before any is recorded: the page width
+// over the header's 240px minimum height.
+const HERO_KEY = 'wa.heroRatio';
+export function heroRatio() {
+  const saved = +localStorage.getItem(HERO_KEY);
+  return saved > 0.5 ? saved : Math.min(1400, $('#view')?.clientWidth || innerWidth) / 240;
+}
+function recordHeroRatio() {
+  const hero = $('.world-home .hero');
+  if (hero?.offsetWidth && hero.offsetHeight) try { localStorage.setItem(HERO_KEY, (hero.offsetWidth / hero.offsetHeight).toFixed(3)); } catch { /* private mode */ }
+}
+addEventListener('resize', () => recordHeroRatio());
+
 const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export function viewWorlds() {
@@ -26,7 +41,7 @@ export function viewWorlds() {
       ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
-          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
+          <div class="card-cover" style="aspect-ratio:${heroRatio().toFixed(3)}${w.image ? `;background-position:${posCSS(w.imagePos)}` : ''}" ${w.image ? `data-bg="${w.image}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
             <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}</div>
             <h3>${esc(w.name)}</h3>
@@ -116,7 +131,7 @@ export async function worldDialog(w) {
       const coverRatio = () => {
         const hero = document.querySelector('.world-home .hero');
         if (hero?.offsetWidth && !isNew && state.wid === w.id) return hero.offsetWidth / hero.offsetHeight;
-        return Math.min(1400, $('#view')?.clientWidth || innerWidth) / 240;
+        return heroRatio();
       };
       const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: coverRatio });
       $('[data-cancel]', m).onclick = () => close();
@@ -223,6 +238,7 @@ export function viewWorld(wid) {
   });
   $('#newArt').onclick = () => newArticleDialog(wid);
   $('#newArt2')?.addEventListener('click', (e) => { e.preventDefault(); newArticleDialog(wid); });
+  recordHeroRatio();
   hydrateImages();
 }
 
