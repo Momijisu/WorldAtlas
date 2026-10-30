@@ -390,11 +390,14 @@ export async function viewMap(wid, mid, q) {
     panel.classList.toggle('arranging', arranging);
     panel.classList.toggle('two-col', listed && !arranging && rows > 16 && layers.length > 1); // arranging keeps one roomy column
     const count = (l) => all.filter((it) => (it.layer || '') === l).length;
+    // A group holding a single region stands for that region (a district and the places in it).
+    const regionOf = (l) => { const rs = regions.filter((r) => (r.layer || '') === l); return rs.length === 1 ? rs[0] : null; };
     panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${arranging ? 'Arrange the key' : nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
       ${layers.length ? `<div class="layer-groups">${layers.map((l) => `<div class="layer-group${folded.has(l) ? ' folded' : ''}" data-group="${esc(l)}">
         <div class="layer-line">${grip(layerName(l))}<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
-          <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${count(l)}</span>
+          ${regionOf(l) ? `<button type="button" class="group-link" data-group-region="${regionOf(l).id}" title="Show ${esc(itemTitle(regionOf(l)) || layerName(l))} on the map"><span class="key-swatch" style="--rc:${esc(regionOf(l).color || SWATCHES[3])}"></span>${esc(layerName(l))}</button>`
+            : `<span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span>`}<span class="count">${count(l)}</span>
         </label>${arranging && l ? `<button type="button" class="icon-btn sm" data-rename="${esc(l)}" title="Rename group">${icon('pencil-simple')}</button><button type="button" class="icon-btn sm" data-remove="${esc(l)}" title="Remove group (its places move to General)">${icon('trash')}</button>` : ''}
         ${listed && (count(l) || arranging) ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${keyFor(l)}</div>`).join('')}</div>`
         : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}
@@ -411,6 +414,22 @@ export async function viewMap(wid, mid, q) {
       saveHidden(mid, hidden);
       refresh();
       renderLayers();
+    });
+    $$('[data-group-region]', panel).forEach((b) => {
+      const id = b.dataset.groupRegion;
+      const mark = (on) => $(`#mapBox [data-region="${id}"]`)?.classList.toggle('lit', on);
+      b.onmouseenter = () => mark(true);
+      b.onmouseleave = () => mark(false);
+      b.onfocus = () => mark(true);
+      b.onblur = () => mark(false);
+      b.onclick = (e) => {
+        e.preventDefault(); // not the layer's checkbox
+        const r = (cur().regions || []).find((x) => x.id === id);
+        if (!r) return;
+        if (hidden.has(r.layer || '')) { hidden.delete(r.layer || ''); saveHidden(mid, hidden); refresh(); renderLayers(); }
+        ctl.focus(r.points);
+        if (editing) regionDialog(r); else showInfo(r, 'region');
+      };
     });
     $$('[data-key]', panel).forEach((b) => {
       const [kind, id] = b.dataset.key.split(':');
@@ -479,7 +498,8 @@ export async function viewMap(wid, mid, q) {
     $$('[data-rename]', panel).forEach((b) => b.onclick = () => {
       const old = b.dataset.rename;
       groupNameDialog('Rename group', layerName(old), (name) => {
-        const re = (it) => ((it.layer || '') === old ? { ...it, layer: name } : it);
+        // A region named like its group keeps the group's name.
+        const re = (it) => ((it.layer || '') === old ? { ...it, layer: name, ...(it.points && (it.label || '').toLowerCase() === layerName(old).toLowerCase() ? { label: name } : {}) } : it);
         if (hidden.delete(old)) { hidden.add(name); saveHidden(mid, hidden); }
         persist({ pins: (cur().pins || []).map(re), regions: (cur().regions || []).map(re), layerOrder: layersOf(cur()).map((l) => (l === old ? name : l)) });
       });
