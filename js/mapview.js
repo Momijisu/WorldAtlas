@@ -168,7 +168,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       el.style.top = p.y * 100 + '%';
       el.style.setProperty('--pin', p.color || '#c4553b');
       // Numbered pins show their number (the map's key lists the names); the name appears on hover.
-      el.innerHTML = `<span class="pin-badge">${p.num ? `<b>${p.num}</b>` : icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
+      el.innerHTML = `<span class="pin-badge"><span class="mk-fill"></span>${p.num ? `<b>${p.num}</b>` : icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
       el.setAttribute('aria-label', p.num ? `${p.num}. ${p.label || 'Pin'}` : p.label || 'Pin');
       // Taps and drags on a pin are handled with the map's own pointer
       // handling (a drag pans, a tap opens it); this is for the keyboard.

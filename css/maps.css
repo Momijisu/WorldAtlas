@@ -277,3 +277,55 @@
 .key-swatch { flex-shrink: 0; width: .8rem; height: .8rem; border-radius: 2px; border: 1px solid var(--rc); background: color-mix(in srgb, var(--rc) 45%, transparent); }
 .region.lit { fill: color-mix(in srgb, var(--rc) 45%, transparent); stroke-width: 3; }
 .region-hidden.lit { stroke: var(--rc); stroke-dasharray: 6 4; }
+
+/* ---- Marker shapes and finishes (set on the map box: data-shape, data-finish) */
+.mk-fill { display: none; }
+.pin { --mk-edge: rgba(255, 248, 235, .95); --mk-fill: var(--pin); --mk-ink: #fff; }
+.map-box[data-finish="ivory"] .pin { --mk-edge: #2b2118; --mk-fill: #f6f0e3; --mk-ink: #2b2118; }
+.map-box[data-finish="parchment"] .pin {
+  --mk-edge: #2e1c0c; --mk-ink: #2e1c0c;
+  --mk-fill: radial-gradient(circle at 40% 32%, rgba(255, 251, 236, .8), rgba(255, 244, 214, 0) 62%), radial-gradient(circle, rgba(0, 0, 0, 0) 55%, rgba(120, 80, 30, .28)), linear-gradient(rgba(242, 226, 184, .72), rgba(242, 226, 184, .72)), url(../assets/backgrounds/parchment.png) center / 60px, #efdcae;
+}
+.map-box[data-finish="hologram"] .pin {
+  --mk-edge: #8af6ff; --mk-ink: #d8fdff;
+  --mk-fill: repeating-linear-gradient(0deg, rgba(138, 246, 255, .22) 0 1px, transparent 1px 3px), radial-gradient(circle at 50% 40%, rgba(60, 210, 240, .45), rgba(8, 40, 70, .7));
+}
+/* The teardrop pin takes the finish too */
+.map-box[data-finish] .pin-badge { background: var(--mk-fill); color: var(--mk-ink); box-shadow: 0 0 0 1.5px var(--mk-edge), 0 2px 6px rgba(0, 0, 0, .45); }
+.map-box[data-finish="hologram"] .pin-badge { box-shadow: 0 0 0 1.2px var(--mk-edge), 0 0 8px rgba(90, 230, 255, .8); }
+
+/* Other shapes: centred on the spot, outlined by a clipped edge layer */
+.map-box[data-shape]:not([data-shape="pin"]) .pin { transform: translate(-50%, calc(-100% + 13px)) scale(var(--inv, 1)); transform-origin: 50% calc(100% - 13px); gap: 6px; }
+.map-box[data-shape]:not([data-shape="pin"]) .pin-badge {
+  transform: none; width: 26px; height: 26px; margin-bottom: 0; border-radius: 0;
+  background: none; box-shadow: none; color: var(--mk-ink); filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, .55));
+}
+.map-box[data-shape]:not([data-shape="pin"]) .pin-badge::before { content: ""; position: absolute; inset: 0; clip-path: var(--clip); background: var(--mk-edge); }
+.map-box[data-shape]:not([data-shape="pin"]) .mk-fill { display: block; position: absolute; inset: var(--mk-line, 1.6px); clip-path: var(--clip); background: var(--mk-fill); }
+.map-box[data-shape]:not([data-shape="pin"]) .pin-badge > :is(b, .i) { position: relative; z-index: 1; transform: none; }
+.map-box[data-shape]:not([data-shape="pin"]) .pin:is(:hover, :focus-visible) .pin-badge { transform: scale(1.12); }
+.map-box[data-shape]:not([data-shape="pin"]) .pin.lit .pin-badge { transform: scale(1.3); }
+.map-box[data-shape="circle"] { --clip: circle(50%); }
+.map-box[data-shape="square"] { --clip: inset(0 round 4px); }
+.map-box[data-shape="hexagon"] { --clip: polygon(50% 0, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%); }
+.map-box[data-shape="diamond"] { --clip: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.map-box[data-shape="diamond"] .pin-badge { width: 30px; height: 30px; }
+.map-box[data-shape="diamond"] .pin-badge > b { font-size: 11px !important; }
+
+/* Numbers in the finishes' own lettering */
+.map-box[data-finish="parchment"] .pin-badge b, .map-box[data-finish="ivory"] .pin-badge b { font: 700 13px/1 var(--display); letter-spacing: 0; }
+.map-box[data-finish="hologram"] .pin-badge b { font: 600 11px/1 var(--mono, monospace); text-shadow: 0 0 4px rgba(120, 240, 255, .95); }
+.map-box[data-finish="hologram"] .pin-badge { filter: drop-shadow(0 0 3px rgba(90, 230, 255, .9)) drop-shadow(0 0 1px rgba(0, 0, 0, .6)); }
+
+/* Labels to match */
+.map-box[data-finish="parchment"] .pin-label {
+  background: radial-gradient(ellipse at 40% 30%, rgba(255, 249, 230, .9), rgba(222, 199, 152, .75)), url(../assets/backgrounds/parchment.png) center / 120px, #e2cfa4;
+  color: #2e1f10; border-color: #3a2614;
+}
+.map-box[data-finish="ivory"] .pin-label { background: rgba(246, 240, 227, .95); color: #2b2118; border-color: rgba(43, 33, 24, .5); }
+.map-box[data-finish="hologram"] .pin-label {
+  background: rgba(6, 30, 50, .78); color: #c9fbff; border-color: rgba(138, 246, 255, .7);
+  font: 500 12px/1.4 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(90, 230, 255, .35); text-shadow: 0 0 4px rgba(120, 240, 255, .6);
+}
+.map-box[data-finish="parchment"] .pin { --mk-line: 2px; }
