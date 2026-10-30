@@ -43,6 +43,8 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     keepInView();
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
     stage.style.setProperty('--inv', 1 / s);
+    // Pins and labels keep their size on screen, so what overlaps changes with zoom.
+    if (Math.abs(s / placedAt - 1) > 0.04) { clearTimeout(placeTimer); placeTimer = setTimeout(placeLabels, 90); }
   };
   const fit = () => {
     const r = container.getBoundingClientRect();
@@ -61,6 +63,51 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   };
 
   const visible = (it) => !items.hidden.has(it.layer || '');
+
+  // Region names sit at the region's centre, nudged a little if pins cover it:
+  // the nearest spot (within about two label heights, still inside the region)
+  // that clears the pins, else the one that overlaps them least.
+  let labels = [], placedAt = 1, placeTimer;
+  const inside = ([px, py], pts) => {
+    let c = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  function placeLabels() {
+    placedAt = s;
+    if (!labels.length) return;
+    const k = s * w, kh = s * h; // image fraction -> screen px
+    const pins = [...pinLayer.querySelectorAll('.pin')].map((el) => {
+      const px = parseFloat(el.style.left) / 100 * k, py = parseFloat(el.style.top) / 100 * kh;
+      // A numbered pin's name only shows on hover, so only its badge counts.
+      const pw = el.classList.contains('numbered') ? 26 : el.offsetWidth, ph = el.classList.contains('numbered') ? 34 : el.offsetHeight;
+      return [px - pw / 2, py - ph, px + pw / 2, py];
+    });
+    const overlap = (cx, cy, lw, lh) => pins.reduce((t, [x0, y0, x1, y1]) => {
+      const ox = Math.min(x1, cx + lw / 2) - Math.max(x0, cx - lw / 2), oy = Math.min(y1, cy + lh / 2) - Math.max(y0, cy - lh / 2);
+      return t + (ox > 0 && oy > 0 ? ox * oy : 0);
+    }, 0);
+    for (const l of labels) {
+      const lw = l.el.offsetWidth * 0.8, lh = l.el.offsetHeight * 0.7; // the soft edges of the label can overlap
+      const bx = l.cx * k, by = l.cy * kh;
+      let best = null;
+      for (const step of [0, 0.6, 1.2, 1.8, 2.4]) {
+        for (const [dx, dy] of step ? [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]] : [[0, 0]]) {
+          const cx = bx + dx * step * lh * (dx && !dy ? 2.2 : 1), cy = by + dy * step * lh;
+          if (step && !inside([cx / k, cy / kh], l.points)) continue;
+          const o = overlap(cx, cy, lw, lh);
+          if (!best || o < best.o) best = { o, cx, cy };
+          if (!o) break;
+        }
+        if (best && !best.o) break;
+      }
+      l.el.style.left = (best.cx / k) * 100 + '%';
+      l.el.style.top = (best.cy / kh) * 100 + '%';
+    }
+  }
 
   function centroid(points) {
     let a = 0, cx = 0, cy = 0;
@@ -81,6 +128,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     // regions
     svg.innerHTML = '';
     labelLayer.innerHTML = '';
+    labels = [];
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     for (const r of items.regions) {
       if (!visible(r) || !r.points || r.points.length < 3) continue;
@@ -99,6 +147,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
         el.style.top = cy * 100 + '%';
         el.textContent = r.label;
         labelLayer.appendChild(el);
+        labels.push({ el, cx, cy, points: r.points });
       }
     }
     if (draft?.length) {
@@ -134,6 +183,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       d.style.top = py * 100 + '%';
       pinLayer.appendChild(d);
     });
+    placeLabels();
   }
 
   img.onload = () => {
