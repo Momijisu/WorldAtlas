@@ -279,7 +279,6 @@
   font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; text-align: left;
 }
 .group-link:hover, .group-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
-.key-swatch { flex-shrink: 0; width: .8rem; height: .8rem; border-radius: 2px; border: 1px solid var(--rc); background: color-mix(in srgb, var(--rc) 45%, transparent); }
 .region.lit { fill: color-mix(in srgb, var(--rc) 45%, transparent); stroke-width: 3; }
 .region-hidden.lit { stroke: var(--rc); stroke-dasharray: 6 4; }
 
