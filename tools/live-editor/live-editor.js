@@ -27,6 +27,7 @@ const mark = (cls, attributes) => Decoration.mark({ class: cls, attributes });
 
 const HEADINGS = { ATXHeading1: 'cm-h1', ATXHeading2: 'cm-h2', ATXHeading3: 'cm-h3', ATXHeading4: 'cm-h4', ATXHeading5: 'cm-h5', ATXHeading6: 'cm-h6' };
 const WIKI = /\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g;
+const EXCERPT = /^!\[\[[^\]\n]+\]\][ \t]*$/gm;
 const INLINE_SCRIPT = /\{\{([^|{}\n]+)\|([^{}\n]+)\}\}/g;
 
 function build(view, opts) {
@@ -43,6 +44,7 @@ function build(view, opts) {
   const isActive = (pos) => active.has(doc.lineAt(pos).number);
   const hideMark = (from, to) => { if (!isActive(from)) add(from, to, hide); };
 
+  const code = []; // fenced code blocks, where ![[…]] is just text
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
       from, to,
@@ -70,6 +72,7 @@ function build(view, opts) {
           add(doc.lineAt(node.from).from, doc.lineAt(node.from).from, line('cm-hr'));
           hideMark(node.from, node.to);
         } else if (name === 'FencedCode') {
+          code.push([node.from, node.to]);
           for (let p = node.from; p <= node.to;) { const l = doc.lineAt(p); add(l.from, l.from, line('cm-codeblock')); p = l.to + 1; }
           return false;
         } else if (name === 'Link' && node.node.getChild('URL')) add(node.from, node.to, mark('cm-mdlink')); // [text](url) only, not the inside of [[wiki links]]
@@ -77,8 +80,16 @@ function build(view, opts) {
     });
     // [[Wiki links]]: link-coloured (red if missing); brackets hidden off the cursor line.
     const text = doc.sliceString(from, to);
+    // ![[Article#Section]] on a line of its own: an excerpt, shown as a quiet "from" line.
+    for (const m of text.matchAll(EXCERPT)) {
+      const s = from + m.index;
+      if (code.some(([f, t]) => s >= f && s <= t)) continue;
+      add(s, s, line('cm-excerpt'));
+      if (!isActive(s)) add(s, s + 1, hide);
+    }
     for (const m of text.matchAll(WIKI)) {
       const s = from + m.index, e = s + m[0].length;
+      if (code.some(([f, t]) => s >= f && s <= t)) continue;
       const known = opts.isKnown?.(m[1].trim()) ?? true;
       add(s, e, mark(known ? 'cm-wikilink' : 'cm-wikilink cm-missing'));
       if (!isActive(s)) {
@@ -119,11 +130,19 @@ const livePreview = (opts) => ViewPlugin.fromClass(class {
   update(u) { if (u.docChanged || u.viewportChanged || u.selectionSet || u.focusChanged || u.transactions.some((t) => t.reconfigured)) this.decorations = build(u.view, opts); }
 }, { decorations: (v) => v.decorations });
 
-// Suggest article titles inside [[ … ]].
-const wikiCompletions = (titles) => (ctx) => {
+// Suggest article titles inside [[ … ]], and that article's headings after a #.
+const wikiCompletions = (titles, headings) => (ctx) => {
   const m = ctx.matchBefore(/\[\[[^\]\n|]*$/);
   if (!m) return null;
   const closed = ctx.state.sliceDoc(ctx.pos, ctx.pos + 2) === ']]';
+  const hash = m.text.indexOf('#');
+  if (hash >= 0) {
+    return {
+      from: m.from + hash + 1,
+      options: (headings?.(m.text.slice(2, hash).trim()) || []).map((h) => ({ label: h, apply: closed ? h : h + ']]' })),
+      validFor: /^[^\]\n|#]*$/,
+    };
+  }
   return {
     from: m.from + 2,
     options: titles().map((t) => ({ label: t, apply: closed ? t : t + ']]' })),
@@ -143,7 +162,7 @@ export function createLiveEditor(parent, opts = {}) {
         markdownLang,
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ spellcheck: 'true', autocorrect: 'on', autocapitalize: 'sentences', 'aria-label': opts.label || 'Article text' }),
-        autocompletion({ override: [wikiCompletions(opts.titles || (() => []))], icons: false }),
+        autocompletion({ override: [wikiCompletions(opts.titles || (() => []), opts.headings)], icons: false }),
         livePreview(opts),
         EditorView.updateListener.of((u) => opts.onUpdate?.(u)),
       ],

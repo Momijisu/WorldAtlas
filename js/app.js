@@ -242,7 +242,7 @@ export function route({ keepScroll = false } = {}) {
       if (sub === 'edit') return viewEditor(wid, structuredClone(a), false, { prompt: q.get('prompt') });
       if (sub === 'history') return viewHistory(wid, id);
       if (sub === 'resolve') return viewResolve(wid, id);
-      return viewArticle(wid, id);
+      return viewArticle(wid, id, { section: q.get('s') });
     },
   };
   const fn = sec ? (Object.hasOwn(routes, sec) ? routes[sec] : null) : () => viewWorld(wid);

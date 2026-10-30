@@ -538,6 +538,8 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 .live-editor .cm-icode { font: .9em var(--mono); background: var(--ink-3); border-radius: 2px; padding: 0 .2em; }
 .live-editor .cm-codeblock { font: .9rem/1.5 var(--mono); background: var(--ink-3); }
 .live-editor .cm-quote { border-left: 3px solid var(--brass); padding-left: 1rem !important; color: var(--text-2); font-style: italic; }
+.live-editor .cm-excerpt { border-left: 1px solid var(--rule-strong); padding-left: 1rem !important; color: var(--muted); font: 500 .85rem/1.9 var(--sans); letter-spacing: .04em; }
+.live-editor .cm-excerpt::before { content: "Excerpt · "; text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; }
 .live-editor .cm-hr { border-bottom: 1px solid var(--rule-strong); line-height: .6; }
 .live-editor .cm-bullet { color: var(--brass); }
 .live-editor .cm-wikilink, .live-editor .cm-mdlink { color: var(--link); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent); text-underline-offset: 3px; }

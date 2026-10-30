@@ -237,7 +237,7 @@ export function descendantIds(a) {
   return out;
 }
 
-const linkRe = /\[\[([^\]|\n]+)(?:\|[^\]\n]*)?\]\]/g;
+const linkRe = /\[\[([^\]|#\n]+)(?:#[^\]|\n]*)?(?:\|[^\]\n]*)?\]\]/g; // [[Title]], [[Title#Section]], [[Title|label]]
 export function linkedTitles(text) {
   return [...String(text || '').matchAll(linkRe)].map((m) => m[1].trim().toLowerCase());
 }
@@ -251,10 +251,10 @@ export function backlinks(a) {
   return articlesOf(a.worldId).filter((o) => o.id !== a.id && linkedTitles(articleText(o)).includes(t));
 }
 
-// Rewrite [[Old]] / [[Old|label]] references after a rename.
+// Rewrite [[Old]] / [[Old#Section]] / [[Old|label]] references after a rename.
 export async function renameReferences(wid, oldTitle, newTitle) {
-  const re = new RegExp('\\[\\[\\s*' + oldTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(\\|[^\\]\\n]*)?\\]\\]', 'gi');
-  const fix = (s) => (s ? s.replace(re, (_, lbl) => `[[${newTitle}${lbl || ''}]]`) : s);
+  const re = new RegExp('\\[\\[\\s*' + oldTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(#[^\\]|\\n]*)?(\\|[^\\]\\n]*)?\\]\\]', 'gi');
+  const fix = (s) => (s ? s.replace(re, (_, sec, lbl) => `[[${newTitle}${sec || ''}${lbl || ''}]]`) : s);
   for (const o of articlesOf(wid)) {
     const fields = Object.fromEntries(Object.entries(o.fields || {}).map(([k, v]) => [k, fix(v)]));
     const next = { ...o, summary: fix(o.summary), body: fix(o.body), gmNotes: fix(o.gmNotes), fields };

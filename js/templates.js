@@ -192,7 +192,7 @@ const KIND_FIELDS = {
 
 export function kindOf(a) {
   for (const f of KIND_FIELDS[a.type] || []) {
-    const v = String(a.fields?.[f] ?? '').replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_, t, l) => l || t).replace(/[*_`#>]/g, '').trim();
+    const v = String(a.fields?.[f] ?? '').replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (_, t, l) => l || t).replace(/[*_`#>]/g, '').trim();
     if (v) return v.length > 40 ? v.slice(0, 39) + '…' : v;
   }
   return '';

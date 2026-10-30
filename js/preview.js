@@ -13,7 +13,7 @@ const DELAY = 350;
 let card, timer, current;
 
 function articleOf(link) {
-  const m = /^#\/w\/[^/]+\/a\/([^/?]+)$/.exec(link.getAttribute('href') || '');
+  const m = /^#\/w\/[^/]+\/a\/([^/?]+)(?:\?.*)?$/.exec(link.getAttribute('href') || '');
   return m && store.article(m[1]);
 }
 

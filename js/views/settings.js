@@ -317,6 +317,7 @@ Reply with only a JSON object shaped like this:
 
 Rules:
 - Use unique titles, and the exact title in [[links]], "parent" and "target".
+- To show a section of another article inside this one, put ![[Title#Heading]] on its own line (![[Title]] shows its summary) instead of repeating the text.
 - Leave out "calendar" if my world has no custom calendar. Dates use its month names; a bare year is fine.
 - Only use facts from my material. Put anything uncertain in "secrets".
 - Split large topics into several linked articles.

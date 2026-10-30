@@ -1,7 +1,7 @@
 // Article editor: content, infobox fields, calendar dates, relationships.
 import * as store from '../store.js';
 import { TYPES, GROUPS } from '../store.js';
-import { render } from '../markdown.js';
+import { render, headingsOf } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
@@ -348,7 +348,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       doc: body.value,
       label: 'Article content',
       titles: () => store.articlesOf(wid).filter((x) => x.id !== a.id).map((x) => x.title),
-      isKnown: (t) => !!store.byTitle(wid, t),
+      isKnown: (t) => { const [title, sec] = t.split('#'); const x = store.byTitle(wid, title.trim()); return !!x && (sec == null || headingsOf(x.body).some((h) => h.toLowerCase() === sec.trim().toLowerCase())); },
+      headings: (t) => headingsOf(store.byTitle(wid, t)?.body),
       fontFor: (n) => familyFor(n, wid),
       isHand: (n) => !!HANDS[n.toLowerCase()],
       onUpdate: (u) => {
@@ -534,7 +535,7 @@ function attachAutocomplete(ta, wid) {
   const update = () => {
     if (ta.hidden) return close(); // Live mode has its own suggestions
     const before = ta.value.slice(0, ta.selectionStart);
-    const m = before.match(/\[\[([^\]|\n]*)$/);
+    const m = before.match(/\[\[([^\]|#\n]*)$/);
     if (!m) return close();
     startPos = ta.selectionStart - m[1].length;
     const q = m[1].toLowerCase();

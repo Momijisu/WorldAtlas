@@ -12,7 +12,7 @@ import { posCSS, BANNER_POS } from '../focus.js';
 import { mountMap } from '../mapview.js';
 import { itemTitle } from './maps.js';
 
-export function viewArticle(wid, id) {
+export function viewArticle(wid, id, { section } = {}) {
   const w = store.world(wid);
   const a = store.article(id);
   const cal = calendarOf(w);
@@ -91,6 +91,15 @@ export function viewArticle(wid, id) {
   hydrateImages();
   contents();
   if (map) embedMap(wid, map);
+  if (section) goToSection(section);
+}
+
+// [[Title#Section]] links open the article at that heading.
+function goToSection(name) {
+  const want = name.trim().toLowerCase();
+  const h = [...view.querySelectorAll('.article-main > .prose :is(h1, h2, h3, h4, h5, h6)')]
+    .find((x) => !x.closest('.excerpt') && x.textContent.trim().toLowerCase() === want);
+  if (h) requestAnimationFrame(() => h.scrollIntoView({ block: 'start' }));
 }
 
 // The article's map, embedded: pan, zoom, and pins/regions that open their article or map.
@@ -119,7 +128,7 @@ async function embedMap(wid, map) {
 // which the router owns.
 function contents() {
   const box = $('#toc');
-  const heads = [...view.querySelectorAll('.article-main > .prose :is(h1, h2, h3), .article-main > .section-head h2')];
+  const heads = [...view.querySelectorAll('.article-main > .prose :is(h1, h2, h3), .article-main > .section-head h2')].filter((h) => !h.closest('.excerpt'));
   if (heads.filter((h) => h.closest('.prose')).length < 2) return;
   const used = new Set();
   const top = Math.min(...heads.map((h) => +h.tagName[1]));

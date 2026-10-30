@@ -15,11 +15,13 @@ function wikiLinks(src, wid) {
   return String(src || '').split(CODE).map((part, i) => (i % 2 ? part : linkify(part, wid))).join('');
 }
 
+// [[Title]], [[Title|label]], and [[Title#Section]] for a heading in that article.
 function linkify(src, wid) {
-  return src.replace(/\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g, (_, title, label) => {
+  return src.replace(/\[\[([^\]|#\n]+)(?:#([^\]|\n]*))?(?:\|([^\]\n]*))?\]\]/g, (_, title, sec, label) => {
     const a = store.byTitle(wid, title);
-    const text = esc((label || title).trim());
-    if (a) return `<a class="wikilink type-${a.type}" href="#/w/${wid}/a/${a.id}" title="${esc(a.summary || a.title)}">${text}</a>`;
+    sec = sec?.trim();
+    const text = esc((label || (sec ? `${title.trim()} › ${sec}` : title)).trim());
+    if (a) return `<a class="wikilink type-${a.type}" href="#/w/${wid}/a/${a.id}${sec ? `?s=${encodeURIComponent(sec)}` : ''}" title="${esc(a.summary || a.title)}">${text}</a>`;
     return `<a class="wikilink missing" href="#/w/${wid}/new/article?title=${encodeURIComponent(title.trim())}" data-create="${esc(title.trim())}" title="Create “${esc(title.trim())}”">${text}</a>`;
   });
 }
@@ -29,6 +31,11 @@ function linkify(src, wid) {
 // its own line and is drawn as a box linking back to the source. Excerpts
 // inside an excerpt are shown as plain links, so articles can't loop.
 const EXCERPT = /^!\[\[([^\]|#\n]+)(?:#([^\]|\n]+))?(?:\|([^\]\n]*))?\]\][ \t]*$/gm;
+
+// The headings in an article's text, for [[Title#Section]] suggestions.
+export function headingsOf(body) {
+  return [...String(body || '').split(CODE).filter((_, i) => i % 2 === 0).join('\n').matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)].map((m) => m[1].trim());
+}
 
 function section(body, heading) {
   const lines = String(body || '').split('\n');
@@ -57,10 +64,10 @@ function excerptHTML(wid, title, heading, caption, depth) {
 
 function renderBody(src, wid, depth = 0) {
   const boxes = [];
-  const withSlots = String(src || '').replace(EXCERPT, (_, title, heading, caption) => {
+  const withSlots = String(src || '').split(CODE).map((part, i) => (i % 2 ? part : part.replace(EXCERPT, (_, title, heading, caption) => {
     boxes.push(excerptHTML(wid, title, heading, caption, depth));
     return `\n\nWAEXCERPT${boxes.length - 1}\n\n`;
-  });
+  }))).join('');
   return marked.parse(wikiLinks(withSlots, wid)).replace(/<p>WAEXCERPT(\d+)<\/p>/g, (_, i) => boxes[i]);
 }
 
@@ -75,7 +82,7 @@ export function renderInline(src, wid) {
 }
 
 export function plain(src, max = 160) {
-  const s = String(src || '').replace(/\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g, (_, t, l) => l || t)
+  const s = String(src || '').replace(/!?\[\[([^\]|#\n]+)(?:#[^\]|\n]*)?(?:\|([^\]\n]*))?\]\]/g, (_, t, l) => l || t)
     .replace(/\{\{[^|{}\n]+\|([^{}\n]+)\}\}/g, '$1').replace(/^:::.*$/gm, '').replace(/[#*_>`~]/g, '').replace(/\s+/g, ' ').trim();
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }

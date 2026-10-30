@@ -8,7 +8,8 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 
 - Articles from 25 templates (characters, settlements, spells, natural laws, conditions, conflicts, plots and more), each with an infobox grouped into sections, a portrait and a header image
 - Live editing: Markdown shown formatted as you type (or plain Markdown, or a preview)
-- `[[Wiki links]]` with autocomplete, hover previews, backlinks, and links that update when an article is renamed
+- `[[Wiki links]]` with autocomplete, hover previews, backlinks, and links that update when an article is renamed; `[[Title#Section]]` links to a heading
+- Excerpts: `![[Title]]` shows another article's summary and `![[Title#Section]]` one of its sections, kept in step with the source and linking back to it
 - A contents box on articles with several headings
 - Typed relationships, family trees and a relationship web
 - Custom calendars with eras and moons, a calendar view and a timeline
