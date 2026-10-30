@@ -415,7 +415,7 @@ export async function viewMap(wid, mid, q) {
         <div class="layer-line">${grip(layerName(l))}<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
           ${regionOf(l) ? `<button type="button" class="group-link" data-group-region="${regionOf(l).id}" title="Show ${esc(itemTitle(regionOf(l)) || layerName(l))} on the map"><span class="key-swatch" style="--rc:${esc(regionOf(l).color || SWATCHES[3])}"></span>${esc(layerName(l))}</button>`
-            : `<span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span>`}<span class="count">${count(l)}</span>
+            : `<span>${esc(layerName(l))}</span>`}<span class="count">${count(l)}</span>
         </label>${arranging && l ? `<button type="button" class="icon-btn sm" data-rename="${esc(l)}" title="Rename group">${icon('pencil-simple')}</button><button type="button" class="icon-btn sm" data-remove="${esc(l)}" title="Remove group (its places move to General)">${icon('trash')}</button>` : ''}
         ${listed && (count(l) || arranging) ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${keyFor(l)}</div>`).join('')}</div>`
         : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}
