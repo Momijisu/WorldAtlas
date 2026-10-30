@@ -669,14 +669,21 @@ option.opt-dim { color: var(--muted); }
   .article-head .actions .btn { padding-left: .55rem; padding-right: .55rem; }
 }
 
-/* ![[Article#Section]] excerpts */
-.excerpt {
-  margin: 1.5em 0; padding: 1rem 1.25rem .75rem; background: color-mix(in srgb, var(--ink-2) 80%, transparent);
-  border: 1px solid var(--rule); border-left: 3px solid var(--brass); border-radius: 2px;
+/* ![[Article#Section]] excerpts: read as part of the article, with a hairline in the margin */
+.excerpt { position: relative; margin: 1.2em 0; }
+.excerpt::before {
+  content: ""; position: absolute; left: -.7rem; top: .35em; bottom: .35em; width: 1px;
+  background: var(--rule-strong); transition: background .2s;
 }
-.excerpt-caption { font: 500 .72rem/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: .55rem; }
-.excerpt-body > :first-child { margin-top: 0; }
-.excerpt-body > :last-child { margin-bottom: 0; }
-.excerpt figcaption { margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--rule); text-align: right; font: 500 .85rem/1.3 var(--sans); }
-.excerpt figcaption a { text-decoration: none; }
-.excerpt.missing { color: var(--rubric); font: italic .95rem var(--sans); padding: .7rem 1rem; border-left-color: var(--rubric); }
+.excerpt:hover::before { background: var(--brass); }
+.excerpt > :first-child { margin-top: 0; }
+.excerpt > :last-child { margin-bottom: 0; }
+.excerpt-caption { font: 500 .68rem/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
+.excerpt-source {
+  white-space: nowrap; margin-left: .15em; font: 500 .72rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted) !important; text-decoration: none !important; opacity: .8;
+}
+.excerpt-source .i { width: .8em; height: .8em; vertical-align: -.05em; margin-left: .15em; }
+.excerpt:hover .excerpt-source, .excerpt-source:focus-visible { color: var(--brass) !important; opacity: 1; }
+.excerpt.missing { color: var(--rubric); font: italic .95rem var(--sans); }
+.excerpt.missing::before { background: var(--rubric); }

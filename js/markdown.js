@@ -2,6 +2,7 @@
 // Uses the vendored marked + DOMPurify (loaded as globals in index.html).
 import * as store from './store.js';
 import { esc } from './util.js';
+import { icon } from './icons.js';
 import { scriptExtensions } from './scripts.js';
 
 let renderingWid = null; // the world being rendered, for its fonts
@@ -46,11 +47,12 @@ function excerptHTML(wid, title, heading, caption, depth) {
   const text = heading ? section(a.body, heading) : (a.summary || a.body.split(/\n\s*\n/)[0]);
   if (text == null) return `<div class="excerpt missing">“${esc(a.title)}” has no section called “${esc(heading.trim())}”.</div>`;
   const href = `#/w/${wid}/a/${a.id}`;
-  return `<figure class="excerpt type-${a.type}">
-    ${caption ? `<div class="excerpt-caption">${esc(caption.trim())}</div>` : ''}
-    <div class="excerpt-body">${depth ? esc(plain(text, 300)) : renderBody(text, wid, depth + 1)}</div>
-    <figcaption><a class="wikilink type-${a.type}" href="${href}">From ${where} →</a></figcaption>
-  </figure>`;
+  // The source link sits at the end of the excerpt's last paragraph, so the text reads as part of the article.
+  const source = `<a class="excerpt-source" href="${href}" title="From ${where}">${esc(a.title)}${icon('arrow-right')}</a>`;
+  let html = depth ? `<p>${esc(plain(text, 300))}</p>` : renderBody(text, wid, depth + 1);
+  const last = html.lastIndexOf('</p>');
+  html = last >= 0 && last + 4 >= html.trimEnd().length ? `${html.slice(0, last)} ${source}</p>${html.slice(last + 4)}` : `${html}<p class="excerpt-tail">${source}</p>`;
+  return `<div class="excerpt type-${a.type}">${caption ? `<div class="excerpt-caption">${esc(caption.trim())}</div>` : ''}${html}</div>`;
 }
 
 function renderBody(src, wid, depth = 0) {
