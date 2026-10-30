@@ -7,7 +7,7 @@ import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { TYPES } from '../store.js';
 import { familyOf } from '../templates.js';
 import { plain } from '../markdown.js';
-import { view, state, setTitle, pageHead, icon, hydrateImages, articleOptions, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
+import { view, state, setTitle, pageHead, icon, hydrateImages, typeIcon, typeLabel, worldCrumb, sep } from '../ui.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
 
 export const PIN_ICONS = ['map-pin', 'castle-turret', 'house', 'tent', 'ruins', 'stairs', 'cave', 'mountains', 'tree-evergreen', 'anchor', 'skull', 'star',
@@ -37,6 +37,11 @@ function mapTrail(wid, mid) {
 }
 
 export const itemTitle = (it) => it.label || store.article(it.articleId)?.title || store.map(it.mapId)?.name || '';
+
+// The article a place or region stands for: the one it links to, or else the
+// article its name matches (so naming a place before writing its article
+// works like a [[link]] to a page that doesn't exist yet).
+export const linkedArticle = (wid, it) => store.article(it.articleId) || (it.label ? store.byTitle(wid, it.label) : null);
 
 // A layer is a template key (pins for Settlements, Characters…), a name the
 // user made up, or '' for General.
@@ -208,17 +213,21 @@ export async function viewMap(wid, mid, q) {
 
   // ---- info card
   async function showInfo(it, kind) {
-    const a = store.article(it.articleId);
+    const a = linkedArticle(wid, it);
     const sub = store.map(it.mapId);
+    // No article yet: offer to write one, straight into the layer's template if it has one.
+    const create = !a && it.label ? `<a class="btn small" href="#/w/${wid}/new/${isTemplateLayer(it.layer) ? it.layer : 'article'}?title=${encodeURIComponent(it.label)}"${isTemplateLayer(it.layer) ? '' : ` data-create="${esc(it.label)}"`}>${icon('plus')} Write about ${esc(it.label)}</a>` : '';
     info.hidden = false;
+    info.classList.toggle('has-map', !!sub?.image);
     info.innerHTML = `<button class="icon-btn sm close" aria-label="Close">${icon('x')}</button>
       ${a?.image ? `<img data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : ''}
       <div class="info-body">
         <div class="eyebrow">${a ? `${typeIcon(a.type)} ${typeLabel(a.type)}` : kind === 'region' ? `${icon('polygon')} Region` : `${icon(it.icon || 'map-pin')} Place`}${it.layer ? ` <span class="sep">/</span> ${esc(layerName(it.layer))}` : ''}</div>
         <div class="info-title">${esc(itemTitle(it))}</div>
         ${a?.summary ? `<p>${esc(plain(a.summary, 200))}</p>` : ''}
+        ${sub?.image ? `<a class="info-map" href="#/w/${wid}/m/${sub.id}" title="Open ${esc(sub.name)}"><img data-img="${sub.image}" alt=""><span>${icon('map-trifold')} ${esc(sub.name)}</span></a>` : ''}
         <div class="info-actions">
-          ${a ? `<a class="btn small" href="#/w/${wid}/a/${a.id}">${icon('book-open-text')} Read article</a>` : ''}
+          ${a ? `<a class="btn small" href="#/w/${wid}/a/${a.id}">${icon('book-open-text')} Read article</a>` : create}
           ${sub ? `<a class="btn small primary" href="#/w/${wid}/m/${sub.id}">${icon('map-trifold')} Open ${esc(sub.name)}</a>` : ''}
         </div>
       </div>`;
@@ -390,7 +399,7 @@ export async function viewMap(wid, mid, q) {
   const layerField = (value) => {
     const own = layersOf(cur()).filter((l) => l && !isTemplateLayer(l));
     if (value && !isTemplateLayer(value) && !own.includes(value)) own.push(value);
-    return `<label>Layer <small>also narrows the article list</small><select name="layer">
+    return `<label>Layer <small>its template's articles are suggested first</small><select name="layer">
         <option value="" ${value ? '' : 'selected'}>General</option>
         <optgroup label="Templates">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${value === k ? 'selected' : ''}>${esc(t.plural)}</option>`).join('')}</optgroup>
         ${own.length ? `<optgroup label="This map’s layers">${own.map((l) => `<option value="${esc(l)}" ${value === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>` : ''}
@@ -399,25 +408,82 @@ export async function viewMap(wid, mid, q) {
       <label class="new-layer" hidden>Layer name<input name="layerNew" placeholder="e.g. Trade routes"></label>`;
   };
   // Articles already placed on this map are greyed (still selectable).
-  const onThisMap = () => new Set([...(cur().pins || []), ...(cur().regions || [])].map((it) => it.articleId).filter(Boolean));
-  const articleField = (layer, selected) => `<select name="articleId">${articleOptions(wid, selected, { only: isTemplateLayer(layer) ? familyOf(layer) : null, dim: onThisMap(), dimNote: 'on this map' })}</select>`;
-  const wireLayer = (el, f) => {
-    const refill = () => {
-      const keep = f.articleId.value;
-      f.articleId.outerHTML = articleField(f.layer.value, keep);
-      f.articleId.onchange = follow;
-    };
-    // An article picked while the layer is General puts the place on that template's layer.
-    const follow = () => {
+  const onThisMap = () => new Set([...(cur().pins || []), ...(cur().regions || [])].map((it) => linkedArticle(wid, it)?.id).filter(Boolean));
+  // Name: type to find an article and pick it, or keep your own name. A name
+  // with no article behind it is still a link, offering to create the article.
+  const nameField = (it, placeholder) => `<div class="link-field">
+      <label for="placeName">Name <small>pick an article, or name a new place</small></label>
+      <div class="link-box"><input id="placeName" name="label" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}" value="${esc(it.label || store.article(it.articleId)?.title || '')}"
+        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="placeSuggest">
+      <input type="hidden" name="articleId" value="${esc(it.articleId || '')}">
+      <ul class="link-suggest" id="placeSuggest" role="listbox" hidden></ul></div>
+      <div class="link-status"></div>
+    </div>`;
+  const wireName = (el, f) => {
+    const input = f.label, list = $('#placeSuggest', el), status = $('.link-status', el);
+    let items = [], idx = -1;
+    const showStatus = () => {
       const a = store.article(f.articleId.value);
-      if (a && !f.layer.value) { f.layer.value = a.type; refill(); }
+      const text = input.value.trim();
+      status.innerHTML = a ? `${icon('link-simple')} Linked to ${typeIcon(a.type)} <b>${esc(a.title)}</b>`
+        : text ? `${icon('plus')} No article called “${esc(text)}” yet. The place will offer to create it.` : '';
+      status.classList.toggle('new', !a && !!text);
     };
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); idx = -1; };
+    const draw = () => {
+      const q = input.value.trim().toLowerCase();
+      const fam = isTemplateLayer(f.layer.value) ? familyOf(f.layer.value) : null;
+      const placed = onThisMap();
+      const rank = (a) => (fam && !fam.includes(a.type) ? 2 : 0) + (a.title.toLowerCase().startsWith(q) ? 0 : 1);
+      items = store.articlesOf(wid).filter((a) => !q || a.title.toLowerCase().includes(q))
+        .sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title)).slice(0, 8);
+      if (!items.length || (items.length === 1 && items[0].title.toLowerCase() === q && items[0].id === f.articleId.value)) return close();
+      list.innerHTML = items.map((a, i) => `<li role="option" id="ps${i}" data-i="${i}" class="${i === idx ? 'on' : ''}${placed.has(a.id) ? ' dim' : ''}">${typeIcon(a.type)}<span>${esc(a.title)}</span><small>${placed.has(a.id) ? 'on this map' : esc(TYPES[a.type]?.label || '')}</small></li>`).join('');
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    };
+    const choose = (a) => {
+      input.value = a.title;
+      f.articleId.value = a.id;
+      if (!f.layer.value) f.layer.value = a.type; // a General place moves to its template's layer
+      close();
+      showStatus();
+    };
+    input.addEventListener('input', () => {
+      f.articleId.value = store.byTitle(wid, input.value.trim())?.id || '';
+      idx = -1;
+      draw();
+      showStatus();
+    });
+    input.addEventListener('focus', draw);
+    input.addEventListener('blur', () => setTimeout(close, 150));
+    input.addEventListener('keydown', (e) => {
+      if (list.hidden) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        draw();
+        input.setAttribute('aria-activedescendant', `ps${idx}`);
+      } else if (e.key === 'Enter' && idx >= 0) { e.preventDefault(); choose(items[idx]); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    });
+    list.addEventListener('mousedown', (e) => {
+      const li = e.target.closest('li');
+      if (li) { e.preventDefault(); choose(items[+li.dataset.i]); }
+    });
+    showStatus();
+  };
+  // What to store: no separate label when the name is just the article's title, so renames follow.
+  const readName = (f) => {
+    const text = f.label.value.trim();
+    const a = store.article(f.articleId.value);
+    return { articleId: a?.id || '', label: a && a.title === text ? '' : text };
+  };
+  const wireLayer = (el, f) => {
     f.layer.onchange = () => {
       $('.new-layer', el).hidden = f.layer.value !== '__new';
       if (f.layer.value === '__new') f.layerNew.focus();
-      refill();
     };
-    f.articleId.onchange = follow;
   };
   let lastLayer = ''; // new places start on the layer last used
   const readLayer = (f) => (lastLayer = f.layer.value === '__new' ? f.layerNew.value.trim() : f.layer.value);
@@ -435,10 +501,9 @@ export async function viewMap(wid, mid, q) {
   function pinDialog(pin, isNew = false) {
     modal(isNew ? 'Add a place' : 'Edit place', `
       <form class="form" id="pf">
+        ${nameField(pin, 'e.g. Varenhold')}
         ${layerField(pin.layer || '')}
-        <label>Linked article${articleField(pin.layer, pin.articleId)}</label>
         <label>Opens map <small>e.g. a city map from a pin on the continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
-        <label>Label <small>defaults to the article</small><input name="label" value="${esc(pin.label || '')}"></label>
         <div class="field-label">Marker</div>
         <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${PIN_NAMES[n] || n.replace(/-/g, ' ')}" aria-label="${PIN_NAMES[n] || n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
         ${colourField(pin.color)}
@@ -450,6 +515,7 @@ export async function viewMap(wid, mid, q) {
       onMount: (el, close) => {
         const f = $('#pf', el);
         wireLayer(el, f);
+        wireName(el, f);
         let chosen = pin.icon || 'map-pin';
         $$('[data-icon]', el).forEach((b) => b.onclick = () => {
           chosen = b.dataset.icon;
@@ -462,8 +528,8 @@ export async function viewMap(wid, mid, q) {
         $('[data-move]', el)?.addEventListener('click', () => { moving = pin.id; close(); renderEditBar(); });
         f.onsubmit = async (e) => {
           e.preventDefault();
-          if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Add a label or link an article or map');
-          const next = { ...pin, articleId: f.articleId.value, mapId: f.mapId.value, label: f.label.value.trim(),
+          if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Give the place a name, or link a map');
+          const next = { ...pin, ...readName(f), mapId: f.mapId.value,
             layer: readLayer(f), icon: chosen, color: f.color.value };
           const pins = cur().pins || [];
           await persist({ pins: isNew ? [...pins, next] : pins.map((p) => (p.id === pin.id ? next : p)) });
@@ -476,9 +542,8 @@ export async function viewMap(wid, mid, q) {
   function regionDialog(reg, isNew = false) {
     modal(isNew ? 'New region' : 'Edit region', `
       <form class="form" id="rf">
-        <label>Label<input name="label" value="${esc(reg.label || '')}" placeholder="e.g. The Ashen Wastes"></label>
+        ${nameField(reg, 'e.g. The Ashen Wastes')}
         ${layerField(reg.layer || '')}
-        <label>Linked article${articleField(reg.layer, reg.articleId)}</label>
         <label>Opens map<select name="mapId">${mapOptions(reg.mapId)}</select></label>
         <div class="field-label">Style</div>
         <div class="seg region-fill">${Object.entries(REGION_FILLS).map(([k, l]) => `<button type="button" data-fill="${k}" class="${(reg.fill || 'solid') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
@@ -494,12 +559,13 @@ export async function viewMap(wid, mid, q) {
         const f = $('#rf', el);
         wireColour(el, f);
         wireLayer(el, f);
+        wireName(el, f);
         $('[data-del]', el)?.addEventListener('click', async () => {
           await persist({ regions: (cur().regions || []).filter((r) => r.id !== reg.id) }); close();
         });
         f.onsubmit = async (e) => {
           e.preventDefault();
-          const next = { ...reg, label: f.label.value.trim(), articleId: f.articleId.value, mapId: f.mapId.value,
+          const next = { ...reg, ...readName(f), mapId: f.mapId.value,
             layer: readLayer(f), color: f.color.value, fill };
           const regions = cur().regions || [];
           await persist({ regions: isNew ? [...regions, next] : regions.map((r) => (r.id === reg.id ? next : r)) });
@@ -512,8 +578,8 @@ export async function viewMap(wid, mid, q) {
   // ---- ?pin=<articleId> focus
   const focusId = q?.get('pin');
   if (focusId) {
-    const pin = (m.pins || []).find((p) => p.articleId === focusId);
-    const reg = !pin && (m.regions || []).find((r) => r.articleId === focusId);
+    const pin = (m.pins || []).find((p) => linkedArticle(wid, p)?.id === focusId);
+    const reg = !pin && (m.regions || []).find((r) => linkedArticle(wid, r)?.id === focusId);
     const target = pin || reg;
     if (target) {
       setTimeout(() => {

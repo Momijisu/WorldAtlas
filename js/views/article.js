@@ -10,7 +10,7 @@ import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS } from '../focus.js';
 import { mountMap } from '../mapview.js';
-import { itemTitle } from './maps.js';
+import { itemTitle, linkedArticle } from './maps.js';
 
 export function viewArticle(wid, id, { section } = {}) {
   const w = store.world(wid);
@@ -21,7 +21,7 @@ export function viewArticle(wid, id, { section } = {}) {
   const crumbs = store.ancestors(a);
   const children = store.articlesOf(wid).filter((c) => c.parentId === a.id).sort((x, y) => x.title.localeCompare(y.title));
   const back = store.backlinks(a).sort((x, y) => x.title.localeCompare(y.title));
-  const onMaps = store.mapsOf(wid).filter((m) => (m.pins || []).some((p) => p.articleId === a.id) || (m.regions || []).some((r) => r.articleId === a.id));
+  const onMaps = store.mapsOf(wid).filter((m) => [...(m.pins || []), ...(m.regions || [])].some((it) => linkedArticle(wid, it)?.id === a.id));
   const sections = sectionsOf(a.type, a.fields || {});
   const fieldCount = sections.reduce((n, sec) => n + sec.entries.length, 0);
   const date = articleDateText(cal, a);
@@ -109,7 +109,8 @@ async function embedMap(wid, map) {
   if (!box?.isConnected) return; // left the page meanwhile
   if (!src) { box.innerHTML = '<p class="muted pad">This map’s image hasn’t downloaded yet.</p>'; return; }
   const go = (it) => {
-    if (it.articleId && store.article(it.articleId)) location.hash = `#/w/${wid}/a/${it.articleId}`;
+    const linked = linkedArticle(wid, it);
+    if (linked) location.hash = `#/w/${wid}/a/${linked.id}`;
     else if (it.mapId && store.map(it.mapId)) location.hash = `#/w/${wid}/m/${it.mapId}`;
   };
   const ctl = mountMap(box, { src, onPinClick: go, onRegionClick: go, embedded: true });
