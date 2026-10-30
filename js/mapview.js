@@ -113,13 +113,14 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       if (!visible(p)) continue;
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = 'pin';
+      el.className = p.num ? 'pin numbered' : 'pin';
       el.dataset.pin = p.id;
       el.style.left = p.x * 100 + '%';
       el.style.top = p.y * 100 + '%';
       el.style.setProperty('--pin', p.color || '#c4553b');
-      el.innerHTML = `<span class="pin-badge">${icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
-      el.setAttribute('aria-label', p.label || 'Pin');
+      // Numbered pins show their number (the map's key lists the names); the name appears on hover.
+      el.innerHTML = `<span class="pin-badge">${p.num ? `<b>${p.num}</b>` : icon(p.icon || 'map-pin')}</span>${p.label ? `<span class="pin-label">${esc(p.label)}</span>` : ''}`;
+      el.setAttribute('aria-label', p.num ? `${p.num}. ${p.label || 'Pin'}` : p.label || 'Pin');
       // Taps and drags on a pin are handled with the map's own pointer
       // handling (a drag pans, a tap opens it); this is for the keyboard.
       el.addEventListener('click', (e) => { if (e.detail || isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });

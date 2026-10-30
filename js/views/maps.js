@@ -69,6 +69,15 @@ function layersOf(m) {
   return [...names].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
 }
 
+// Numbered pins: counted layer by layer (in the Layers list order), then in the
+// order they were placed, so each layer's places sit together in the key.
+function pinNumbers(m) {
+  const nums = new Map();
+  let n = 0;
+  for (const l of layersOf(m)) for (const p of m.pins || []) if ((p.layer || '') === l) nums.set(p.id, ++n);
+  return nums;
+}
+
 const hiddenKey = (mid) => 'wa.map.hidden.' + mid;
 function loadHidden(mid) {
   try { return new Set(JSON.parse(localStorage.getItem(hiddenKey(mid)) || '[]')); } catch { return new Set(); }
@@ -113,6 +122,8 @@ function mapDialog(wid, m) {
         <label class="btn small">${icon('image')} Choose image<input type="file" name="file" accept="image/*" hidden></label>
         <span class="small muted dz-name"></span>
       </div>
+      <div class="field-label">Pins show</div>
+      <div class="seg" id="pinStyle"><button type="button" data-ps="names">Names</button><button type="button" data-ps="numbers">Numbers, with a key</button></div>
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete map</button><span class="spacer"></span>`}
         <button class="btn primary">${isNew ? 'Create map' : 'Save'}</button>
@@ -121,6 +132,10 @@ function mapDialog(wid, m) {
     onMount: (el, close) => {
       const f = $('#mf', el);
       wireDropzone($('.image-field', f));
+      let pinStyle = m.pinStyle || 'names';
+      const showStyle = () => $$('[data-ps]', el).forEach((b) => b.classList.toggle('on', b.dataset.ps === pinStyle));
+      $$('[data-ps]', el).forEach((b) => b.onclick = () => { pinStyle = b.dataset.ps; showStyle(); });
+      showStyle();
       f.file.addEventListener('change', () => {
         const file = f.file.files[0];
         if (!file) return;
@@ -141,6 +156,7 @@ function mapDialog(wid, m) {
         try {
           if (f.file.files[0]) m.image = await store.addImage(await prepareImage(f.file.files[0], 4096));
           m.name = f.name.value.trim();
+          m.pinStyle = pinStyle === 'numbers' ? 'numbers' : undefined;
           await store.save('maps', m);
           close();
           if (isNew) location.hash = `#/w/${wid}/m/${m.id}`; else state.route();
@@ -203,7 +219,11 @@ export async function viewMap(wid, mid, q) {
   }
   const info = $('#mapInfo');
   const labelled = (list) => (list || []).map((it) => ({ ...it, label: itemTitle(it) }));
-  const refresh = () => ctl.setItems({ pins: labelled(cur().pins), regions: labelled(cur().regions), hidden });
+  const numbered = () => cur().pinStyle === 'numbers';
+  const refresh = () => {
+    const nums = numbered() ? pinNumbers(cur()) : null;
+    ctl.setItems({ pins: labelled(cur().pins).map((p) => (nums ? { ...p, num: nums.get(p.id) } : p)), regions: labelled(cur().regions), hidden });
+  };
   const persist = async (patch) => {
     await store.save('maps', { ...cur(), ...patch });
     refresh();
@@ -334,15 +354,40 @@ export async function viewMap(wid, mid, q) {
     const panel = $('#layersPanel');
     const all = [...(cur().pins || []), ...(cur().regions || [])];
     const layers = layersOf(cur());
-    panel.innerHTML = `<div class="map-panel-head"><span class="field-label">Layers</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
+    // Numbered maps: the panel is the key, each layer's places listed under its checkbox.
+    const nums = numbered() ? pinNumbers(cur()) : null;
+    const pins = cur().pins || [];
+    const keyFor = (l) => {
+      if (!nums) return '';
+      const list = pins.filter((p) => (p.layer || '') === l).sort((x, y) => nums.get(x.id) - nums.get(y.id));
+      return list.length ? `<ol class="map-key${hidden.has(l) ? ' off' : ''}">${list.map((p) => `
+          <li><button type="button" data-key="${p.id}"><span class="key-num" style="--pin:${esc(p.color || '#c4553b')}">${nums.get(p.id)}</span><span>${esc(itemTitle(p) || 'Untitled')}</span></button></li>`).join('')}</ol>` : '';
+    };
+    panel.classList.toggle('keyed', !!nums);
+    panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
       ${layers.length ? layers.map((l) => `<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
           <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
-        </label>`).join('') : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
+        </label>${keyFor(l)}`).join('') : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
     $$('[data-layer]', panel).forEach((cb) => cb.onchange = () => {
       if (cb.checked) hidden.delete(cb.dataset.layer); else hidden.add(cb.dataset.layer);
       saveHidden(mid, hidden);
       refresh();
+    });
+    $$('[data-key]', panel).forEach((b) => {
+      const pin = () => (cur().pins || []).find((p) => p.id === b.dataset.key);
+      const mark = (on) => $(`#mapBox [data-pin="${b.dataset.key}"]`)?.classList.toggle('lit', on);
+      b.onmouseenter = () => mark(true);
+      b.onmouseleave = () => mark(false);
+      b.onfocus = () => mark(true);
+      b.onblur = () => mark(false);
+      b.onclick = () => {
+        const p = pin();
+        if (!p) return;
+        if (hidden.has(p.layer || '')) { hidden.delete(p.layer || ''); saveHidden(mid, hidden); refresh(); renderLayers(); }
+        ctl.focus(p);
+        showInfo(p, 'pin');
+      };
     });
     panel.querySelector('[data-close]').onclick = () => { panel.hidden = true; $('#layersBtn').classList.remove('on'); rememberLayers(false); };
   }

@@ -216,3 +216,21 @@
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: .4rem; padding: 1.2rem .7rem .45rem;
   background: linear-gradient(transparent, rgba(10, 9, 7, .85)); color: #f4ecdc; font: 600 .95rem/1.2 var(--display);
 }
+
+/* Numbered pins and the map key */
+.pin.numbered .pin-badge b { transform: rotate(45deg); font: 700 11px/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.pin.numbered .pin-label { opacity: 0; pointer-events: none; transition: opacity .12s; }
+.pin.numbered:is(:hover, :focus-visible, .lit) .pin-label { opacity: 1; }
+.pin.lit .pin-badge { transform: rotate(-45deg) scale(1.3); }
+.map-panel.keyed .layer-row { font: 500 .72rem/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); padding: .5rem 0 .3rem; }
+.map-key { list-style: none; margin: 0 0 .3rem; padding: 0; }
+.map-key.off { opacity: .4; }
+.map-key li button {
+  display: flex; align-items: center; gap: .45rem; width: 100%; padding: .12rem .2rem; border: 0; border-radius: 2px;
+  background: none; color: var(--text); font: 500 .88rem/1.2 var(--display); text-align: left; cursor: pointer;
+}
+.map-key li button:hover, .map-key li button:focus-visible { background: var(--ink-4); }
+.key-num {
+  flex-shrink: 0; min-width: 1.25rem; height: 1.25rem; padding: 0 .2rem; display: grid; place-items: center; border-radius: 50%;
+  background: var(--pin); color: #fff; font: 700 .64rem/1 var(--sans); font-variant-numeric: tabular-nums;
+}
