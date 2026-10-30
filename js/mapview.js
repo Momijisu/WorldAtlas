@@ -145,17 +145,19 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
 
   // Pointer handling: one pointer pans, two pinch-zoom; a tap that barely moves is a click.
   const pts = new Map();
-  let start = null, moved = false, pinch = null, downTarget = null;
+  let start = null, moved = false, pinch = null, downTarget = null, panOnly = false;
   let vertex = null; // index of a draft vertex being dragged
   const toImage = (e) => {
     const r = container.getBoundingClientRect();
     return [Math.min(1, Math.max(0, (e.clientX - r.left - x) / s / w)), Math.min(1, Math.max(0, (e.clientY - r.top - y) / s / h))];
   };
   const onDown = (e) => {
-    if (e.button > 0) return;
-    if (pts.size === 0) downTarget = e.target;
+    // Left button, touch or pen; the middle button always pans (and is never a click).
+    if (e.button > 1) return;
+    if (e.button === 1) e.preventDefault(); // no autoscroll
+    if (pts.size === 0) { downTarget = e.target; panOnly = e.button === 1; }
     // Pressing a vertex of the region being drawn moves it instead of adding one.
-    const v = pts.size === 0 && e.target.closest?.('[data-vertex]');
+    const v = pts.size === 0 && !panOnly && e.target.closest?.('[data-vertex]');
     if (v) {
       vertex = +v.dataset.vertex;
       moved = true;
@@ -200,7 +202,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     else if (pts.size < 2) pinch = null;
     if (pts.size === 1) { const p = [...pts.values()][0]; start = { px: p.x, py: p.y, x, y }; }
     if (pts.size === 0) {
-      if (!moved && e.type === 'pointerup') {
+      if (!moved && !panOnly && e.type === 'pointerup') {
         const r = container.getBoundingClientRect();
         const ix = (e.clientX - r.left - x) / s / w, iy = (e.clientY - r.top - y) / s / h;
         const pinEl = downTarget?.closest?.('[data-pin]');
@@ -232,6 +234,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
   };
   container.addEventListener('pointerdown', onDown);
+  container.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // middle-drag pans instead of autoscrolling
   container.addEventListener('pointermove', onMove);
   container.addEventListener('pointerup', onEnd);
   container.addEventListener('pointercancel', onEnd);

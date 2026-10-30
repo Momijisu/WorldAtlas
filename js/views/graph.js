@@ -347,7 +347,9 @@ export function viewGraph(wid, q) {
   const pts = new Map();
   let drag = null, pinch = null;
   box.addEventListener('pointerdown', (e) => {
-    if (e.button > 0) return;
+    // Left button, touch or pen; the middle button always pans (and is never a click).
+    if (e.button > 1) return;
+    if (e.button === 1) e.preventDefault();
     const r = box.getBoundingClientRect();
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
@@ -358,8 +360,8 @@ export function viewGraph(wid, q) {
       return;
     }
     const g = e.target.closest('.g-node');
-    const node = g ? byId.get(g.dataset.id) : null;
-    drag = { node, sx: e.clientX, sy: e.clientY, tx: tf.x, ty: tf.y, moved: false, rx: r.left, ry: r.top };
+    const node = g && e.button !== 1 ? byId.get(g.dataset.id) : null;
+    drag = { node, sx: e.clientX, sy: e.clientY, tx: tf.x, ty: tf.y, moved: false, rx: r.left, ry: r.top, panOnly: e.button === 1 };
     box.setPointerCapture(e.pointerId);
   });
   box.addEventListener('pointermove', (e) => {
@@ -402,10 +404,11 @@ export function viewGraph(wid, q) {
     if (!drag || pts.size) { if (!pts.size) drag = null; return; }
     box.classList.remove('dragging');
     if (drag.node) drag.node.p.fixed = false;
-    if (!drag.moved && e.type === 'pointerup') select(drag.node ? drag.node.id : null);
+    if (!drag.moved && !drag.panOnly && e.type === 'pointerup') select(drag.node ? drag.node.id : null);
     drag = null;
   };
   box.addEventListener('pointerup', end);
+  box.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // middle-drag pans instead of autoscrolling
   box.addEventListener('pointercancel', end);
   box.addEventListener('wheel', (e) => {
     e.preventDefault();
