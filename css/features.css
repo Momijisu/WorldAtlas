@@ -354,3 +354,9 @@ details.guide summary .muted { font-weight: 400; }
 .link-preview .lp-type svg { width: 13px; height: 13px; }
 .link-preview .lp-title { font: 600 1.3rem/1.1 var(--display); margin: .25rem 0 .35rem; color: var(--text); }
 .link-preview p { margin: 0; font: 400 .92rem/1.45 var(--serif); color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* "Already covered": pick the article that answers a prompt */
+.prompt-quote { margin: 0 0 .6rem; font: italic 500 1.12rem/1.35 var(--display); }
+#covQ { width: 100%; margin: .2rem 0 .6rem; }
+.cov-list { max-height: min(50vh, 26rem); overflow: auto; }
+.cov-list .rows { margin: 0; }

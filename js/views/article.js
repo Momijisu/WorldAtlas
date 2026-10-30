@@ -55,7 +55,7 @@ export function viewArticle(wid, id) {
       <div class="actions left" style="margin-top:.7rem"><a class="btn small primary" href="#/w/${wid}/a/${a.id}/resolve">${icon('arrows-out-cardinal')} Resolve conflict</a></div></div></div>` : ''}
     <div class="article-grid">
       <div class="article-main">
-        ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Written for the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
+        ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Answers the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
         <details class="toc" id="toc" hidden open><summary>${icon('list-bullets')} Contents</summary><ol></ol></details>
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
         ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}

@@ -1,9 +1,9 @@
 // Writing prompts: a drawn prompt, the full library with filters, and custom prompts.
 import * as store from '../store.js';
 import { TYPES } from '../store.js';
-import { CATEGORIES, allPrompts, pickPrompt, updatePromptState } from '../prompts.js';
+import { CATEGORIES, allPrompts, pickPrompt, updatePromptState, recordAnswer } from '../prompts.js';
 import { $, esc, uid, modal, toast } from '../util.js';
-import { view, setTitle, pageHead, icon, worldCrumb, sep } from '../ui.js';
+import { view, setTitle, pageHead, icon, worldCrumb, sep, articleRows, hydrateImages } from '../ui.js';
 
 const catLabel = (c) => CATEGORIES[c]?.label || 'Your prompts';
 const catIcon = (c) => CATEGORIES[c]?.icon || 'feather';
@@ -24,6 +24,7 @@ export function promptCard(wid, p, { eyebrow = 'A prompt for you', draw = true }
       <a class="btn primary" href="${answerHref(wid, p)}">${icon('pencil-simple')} New ${esc((TYPES[p.type] || TYPES.article).label.toLowerCase())} article</a>
       ${p.about ? `<a class="btn" href="${addToHref(wid, p)}">${icon('plus')} Add to ${esc(p.about.title)}</a>` : ''}
       ${draw ? `<button class="btn quiet" data-draw>${icon('arrows-clockwise')} Another</button>` : ''}
+      <button class="btn quiet" data-covered title="Mark it answered by an article you've already written">${icon('check')} Already covered</button>
       <button class="btn quiet" data-dismiss title="Hide this prompt">${icon('eye-slash')} Not for me</button>
     </div>
   </div>`;
@@ -34,6 +35,10 @@ export function wirePromptCard(wid, root, { onChange }) {
   const card = $('.prompt-card', root);
   if (!card?.dataset.key) return;
   $('[data-draw]', card)?.addEventListener('click', () => onChange(pickPrompt(wid, { exclude: [card.dataset.key] })));
+  $('[data-covered]', card)?.addEventListener('click', () => coveredDialog(wid, card.dataset.key, () => {
+    toast('Prompt marked as answered');
+    onChange(pickPrompt(wid, { exclude: [card.dataset.key] }));
+  }));
   $('[data-dismiss]', card)?.addEventListener('click', async () => {
     const key = card.dataset.key;
     await updatePromptState(wid, (st) => { if (!st.dismissed.includes(key)) st.dismissed.push(key); });
@@ -87,7 +92,8 @@ export function viewPrompts(wid) {
           ${f.status === 'dismissed' ? `<button class="btn small" data-restore>Restore</button>` : `
             <a class="btn small" href="${answerHref(wid, p)}" title="Write a new article for this prompt">${icon('pencil-simple')}<span class="hide-sm">Write</span></a>
             ${p.about ? `<a class="btn small quiet" href="${addToHref(wid, p)}" title="Add to ${esc(p.about.title)}">${icon('plus')}<span class="hide-sm">Add to article</span></a>` : ''}
-            ${!p.answers.length ? `<button class="icon-btn" data-dismiss title="Set aside">${icon('eye-slash')}</button>` : ''}`}
+            ${!p.answers.length ? `<button class="icon-btn" data-covered title="Already covered by an article">${icon('check')}</button>
+              <button class="icon-btn" data-dismiss title="Set aside">${icon('eye-slash')}</button>` : `<button class="icon-btn" data-reopen title="Unlink the articles and reopen this prompt">${icon('arrow-counter-clockwise')}</button>`}`}
           ${p.custom ? `<button class="icon-btn" data-delete title="Delete your prompt">${icon('trash')}</button>` : ''}
         </div>
       </li>`).join('')}</ul>
@@ -102,7 +108,9 @@ export function viewPrompts(wid) {
     const li = e.target.closest('li');
     if (!li) return;
     const key = li.dataset.key;
-    if (e.target.closest('[data-dismiss]')) await updatePromptState(wid, (st) => { if (!st.dismissed.includes(key)) st.dismissed.push(key); });
+    if (e.target.closest('[data-covered]')) { coveredDialog(wid, key, () => { toast('Prompt marked as answered'); drawList(); }); return; }
+    if (e.target.closest('[data-reopen]')) await updatePromptState(wid, (st) => { delete st.answered[key]; });
+    else if (e.target.closest('[data-dismiss]')) await updatePromptState(wid, (st) => { if (!st.dismissed.includes(key)) st.dismissed.push(key); });
     else if (e.target.closest('[data-restore]')) await updatePromptState(wid, (st) => { st.dismissed = st.dismissed.filter((k) => k !== key); });
     else if (e.target.closest('[data-delete]')) await updatePromptState(wid, (st) => { st.custom = st.custom.filter((c) => `c:${c.id}` !== key); });
     else return;
@@ -112,6 +120,40 @@ export function viewPrompts(wid) {
 
   showDrawn(pickPrompt(wid));
   drawList();
+}
+
+// Mark a prompt as answered by an article that already covers it.
+function coveredDialog(wid, key, done) {
+  const p = allPrompts(wid).find((x) => x.key === key);
+  if (!p) return;
+  // The article the prompt is about, then articles of the prompt's template, then the rest.
+  const rank = (a) => (p.about?.id === a.id ? 0 : a.type === p.type ? 1 : 2);
+  const all = store.articlesOf(wid).sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title));
+  modal('Already covered', `<p class="prompt-quote">${esc(p.text)}</p>
+    <p class="muted small" style="margin-top:0">Pick the article that answers it. The prompt moves to Answered and the article shows it, without changing what you wrote.</p>
+    <input type="search" id="covQ" placeholder="Find an article…" aria-label="Find an article">
+    <div id="covList" class="cov-list"></div>`, {
+    onMount: (m, close) => {
+      const draw = () => {
+        const q = $('#covQ', m).value.trim().toLowerCase();
+        const list = all.filter((a) => !q || a.title.toLowerCase().includes(q)).slice(0, 30);
+        $('#covList', m).innerHTML = list.length ? articleRows(list, wid) : '<p class="muted small">No articles match.</p>';
+        hydrateImages($('#covList', m));
+      };
+      $('#covQ', m).addEventListener('input', draw);
+      $('#covList', m).addEventListener('click', async (e) => {
+        const link = e.target.closest('a[href*="/a/"]');
+        if (!link) return;
+        e.preventDefault();
+        const id = link.getAttribute('href').split('/a/')[1].split(/[/?]/)[0];
+        await recordAnswer(wid, key, id);
+        close();
+        done();
+      });
+      draw();
+      $('#covQ', m).focus();
+    },
+  });
 }
 
 function customPromptDialog(wid, done) {
