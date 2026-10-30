@@ -63,10 +63,14 @@ function templateLayers(m) {
   return changed ? next : null;
 }
 
+// A map's layers: in the order arranged in its key (map.layerOrder, which also
+// keeps empty groups), then any others, General first and the rest A–Z.
 function layersOf(m) {
   const names = new Set();
   for (const it of [...(m.pins || []), ...(m.regions || [])]) names.add(it.layer || '');
-  return [...names].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
+  const ordered = [...new Set(m.layerOrder || [])].filter((l) => names.has(l) || (l && !isTemplateLayer(l)));
+  const rest = [...names].filter((l) => !ordered.includes(l)).sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
+  return [...ordered, ...rest];
 }
 
 // Numbered pins: counted layer by layer (in the Layers list order), then in the
@@ -348,35 +352,54 @@ export async function viewMap(wid, mid, q) {
     $('#mapBox').classList.toggle('editing', on);
     info.hidden = true;
     renderEditBar();
+    renderLayers();
   }
   $('#editBtn').onclick = () => setEditing(!editing);
 
   // ---- layers panel
+  // In edit mode the key can be arranged: drag places within and between
+  // layers, drag layers to reorder them, and add, rename or remove groups.
+  // Numbers follow the order.
   function renderLayers() {
     const panel = $('#layersPanel');
-    const all = [...(cur().pins || []), ...(cur().regions || [])];
-    const layers = layersOf(cur());
-    // Numbered maps: the panel is the key, each layer's places listed under its checkbox.
-    const nums = numbered() ? pinNumbers(cur()) : null;
-    const pins = cur().pins || [];
+    const m = cur();
+    const pins = m.pins || [], regions = m.regions || [];
+    const all = [...pins, ...regions];
+    const layers = layersOf(m);
+    const nums = numbered() ? pinNumbers(m) : null;
+    const arranging = editing;
+    const listed = !!nums || arranging; // places are listed under their layers
+    const itemsOf = (l) => [
+      ...pins.filter((p) => (p.layer || '') === l).map((it) => ({ it, kind: 'pin' })),
+      ...(arranging ? regions.filter((r) => (r.layer || '') === l).map((it) => ({ it, kind: 'region' })) : []),
+    ];
+    const grip = (label) => (arranging ? `<button type="button" class="grip" data-grip aria-label="Move ${esc(label)}" title="Drag to move, or use the arrow keys">${icon('dots-six-vertical')}</button>` : '');
     const keyFor = (l) => {
-      if (!nums) return '';
-      const list = pins.filter((p) => (p.layer || '') === l).sort((x, y) => nums.get(x.id) - nums.get(y.id));
-      return list.length ? `<ol class="map-key${hidden.has(l) ? ' off' : ''}">${list.map((p) => `
-          <li><button type="button" data-key="${p.id}"><span class="key-num" style="--pin:${esc(p.color || '#c4553b')}">${nums.get(p.id)}</span><span>${esc(itemTitle(p) || 'Untitled')}</span></button></li>`).join('')}</ol>` : '';
+      const list = listed && !folded.has(l) ? itemsOf(l) : [];
+      if (!list.length) return arranging && !folded.has(l) ? `<ol class="map-key empty" data-drop-layer="${esc(l)}"><li class="muted small">Drop places here</li></ol>` : '';
+      return `<ol class="map-key${hidden.has(l) ? ' off' : ''}" data-drop-layer="${esc(l)}">${list.map(({ it, kind }) => {
+        const name = itemTitle(it) || 'Untitled';
+        const mark = kind === 'region' ? `<span class="key-num region" style="--pin:${esc(it.color || SWATCHES[3])}">${icon('polygon')}</span>`
+          : nums ? `<span class="key-num" style="--pin:${esc(it.color || '#c4553b')}">${nums.get(it.id)}</span>`
+            : `<span class="key-num" style="--pin:${esc(it.color || '#c4553b')}">${icon(it.icon || 'map-pin')}</span>`;
+        return `<li data-item="${kind}:${it.id}">${grip(name)}<button type="button" data-key="${kind}:${it.id}">${mark}<span>${esc(name)}</span></button></li>`;
+      }).join('')}</ol>`;
     };
-    // A long key spreads over two columns; each layer's list can be folded away.
-    const rows = layers.reduce((n, l) => n + 1 + (nums && !folded.has(l) ? pins.filter((p) => (p.layer || '') === l).length : 0), 0);
-    panel.classList.toggle('keyed', !!nums);
-    panel.classList.toggle('two-col', !!nums && rows > 16 && layers.length > 1);
-    panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
-      ${layers.length ? `<div class="layer-groups">${layers.map((l) => {
-        const key = keyFor(l);
-        return `<div class="layer-group${folded.has(l) ? ' folded' : ''}"><div class="layer-line"><label class="check layer-row">
+    const rows = layers.reduce((n, l) => n + 1 + (listed && !folded.has(l) ? itemsOf(l).length : 0), 0);
+    panel.classList.toggle('keyed', listed);
+    panel.classList.toggle('arranging', arranging);
+    panel.classList.toggle('two-col', listed && !arranging && rows > 16 && layers.length > 1); // arranging keeps one roomy column
+    const count = (l) => all.filter((it) => (it.layer || '') === l).length;
+    panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${arranging ? 'Arrange the key' : nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
+      ${layers.length ? `<div class="layer-groups">${layers.map((l) => `<div class="layer-group${folded.has(l) ? ' folded' : ''}" data-group="${esc(l)}">
+        <div class="layer-line">${grip(layerName(l))}<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
-          <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
-        </label>${key ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${key}</div>`;
-      }).join('')}</div>` : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
+          <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${count(l)}</span>
+        </label>${arranging && l ? `<button type="button" class="icon-btn sm" data-rename="${esc(l)}" title="Rename group">${icon('pencil-simple')}</button><button type="button" class="icon-btn sm" data-remove="${esc(l)}" title="Remove group (its places move to General)">${icon('trash')}</button>` : ''}
+        ${listed && (count(l) || arranging) ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${keyFor(l)}</div>`).join('')}</div>`
+        : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}
+      ${arranging ? `<button type="button" class="btn small quiet new-group" data-new-group>${icon('plus')} New group</button>` : ''}`;
+
     $$('[data-fold]', panel).forEach((b) => b.onclick = () => {
       const l = b.dataset.fold;
       if (folded.has(l)) folded.delete(l); else folded.add(l);
@@ -390,22 +413,181 @@ export async function viewMap(wid, mid, q) {
       renderLayers();
     });
     $$('[data-key]', panel).forEach((b) => {
-      const pin = () => (cur().pins || []).find((p) => p.id === b.dataset.key);
-      const mark = (on) => $(`#mapBox [data-pin="${b.dataset.key}"]`)?.classList.toggle('lit', on);
+      const [kind, id] = b.dataset.key.split(':');
+      const find = () => (kind === 'pin' ? cur().pins : cur().regions || []).find((x) => x.id === id);
+      const mark = (on) => kind === 'pin' && $(`#mapBox [data-pin="${id}"]`)?.classList.toggle('lit', on);
       b.onmouseenter = () => mark(true);
       b.onmouseleave = () => mark(false);
       b.onfocus = () => mark(true);
       b.onblur = () => mark(false);
       b.onclick = () => {
-        const p = pin();
-        if (!p) return;
-        if (hidden.has(p.layer || '')) { hidden.delete(p.layer || ''); saveHidden(mid, hidden); refresh(); renderLayers(); }
-        ctl.focus(p);
-        showInfo(p, 'pin');
+        const it = find();
+        if (!it) return;
+        if (hidden.has(it.layer || '')) { hidden.delete(it.layer || ''); saveHidden(mid, hidden); refresh(); renderLayers(); }
+        ctl.focus(kind === 'pin' ? it : it.points);
+        if (arranging) (kind === 'pin' ? pinDialog : regionDialog)(it); else showInfo(it, kind);
       };
     });
     panel.querySelector('[data-close]').onclick = () => { panel.hidden = true; $('#layersBtn').classList.remove('on'); rememberLayers(false); };
+    if (arranging) wireArrange(panel);
   }
+
+  // ---- arranging the key
+  const saveOrder = (order) => persist({ layerOrder: order });
+  // Move a pin or region to layer `l`, before `beforeId` (another item of the same kind), or to the end of that layer.
+  function moveItem(kind, id, l, beforeId) {
+    const key = kind === 'pin' ? 'pins' : 'regions';
+    const list = [...(cur()[key] || [])];
+    const from = list.findIndex((x) => x.id === id);
+    if (from < 0) return;
+    const [it] = list.splice(from, 1);
+    const moved = { ...it, layer: l };
+    let at = beforeId ? list.findIndex((x) => x.id === beforeId) : -1;
+    if (at < 0) { // after the last of that layer, else at the end
+      const last = list.map((x) => x.layer || '').lastIndexOf(l);
+      at = last < 0 ? list.length : last + 1;
+    }
+    list.splice(at, 0, moved);
+    const order = layersOf(cur());
+    return persist({ [key]: list, layerOrder: order.includes(l) ? order : [...order, l] });
+  }
+  function moveLayer(l, beforeL) {
+    const order = layersOf(cur()).filter((x) => x !== l);
+    const at = beforeL == null ? order.length : order.indexOf(beforeL);
+    order.splice(at < 0 ? order.length : at, 0, l);
+    return saveOrder(order);
+  }
+  function groupNameDialog(title, value, done) {
+    modal(title, `<form class="form" id="gf"><label>Name<input name="name" required value="${esc(value)}" placeholder="e.g. Old Town"></label>
+      <div class="actions"><button class="btn primary">Save</button></div></form>`, {
+      onMount: (el, close) => {
+        const f = $('#gf', el);
+        f.name.select();
+        f.onsubmit = (e) => {
+          e.preventDefault();
+          const name = f.name.value.trim();
+          if (!name) return;
+          if (layersOf(cur()).some((l) => l !== value && layerName(l).toLowerCase() === name.toLowerCase())) return toast('There’s already a group with that name');
+          close();
+          done(name);
+        };
+      },
+    });
+  }
+  function wireArrange(panel) {
+    $('[data-new-group]', panel).onclick = () => groupNameDialog('New group', '', (name) => saveOrder([...layersOf(cur()), name]));
+    $$('[data-rename]', panel).forEach((b) => b.onclick = () => {
+      const old = b.dataset.rename;
+      groupNameDialog('Rename group', layerName(old), (name) => {
+        const re = (it) => ((it.layer || '') === old ? { ...it, layer: name } : it);
+        if (hidden.delete(old)) { hidden.add(name); saveHidden(mid, hidden); }
+        persist({ pins: (cur().pins || []).map(re), regions: (cur().regions || []).map(re), layerOrder: layersOf(cur()).map((l) => (l === old ? name : l)) });
+      });
+    });
+    $$('[data-remove]', panel).forEach((b) => b.onclick = async () => {
+      const l = b.dataset.remove;
+      const n = [...(cur().pins || []), ...(cur().regions || [])].filter((it) => (it.layer || '') === l).length;
+      if (n && !(await confirmDialog(`Remove the group “${layerName(l)}”? Its ${n} place${n === 1 ? '' : 's'} move to General.`, 'Remove group'))) return;
+      const re = (it) => ((it.layer || '') === l ? { ...it, layer: '' } : it);
+      persist({ pins: (cur().pins || []).map(re), regions: (cur().regions || []).map(re), layerOrder: layersOf(cur()).filter((x) => x !== l) });
+    });
+
+    // Drag by the grip (mouse, touch or pen); arrow keys on a focused grip move one step.
+    $$('[data-grip]', panel).forEach((g) => {
+      const row = g.closest('[data-item], [data-group]');
+      const isLayer = !row.dataset.item;
+      g.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        const up = e.key === 'ArrowUp';
+        const refocus = (sel) => requestAnimationFrame(() => $(`${sel} [data-grip]`, $('#layersPanel'))?.focus());
+        if (isLayer) {
+          const order = layersOf(cur()), l = row.dataset.group, i = order.indexOf(l);
+          const j = up ? i - 1 : i + 2;
+          if ((up && i <= 0) || (!up && i >= order.length - 1)) return;
+          moveLayer(l, order[j] ?? null).then(() => refocus(`[data-group="${CSS.escape(l)}"] > .layer-line`));
+          return;
+        }
+        const [kind, id] = row.dataset.item.split(':');
+        const sibs = $$(`[data-item^="${kind}:"]`, row.parentElement).map((x) => x.dataset.item.split(':')[1]);
+        const i = sibs.indexOf(id), l = row.closest('[data-group]').dataset.group;
+        const order = layersOf(cur()), li = order.indexOf(l);
+        let target = l, before;
+        if (up && i > 0) before = sibs[i - 1];
+        else if (!up && i < sibs.length - 1) before = sibs[i + 2];
+        else if (up && li > 0) target = order[li - 1]; // to the end of the layer above
+        else if (!up && li < order.length - 1) { // to the start of the layer below
+          target = order[li + 1];
+          before = (cur()[kind === 'pin' ? 'pins' : 'regions'] || []).find((x) => (x.layer || '') === target)?.id;
+        } else return;
+        moveItem(kind, id, target, before).then(() => refocus(`[data-item="${kind}:${id}"]`));
+      });
+      g.addEventListener('pointerdown', (e) => {
+        if (e.button > 0) return;
+        e.preventDefault();
+        g.setPointerCapture(e.pointerId);
+        row.classList.add('dragging');
+        let drop = null;
+        const clear = () => $$('.drop-before, .drop-after, .drop-into', panel).forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-into'));
+        const over = (ev) => {
+          clear();
+          drop = null;
+          const el = document.elementFromPoint(ev.clientX, ev.clientY);
+          if (!el || !panel.contains(el)) return;
+          if (isLayer) {
+            const grp = el.closest('[data-group]');
+            if (!grp || grp === row) return;
+            const r = grp.getBoundingClientRect();
+            const after = ev.clientY > r.top + Math.min(r.height / 2, 24);
+            grp.classList.add(after ? 'drop-after' : 'drop-before');
+            drop = { group: grp.dataset.group, after };
+            return;
+          }
+          const [kind] = row.dataset.item.split(':');
+          const li = el.closest('[data-item]');
+          if (li && li !== row && li.dataset.item.startsWith(kind + ':')) {
+            const r = li.getBoundingClientRect();
+            const after = ev.clientY > r.top + r.height / 2;
+            li.classList.add(after ? 'drop-after' : 'drop-before');
+            drop = { group: li.closest('[data-group]').dataset.group, ref: li, after };
+            return;
+          }
+          const grp = el.closest('[data-group]');
+          if (grp) { grp.classList.add('drop-into'); drop = { group: grp.dataset.group }; }
+        };
+        const move = (ev) => {
+          // Near the panel's top or bottom edge, scroll it so the whole key can be reached.
+          const r = panel.getBoundingClientRect();
+          if (ev.clientY < r.top + 40) panel.scrollTop -= 12; else if (ev.clientY > r.bottom - 40) panel.scrollTop += 12;
+          over(ev);
+        };
+        const up = () => {
+          g.removeEventListener('pointermove', move);
+          row.classList.remove('dragging');
+          clear();
+          if (!drop) return;
+          if (isLayer) {
+            const order = layersOf(cur()).filter((x) => x !== row.dataset.group);
+            const next = drop.after ? order[order.indexOf(drop.group) + 1] ?? null : drop.group;
+            moveLayer(row.dataset.group, next);
+            return;
+          }
+          const [kind, id] = row.dataset.item.split(':');
+          let before = null;
+          if (drop.ref) {
+            const sibs = $$(`[data-item^="${kind}:"]`, drop.ref.parentElement).map((x) => x.dataset.item.split(':')[1]).filter((x) => x !== id);
+            const refId = drop.ref.dataset.item.split(':')[1];
+            before = drop.after ? sibs[sibs.indexOf(refId) + 1] ?? null : refId;
+          }
+          moveItem(kind, id, drop.group, before);
+        };
+        g.addEventListener('pointermove', move);
+        g.addEventListener('pointerup', up, { once: true });
+        g.addEventListener('pointercancel', () => { g.removeEventListener('pointermove', move); row.classList.remove('dragging'); clear(); }, { once: true });
+      });
+    });
+  }
+
   renderLayers();
 
   // ---- places panel

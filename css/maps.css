@@ -225,11 +225,11 @@
 .map-panel.keyed .layer-row { font: 500 .72rem/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); padding: .5rem 0 .3rem; }
 .map-key { list-style: none; margin: 0 0 .3rem; padding: 0; }
 .map-key.off { opacity: .4; }
-.map-key li button {
+.map-key li button[data-key] {
   display: flex; align-items: center; gap: .45rem; width: 100%; padding: .12rem .2rem; border: 0; border-radius: 2px;
   background: none; color: var(--text); font: 500 .88rem/1.2 var(--display); text-align: left; cursor: pointer;
 }
-.map-key li button:hover, .map-key li button:focus-visible { background: var(--ink-4); }
+.map-key li button[data-key]:hover, .map-key li button[data-key]:focus-visible { background: var(--ink-4); }
 .key-num {
   flex-shrink: 0; min-width: 1.25rem; height: 1.25rem; padding: 0 .2rem; display: grid; place-items: center; border-radius: 50%;
   background: var(--pin); color: #fff; font: 700 .64rem/1 var(--sans); font-variant-numeric: tabular-nums;
@@ -242,3 +242,26 @@
 .map-panel.two-col { width: min(500px, calc(100% - 1.2rem)); }
 .map-panel.two-col .layer-groups { column-count: 2; column-gap: 1.1rem; }
 .map-panel.two-col .layer-group { break-inside: avoid; }
+.key-num .i { width: .75rem; height: .75rem; }
+.key-num.region { border-radius: 3px; }
+
+/* Arranging the key (edit mode) */
+.map-key li { display: flex; align-items: center; }
+.map-key li > button[data-key] { flex: 1; min-width: 0; }
+.map-panel.arranging { width: min(340px, calc(100% - 1.2rem)); }
+.map-key li > button[data-key] span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-key.empty { border: 1px dashed var(--rule-strong); border-radius: 2px; padding: .35rem .5rem; }
+.grip {
+  flex-shrink: 0; display: grid; place-items: center; width: 1.2rem; height: 1.6rem; padding: 0; border: 0; background: none;
+  color: var(--muted); cursor: grab; touch-action: none; border-radius: 2px;
+}
+.grip .i { width: .9rem; height: .9rem; }
+.grip:hover, .grip:focus-visible { color: var(--brass); background: var(--ink-4); }
+.dragging { opacity: .45; }
+.dragging .grip { cursor: grabbing; }
+.drop-before { box-shadow: inset 0 2px 0 var(--brass); }
+.drop-after { box-shadow: inset 0 -2px 0 var(--brass); }
+.layer-group.drop-into { background: color-mix(in srgb, var(--brass) 12%, transparent); border-radius: 2px; }
+.map-panel.arranging .layer-line .icon-btn.sm:not(.fold) { opacity: .55; }
+.map-panel.arranging .layer-line .icon-btn.sm:not(.fold):hover { opacity: 1; }
+.new-group { margin-top: .6rem; width: 100%; justify-content: center; border: 1px dashed var(--rule-strong); }
