@@ -218,7 +218,7 @@
 }
 
 /* Numbered pins and the map key */
-.pin.numbered .pin-badge b { transform: rotate(45deg); font: 700 11px/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.pin.numbered .pin-badge b { transform: rotate(45deg) translate(var(--shape-x, 0px), calc(var(--num-y, 0px) + var(--shape-y, 0px))); font: 700 11px/1 var(--sans); font-variant-numeric: lining-nums proportional-nums; letter-spacing: -.02em; }
 .pin.numbered .pin-label { opacity: 0; pointer-events: none; transition: opacity .12s; }
 .pin.numbered:is(:hover, :focus-visible, .lit) .pin-label { opacity: 1; }
 .pin.lit .pin-badge { transform: rotate(-45deg) scale(1.3); }
@@ -281,18 +281,19 @@
 /* ---- Marker shapes and finishes (set on the map box: data-shape, data-finish) */
 .mk-fill { display: none; }
 .pin { --mk-edge: rgba(255, 248, 235, .95); --mk-fill: var(--pin); --mk-ink: #fff; }
-.map-box[data-finish="ivory"] .pin { --mk-edge: #2b2118; --mk-fill: #f6f0e3; --mk-ink: #2b2118; }
-.map-box[data-finish="parchment"] .pin {
-  --mk-edge: #2e1c0c; --mk-ink: #2e1c0c;
-  --mk-fill: radial-gradient(circle at 40% 32%, rgba(255, 251, 236, .8), rgba(255, 244, 214, 0) 62%), radial-gradient(circle, rgba(0, 0, 0, 0) 55%, rgba(120, 80, 30, .28)), linear-gradient(rgba(242, 226, 184, .72), rgba(242, 226, 184, .72)), url(../assets/backgrounds/parchment.png) center / 60px, #efdcae;
+.map-box[data-finish="ivory"] .pin { --mk-edge: #2b2118; --mk-fill: #f7f3e6; --mk-ink: #2b2118; }
+.map-box[data-finish="parchment"] .pin { --mk-edge: #2e1c0c; --mk-fill: #efe3bf; --mk-ink: #2e1c0c; }
+.map-box[data-finish="hologram"] .pin { --mk-edge: #7eeaf5; --mk-fill: #0f3b4a; --mk-ink: #c8fbff; }
+/* Flat colour with a little grain over it, like the page's own noise (not configurable). */
+.map-box[data-finish] .mk-fill { display: block; position: absolute; inset: 0; border-radius: inherit; background-color: var(--mk-fill); }
+.map-box[data-finish] .mk-fill::after, .map-box[data-shape]:not([data-shape="pin"]) .mk-fill::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: url(../assets/backgrounds/noise.png) 0 0 / 64px; opacity: .1; mix-blend-mode: overlay;
 }
-.map-box[data-finish="hologram"] .pin {
-  --mk-edge: #8af6ff; --mk-ink: #d8fdff;
-  --mk-fill: repeating-linear-gradient(0deg, rgba(138, 246, 255, .22) 0 1px, transparent 1px 3px), radial-gradient(circle at 50% 40%, rgba(60, 210, 240, .45), rgba(8, 40, 70, .7));
-}
+.map-box[data-finish="hologram"] .mk-fill::after { opacity: .16; mix-blend-mode: screen; }
 /* The teardrop pin takes the finish too */
-.map-box[data-finish] .pin-badge { background: var(--mk-fill); color: var(--mk-ink); box-shadow: 0 0 0 1.5px var(--mk-edge), 0 2px 6px rgba(0, 0, 0, .45); }
-.map-box[data-finish="hologram"] .pin-badge { box-shadow: 0 0 0 1.2px var(--mk-edge), 0 0 8px rgba(90, 230, 255, .8); }
+.map-box[data-finish] .pin-badge { background-color: var(--mk-fill); color: var(--mk-ink); box-shadow: 0 0 0 1.5px var(--mk-edge), 0 2px 6px rgba(0, 0, 0, .45); }
+.map-box[data-finish="hologram"] .pin-badge { box-shadow: 0 0 0 1.2px var(--mk-edge), 0 0 6px rgba(90, 230, 255, .5); }
 
 /* Other shapes: centred on the spot, outlined by a clipped edge layer */
 .map-box[data-shape]:not([data-shape="pin"]) .pin { transform: translate(-50%, calc(-100% + 13px)) scale(var(--inv, 1)); transform-origin: 50% calc(100% - 13px); gap: 6px; }
@@ -301,8 +302,9 @@
   background: none; box-shadow: none; color: var(--mk-ink); filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, .55));
 }
 .map-box[data-shape]:not([data-shape="pin"]) .pin-badge::before { content: ""; position: absolute; inset: 0; clip-path: var(--clip); background: var(--mk-edge); }
-.map-box[data-shape]:not([data-shape="pin"]) .mk-fill { display: block; position: absolute; inset: var(--mk-line, 1.6px); clip-path: var(--clip); background: var(--mk-fill); }
+.map-box[data-shape]:not([data-shape="pin"]) .mk-fill { display: block; position: absolute; inset: var(--mk-line, 1.6px); clip-path: var(--clip); background-color: var(--mk-fill); }
 .map-box[data-shape]:not([data-shape="pin"]) .pin-badge > :is(b, .i) { position: relative; z-index: 1; transform: none; }
+.map-box[data-shape]:not([data-shape="pin"]) .pin-badge > b { translate: var(--shape-x, 0px) calc(var(--num-y, 0px) + var(--shape-y, 0px)); }
 .map-box[data-shape]:not([data-shape="pin"]) .pin:is(:hover, :focus-visible) .pin-badge { transform: scale(1.12); }
 .map-box[data-shape]:not([data-shape="pin"]) .pin.lit .pin-badge { transform: scale(1.3); }
 .map-box[data-shape="circle"] { --clip: circle(50%); }
@@ -313,9 +315,9 @@
 .map-box[data-shape="diamond"] .pin-badge > b { font-size: 11px !important; }
 
 /* Numbers in the finishes' own lettering */
-.map-box[data-finish="parchment"] .pin-badge b, .map-box[data-finish="ivory"] .pin-badge b { font: 700 13px/1 var(--display); letter-spacing: 0; }
-.map-box[data-finish="hologram"] .pin-badge b { font: 600 11px/1 var(--mono, monospace); text-shadow: 0 0 4px rgba(120, 240, 255, .95); }
-.map-box[data-finish="hologram"] .pin-badge { filter: drop-shadow(0 0 3px rgba(90, 230, 255, .9)) drop-shadow(0 0 1px rgba(0, 0, 0, .6)); }
+.map-box[data-finish="parchment"] .pin-badge b, .map-box[data-finish="ivory"] .pin-badge b { font: 700 13px/1 var(--display); letter-spacing: 0; font-variant-numeric: lining-nums proportional-nums; }
+.map-box[data-finish="hologram"] .pin-badge b { font: 600 11px/1 var(--mono, monospace); font-variant-numeric: lining-nums proportional-nums; text-shadow: 0 0 3px rgba(120, 240, 255, .55); }
+.map-box[data-finish="hologram"] .pin-badge { filter: drop-shadow(0 0 3px rgba(90, 230, 255, .55)) drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
 
 /* Labels to match */
 .map-box[data-finish="parchment"] .pin-label {
@@ -329,3 +331,17 @@
   box-shadow: 0 0 8px rgba(90, 230, 255, .35); text-shadow: 0 0 4px rgba(120, 240, 255, .6);
 }
 .map-box[data-finish="parchment"] .pin { --mk-line: 2px; }
+
+/* Numbers: lining figures (old-style 3, 4, 5, 7 drop below the line), centred in the
+   badge. After the font shorthands above, which would reset them. */
+.map-box .pin-badge b { position: relative; z-index: 1; display: block; line-height: 1; font-variant-numeric: lining-nums proportional-nums; }
+/* Optical centring, measured: the sans figures sit a little low, and a diamond's
+   middle reads higher than its box's. */
+.pin { --num-y: -.8px; }
+.map-box:is([data-finish="ivory"], [data-finish="parchment"]) .pin { --num-y: .1px; }
+.map-box[data-finish="hologram"] .pin { --num-y: 0px; }
+.map-box[data-shape="diamond"] .pin { --shape-y: -.5px; }
+.map-box:is(:not([data-shape]), [data-shape="pin"]) .pin { --shape-y: .3px; }
+.map-box:is(:not([data-shape]), [data-shape="pin"]):is([data-finish="ivory"], [data-finish="parchment"]) .pin { --shape-x: -.6px; --shape-y: .4px; }
+.map-box[data-shape="diamond"][data-finish="hologram"] .pin { --shape-y: 0px; }
+.map-box:is(:not([data-shape]), [data-shape="pin"])[data-finish="hologram"] .pin { --shape-x: -.6px; --shape-y: 0px; }
