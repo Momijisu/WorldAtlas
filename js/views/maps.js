@@ -179,6 +179,8 @@ export async function viewMap(wid, mid, q) {
   let draft = null;         // region vertices being drawn
   let moving = null;        // pin id waiting for its new location
   let hidden = loadHidden(mid);
+  let folded = new Set(); // layers whose key list is folded away
+  try { folded = new Set(JSON.parse(localStorage.getItem('wa.map.folded.' + mid) || '[]')); } catch { /* storage unavailable */ }
   const cur = () => store.map(mid) || m;
 
   view.innerHTML = `<section class="page map-page">
@@ -363,16 +365,29 @@ export async function viewMap(wid, mid, q) {
       return list.length ? `<ol class="map-key${hidden.has(l) ? ' off' : ''}">${list.map((p) => `
           <li><button type="button" data-key="${p.id}"><span class="key-num" style="--pin:${esc(p.color || '#c4553b')}">${nums.get(p.id)}</span><span>${esc(itemTitle(p) || 'Untitled')}</span></button></li>`).join('')}</ol>` : '';
     };
+    // A long key spreads over two columns; each layer's list can be folded away.
+    const rows = layers.reduce((n, l) => n + 1 + (nums && !folded.has(l) ? pins.filter((p) => (p.layer || '') === l).length : 0), 0);
     panel.classList.toggle('keyed', !!nums);
+    panel.classList.toggle('two-col', !!nums && rows > 16 && layers.length > 1);
     panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
-      ${layers.length ? layers.map((l) => `<label class="check layer-row">
+      ${layers.length ? `<div class="layer-groups">${layers.map((l) => {
+        const key = keyFor(l);
+        return `<div class="layer-group${folded.has(l) ? ' folded' : ''}"><div class="layer-line"><label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
           <span>${isTemplateLayer(l) ? icon(TYPES[l].icon) + ' ' : ''}${esc(layerName(l))}</span><span class="count">${all.filter((it) => (it.layer || '') === l).length}</span>
-        </label>${keyFor(l)}`).join('') : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
+        </label>${key ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${key}</div>`;
+      }).join('')}</div>` : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}`;
+    $$('[data-fold]', panel).forEach((b) => b.onclick = () => {
+      const l = b.dataset.fold;
+      if (folded.has(l)) folded.delete(l); else folded.add(l);
+      try { localStorage.setItem('wa.map.folded.' + mid, JSON.stringify([...folded])); } catch { /* storage unavailable */ }
+      renderLayers();
+    });
     $$('[data-layer]', panel).forEach((cb) => cb.onchange = () => {
       if (cb.checked) hidden.delete(cb.dataset.layer); else hidden.add(cb.dataset.layer);
       saveHidden(mid, hidden);
       refresh();
+      renderLayers();
     });
     $$('[data-key]', panel).forEach((b) => {
       const pin = () => (cur().pins || []).find((p) => p.id === b.dataset.key);

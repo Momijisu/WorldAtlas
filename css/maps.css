@@ -234,3 +234,11 @@
   flex-shrink: 0; min-width: 1.25rem; height: 1.25rem; padding: 0 .2rem; display: grid; place-items: center; border-radius: 50%;
   background: var(--pin); color: #fff; font: 700 .64rem/1 var(--sans); font-variant-numeric: tabular-nums;
 }
+.layer-line { display: flex; align-items: center; gap: .2rem; border-top: 1px solid var(--rule); }
+.layer-line .layer-row { flex: 1; border-top: 0; }
+.fold .i { transition: transform .15s; }
+.layer-group.folded .fold .i { transform: rotate(-90deg); }
+.layer-group.folded .map-key { display: none; }
+.map-panel.two-col { width: min(500px, calc(100% - 1.2rem)); }
+.map-panel.two-col .layer-groups { column-count: 2; column-gap: 1.1rem; }
+.map-panel.two-col .layer-group { break-inside: avoid; }
