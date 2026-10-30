@@ -408,13 +408,13 @@ export async function viewMap(wid, mid, q) {
     panel.classList.toggle('arranging', arranging);
     panel.classList.toggle('two-col', listed && !arranging && rows > 16 && layers.length > 1); // arranging keeps one roomy column
     const count = (l) => all.filter((it) => (it.layer || '') === l).length;
-    // A group holding a single region stands for that region (a district and the places in it).
-    const regionOf = (l) => { const rs = regions.filter((r) => (r.layer || '') === l); return rs.length === 1 ? rs[0] : null; };
+    // A group holding regions stands for them (a district and the places in it): its name highlights and shows them.
+    const regionsOf = (l) => regions.filter((r) => (r.layer || '') === l && r.points?.length > 2);
     panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${arranging ? 'Arrange the key' : nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
       ${layers.length ? `<div class="layer-groups">${layers.map((l) => `<div class="layer-group${folded.has(l) ? ' folded' : ''}" data-group="${esc(l)}">
         <div class="layer-line">${grip(layerName(l))}<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
-          ${regionOf(l) ? `<button type="button" class="group-link" data-group-region="${regionOf(l).id}" title="Show ${esc(itemTitle(regionOf(l)) || layerName(l))} on the map">${esc(layerName(l))}</button>`
+          ${regionsOf(l).length ? `<button type="button" class="group-link" data-group-regions="${regionsOf(l).map((r) => r.id).join(' ')}" title="Show ${regionsOf(l).length === 1 ? esc(itemTitle(regionsOf(l)[0]) || layerName(l)) : `${regionsOf(l).length} regions`} on the map">${esc(layerName(l))}</button>`
             : `<span>${esc(layerName(l))}</span>`}<span class="count">${count(l)}</span>
         </label>${arranging && l ? `<button type="button" class="icon-btn sm" data-rename="${esc(l)}" title="Rename group">${icon('pencil-simple')}</button><button type="button" class="icon-btn sm" data-remove="${esc(l)}" title="Remove group (its places move to General)">${icon('trash')}</button>` : ''}
         ${listed && (count(l) || arranging) ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${keyFor(l)}</div>`).join('')}</div>`
@@ -433,20 +433,22 @@ export async function viewMap(wid, mid, q) {
       refresh();
       renderLayers();
     });
-    $$('[data-group-region]', panel).forEach((b) => {
-      const id = b.dataset.groupRegion;
-      const mark = (on) => $(`#mapBox [data-region="${id}"]`)?.classList.toggle('lit', on);
+    $$('[data-group-regions]', panel).forEach((b) => {
+      const ids = b.dataset.groupRegions.split(' ');
+      const mark = (on) => ids.forEach((id) => $(`#mapBox [data-region="${id}"]`)?.classList.toggle('lit', on));
       b.onmouseenter = () => mark(true);
       b.onmouseleave = () => mark(false);
       b.onfocus = () => mark(true);
       b.onblur = () => mark(false);
       b.onclick = (e) => {
         e.preventDefault(); // not the layer's checkbox
-        const r = (cur().regions || []).find((x) => x.id === id);
-        if (!r) return;
-        if (hidden.has(r.layer || '')) { hidden.delete(r.layer || ''); saveHidden(mid, hidden); refresh(); renderLayers(); }
-        ctl.focus(r.points);
-        if (editing) regionDialog(r); else showInfo(r, 'region');
+        const rs = (cur().regions || []).filter((x) => ids.includes(x.id));
+        if (!rs.length) return;
+        const l = rs[0].layer || '';
+        if (hidden.has(l)) { hidden.delete(l); saveHidden(mid, hidden); refresh(); renderLayers(); }
+        ctl.focus(rs.flatMap((r) => r.points)); // all of them in view
+        if (rs.length === 1) { if (editing) regionDialog(rs[0]); else showInfo(rs[0], 'region'); } else info.hidden = true;
+        requestAnimationFrame(() => mark(true)); // keep them lit after the redraw
       };
     });
     $$('[data-key]', panel).forEach((b) => {
