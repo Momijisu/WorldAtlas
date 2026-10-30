@@ -82,6 +82,16 @@ function pinNumbers(m) {
   return nums;
 }
 
+// Marker shape and style, set per map (see the map settings dialog).
+export const MARKER_SHAPES = { pin: 'Pin', circle: 'Circle', hexagon: 'Hexagon', diamond: 'Diamond', square: 'Square' };
+export const MARKER_STYLES = { colour: 'Colour', ivory: 'Ivory', parchment: 'Parchment', hologram: 'Hologram' };
+export function applyMarkers(el, m) {
+  const shape = Object.hasOwn(MARKER_SHAPES, m?.pinShape) ? m.pinShape : 'pin';
+  const style = Object.hasOwn(MARKER_STYLES, m?.pinFinish) ? m.pinFinish : 'colour';
+  if (shape === 'pin') delete el.dataset.shape; else el.dataset.shape = shape;
+  if (style === 'colour') delete el.dataset.finish; else el.dataset.finish = style;
+}
+
 const hiddenKey = (mid) => 'wa.map.hidden.' + mid;
 function loadHidden(mid) {
   try { return new Set(JSON.parse(localStorage.getItem(hiddenKey(mid)) || '[]')); } catch { return new Set(); }
@@ -128,6 +138,10 @@ function mapDialog(wid, m) {
       </div>
       <div class="field-label">Pins show</div>
       <div class="seg" id="pinStyle"><button type="button" data-ps="names">Names</button><button type="button" data-ps="numbers">Numbers, with a key</button></div>
+      <div class="row">
+        <label>Marker shape<select name="pinShape">${Object.entries(MARKER_SHAPES).map(([k, l]) => `<option value="${k}" ${(m.pinShape || 'pin') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label>Marker style<select name="pinFinish">${Object.entries(MARKER_STYLES).map(([k, l]) => `<option value="${k}" ${(m.pinFinish || 'colour') === k ? 'selected' : ''}>${l}${k === 'colour' ? ' (each pin’s own)' : ''}</option>`).join('')}</select></label>
+      </div>
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete map</button><span class="spacer"></span>`}
         <button class="btn primary">${isNew ? 'Create map' : 'Save'}</button>
@@ -161,6 +175,8 @@ function mapDialog(wid, m) {
           if (f.file.files[0]) m.image = await store.addImage(await prepareImage(f.file.files[0], 4096));
           m.name = f.name.value.trim();
           m.pinStyle = pinStyle === 'numbers' ? 'numbers' : undefined;
+          m.pinShape = f.pinShape.value === 'pin' ? undefined : f.pinShape.value;
+          m.pinFinish = f.pinFinish.value === 'colour' ? undefined : f.pinFinish.value;
           await store.save('maps', m);
           close();
           if (isNew) location.hash = `#/w/${wid}/m/${m.id}`; else state.route();
@@ -217,6 +233,8 @@ export async function viewMap(wid, mid, q) {
   </section>`;
 
   const box = $('#mapBox');
+  applyMarkers(box, m);
+  applyMarkers($('#layersPanel'), m); // the key's numbers match the markers
   const src = await store.imageURL(m.image);
   if (!box.isConnected) return; // left this page while the image loaded
   if (!src) {

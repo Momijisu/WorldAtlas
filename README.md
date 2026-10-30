@@ -13,7 +13,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - A contents box on articles with several headings
 - Typed relationships, family trees and a relationship web
 - Custom calendars with eras and moons, a calendar view and a timeline
-- Maps with pins, regions, layers and nested maps; optionally numbered pins with a key you can arrange into groups
+- Maps with pins, regions, layers and nested maps; optionally numbered pins with a key you can arrange into groups, and marker shapes (pin, circle, hexagon, diamond, square) in colour, ivory, parchment or hologram styles
 - Revision history with line diffs, restore, and recovery of deleted articles
 - A writing guide for each template, and 353 writing prompts, some naming your own articles
 - GM notes that stay collapsed while reading

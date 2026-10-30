@@ -345,3 +345,15 @@
 .map-box:is(:not([data-shape]), [data-shape="pin"]):is([data-finish="ivory"], [data-finish="parchment"]) .pin { --shape-x: -.6px; --shape-y: .4px; }
 .map-box[data-shape="diamond"][data-finish="hologram"] .pin { --shape-y: 0px; }
 .map-box:is(:not([data-shape]), [data-shape="pin"])[data-finish="hologram"] .pin { --shape-x: -.6px; --shape-y: 0px; }
+
+/* The key's number badges match the map's markers */
+.key-num { font-variant-numeric: lining-nums proportional-nums; }
+.map-panel[data-finish] .key-num:not(.region) { background: var(--kf); color: var(--ki); box-shadow: inset 0 0 0 1.3px var(--ke); }
+.map-panel[data-finish="ivory"] { --kf: #f7f3e6; --ki: #2b2118; --ke: #2b2118; }
+.map-panel[data-finish="parchment"] { --kf: #efe3bf; --ki: #2e1c0c; --ke: #2e1c0c; }
+.map-panel[data-finish="hologram"] { --kf: #0f3b4a; --ki: #c8fbff; --ke: #7eeaf5; }
+.map-panel:is([data-finish="ivory"], [data-finish="parchment"]) .key-num:not(.region) { font: 700 .74rem/1 var(--display); font-variant-numeric: lining-nums proportional-nums; }
+.map-panel[data-finish="hologram"] .key-num:not(.region) { font: 600 .62rem/1 var(--mono); }
+.map-panel[data-shape="square"] .key-num:not(.region) { border-radius: 3px; }
+.map-panel[data-shape="hexagon"] .key-num:not(.region) { border-radius: 0; clip-path: polygon(50% 0, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%); }
+.map-panel[data-shape="diamond"] .key-num:not(.region) { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); min-width: 1.45rem; height: 1.45rem; }

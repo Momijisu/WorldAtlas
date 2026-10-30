@@ -10,7 +10,7 @@ import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS } from '../focus.js';
 import { mountMap } from '../mapview.js';
-import { itemTitle, linkedArticle } from './maps.js';
+import { itemTitle, linkedArticle, applyMarkers } from './maps.js';
 
 export function viewArticle(wid, id, { section } = {}) {
   const w = store.world(wid);
@@ -105,6 +105,7 @@ function goToSection(name) {
 // The article's map, embedded: pan, zoom, and pins/regions that open their article or map.
 async function embedMap(wid, map) {
   const box = $('#articleMap');
+  if (box) applyMarkers(box, map);
   const src = await store.imageURL(map.image);
   if (!box?.isConnected) return; // left the page meanwhile
   if (!src) { box.innerHTML = '<p class="muted pad">This map’s image hasn’t downloaded yet.</p>'; return; }
