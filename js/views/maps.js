@@ -522,10 +522,8 @@ export async function viewMap(wid, mid, q) {
         } else return;
         moveItem(kind, id, target, before).then(() => refocus(`[data-item="${kind}:${id}"]`));
       });
-      g.addEventListener('pointerdown', (e) => {
-        if (e.button > 0) return;
-        e.preventDefault();
-        g.setPointerCapture(e.pointerId);
+      const drag = (e, el) => {
+        el.setPointerCapture(e.pointerId);
         row.classList.add('dragging');
         let drop = null;
         const clear = () => $$('.drop-before, .drop-after, .drop-into', panel).forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-into'));
@@ -562,7 +560,7 @@ export async function viewMap(wid, mid, q) {
           over(ev);
         };
         const up = () => {
-          g.removeEventListener('pointermove', move);
+          el.removeEventListener('pointermove', move);
           row.classList.remove('dragging');
           clear();
           if (!drop) return;
@@ -581,10 +579,37 @@ export async function viewMap(wid, mid, q) {
           }
           moveItem(kind, id, drop.group, before);
         };
-        g.addEventListener('pointermove', move);
-        g.addEventListener('pointerup', up, { once: true });
-        g.addEventListener('pointercancel', () => { g.removeEventListener('pointermove', move); row.classList.remove('dragging'); clear(); }, { once: true });
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up, { once: true });
+        el.addEventListener('pointercancel', () => { el.removeEventListener('pointermove', move); row.classList.remove('dragging'); clear(); }, { once: true });
+      };
+      g.addEventListener('pointerdown', (e) => {
+        if (e.button > 0) return;
+        e.preventDefault();
+        drag(e, g);
       });
+      // With a mouse or pen, the name (or number) drags too, once it has moved a
+      // few pixels; a plain click still opens it. On touch, swiping there scrolls
+      // the panel, so the grip is the handle.
+      const handle = isLayer ? row.querySelector(':scope > .layer-line .layer-row') : row.querySelector('[data-key]');
+      if (!handle) return;
+      let dragged = false;
+      handle.addEventListener('pointerdown', (e) => {
+        if (e.button > 0 || e.pointerType === 'touch' || e.target.closest('input')) return;
+        const sx = e.clientX, sy = e.clientY;
+        handle.setPointerCapture(e.pointerId);
+        const pre = (ev) => {
+          if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 6) return;
+          stop();
+          dragged = true;
+          drag(ev, handle);
+        };
+        const stop = () => { handle.removeEventListener('pointermove', pre); handle.removeEventListener('pointerup', stop); };
+        handle.addEventListener('pointermove', pre);
+        handle.addEventListener('pointerup', stop);
+      });
+      // A drag isn't also a click (which would open the place or tick the layer).
+      handle.addEventListener('click', (e) => { if (dragged) { dragged = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
     });
   }
 

@@ -265,3 +265,5 @@
 .map-panel.arranging .layer-line .icon-btn.sm:not(.fold) { opacity: .55; }
 .map-panel.arranging .layer-line .icon-btn.sm:not(.fold):hover { opacity: 1; }
 .new-group { margin-top: .6rem; width: 100%; justify-content: center; border: 1px dashed var(--rule-strong); }
+.map-panel.arranging [data-key], .map-panel.arranging .layer-row span { user-select: none; -webkit-user-select: none; }
+.map-panel.arranging [data-key] { cursor: grab; }
