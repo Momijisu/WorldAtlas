@@ -23,9 +23,48 @@ function linkify(src, wid) {
   });
 }
 
+// ![[Title]] shows another article's summary; ![[Title#Heading]] one of its
+// sections; ![[Title#Heading|Caption]] with a caption of your own. Each sits on
+// its own line and is drawn as a box linking back to the source. Excerpts
+// inside an excerpt are shown as plain links, so articles can't loop.
+const EXCERPT = /^!\[\[([^\]|#\n]+)(?:#([^\]|\n]+))?(?:\|([^\]\n]*))?\]\][ \t]*$/gm;
+
+function section(body, heading) {
+  const lines = String(body || '').split('\n');
+  const want = heading.trim().toLowerCase();
+  const start = lines.findIndex((l) => /^#{1,6}\s/.test(l) && l.replace(/^#+\s*/, '').trim().toLowerCase() === want);
+  if (start < 0) return null;
+  const level = lines[start].match(/^#+/)[0].length;
+  const end = lines.findIndex((l, i) => i > start && /^#{1,6}\s/.test(l) && l.match(/^#+/)[0].length <= level);
+  return lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim();
+}
+
+function excerptHTML(wid, title, heading, caption, depth) {
+  const a = store.byTitle(wid, title.trim());
+  const where = esc(title.trim()) + (heading ? ` › ${esc(heading.trim())}` : '');
+  if (!a) return `<div class="excerpt missing">No article called “${esc(title.trim())}” to quote from.</div>`;
+  const text = heading ? section(a.body, heading) : (a.summary || a.body.split(/\n\s*\n/)[0]);
+  if (text == null) return `<div class="excerpt missing">“${esc(a.title)}” has no section called “${esc(heading.trim())}”.</div>`;
+  const href = `#/w/${wid}/a/${a.id}`;
+  return `<figure class="excerpt type-${a.type}">
+    ${caption ? `<div class="excerpt-caption">${esc(caption.trim())}</div>` : ''}
+    <div class="excerpt-body">${depth ? esc(plain(text, 300)) : renderBody(text, wid, depth + 1)}</div>
+    <figcaption><a class="wikilink type-${a.type}" href="${href}">From ${where} →</a></figcaption>
+  </figure>`;
+}
+
+function renderBody(src, wid, depth = 0) {
+  const boxes = [];
+  const withSlots = String(src || '').replace(EXCERPT, (_, title, heading, caption) => {
+    boxes.push(excerptHTML(wid, title, heading, caption, depth));
+    return `\n\nWAEXCERPT${boxes.length - 1}\n\n`;
+  });
+  return marked.parse(wikiLinks(withSlots, wid)).replace(/<p>WAEXCERPT(\d+)<\/p>/g, (_, i) => boxes[i]);
+}
+
 export function render(src, wid) {
   renderingWid = wid;
-  return DOMPurify.sanitize(marked.parse(wikiLinks(src, wid)));
+  return DOMPurify.sanitize(renderBody(src, wid));
 }
 
 export function renderInline(src, wid) {
