@@ -59,8 +59,9 @@
 .map-box.editing .region-hidden { stroke: color-mix(in srgb, var(--rc) 60%, transparent); }
 .map-box.editing .region { stroke-dasharray: 5 3; }
 .region-draft {
-  fill: color-mix(in srgb, var(--brass) 18%, transparent);
-  stroke: var(--brass); stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;
+  fill: color-mix(in srgb, #f0c878 22%, transparent);
+  stroke: #f0c878; stroke-width: 2.5; stroke-dasharray: 7 4; vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, .9));  /* reads on pale and busy maps alike */
 }
 .region-label {
   position: absolute; transform: translate(-50%, -50%) scale(var(--inv, 1));
@@ -361,3 +362,22 @@
 .map-panel[data-shape="square"] .key-num:not(.region) { border-radius: 3px; }
 .map-panel[data-shape="hexagon"] .key-num:not(.region) { border-radius: 0; clip-path: polygon(50% 0, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%); }
 .map-panel[data-shape="diamond"] .key-num:not(.region) { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); min-width: 1.45rem; height: 1.45rem; }
+
+/* Editing a region's outline: a handle in the middle of each edge adds a point */
+.draft-mid {
+  position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+  transform: scale(var(--inv, 1)) rotate(45deg); background: rgba(255, 255, 255, .85); border: 1.5px solid var(--brass);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45); cursor: copy; touch-action: none; pointer-events: auto; opacity: .8;
+}
+.draft-mid::after { content: ""; position: absolute; inset: -6px; }
+.draft-mid:hover { opacity: 1; background: var(--brass); }
+
+/* Right-click menu on a region */
+.map-menu {
+  position: fixed; z-index: 50; min-width: 170px; padding: .3rem; display: grid;
+  background: var(--ink-2); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--shadow);
+}
+.map-menu .menu-title { padding: .3rem .6rem .35rem; font: 500 .68rem/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); margin-bottom: .2rem; }
+.map-menu button { display: flex; align-items: center; gap: .55rem; padding: .45rem .6rem; border: 0; border-radius: 2px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.map-menu button:hover, .map-menu button:focus-visible { background: var(--ink-4); }
+.map-menu button.danger { color: var(--rubric); }

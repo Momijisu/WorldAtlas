@@ -196,7 +196,9 @@ export async function viewMap(wid, mid, q) {
   const trail = mapTrail(wid, mid);
   let editing = false;
   let tool = 'pin';         // 'pin' | 'region'
-  let draft = null;         // region vertices being drawn
+  let draft = null;         // region vertices being drawn (or reshaped)
+  let reshaping = null;     // id of the region whose outline is being edited
+  let shapeUndo = [];       // earlier outlines while reshaping
   let moving = null;        // pin id waiting for its new location
   let hidden = loadHidden(mid);
   let folded = new Set(); // layers whose key list is folded away
@@ -246,7 +248,7 @@ export async function viewMap(wid, mid, q) {
   const numbered = () => cur().pinStyle === 'numbers';
   const refresh = () => {
     const nums = numbered() ? pinNumbers(cur()) : null;
-    ctl.setItems({ pins: labelled(cur().pins).map((p) => (nums ? { ...p, num: nums.get(p.id) } : p)), regions: labelled(cur().regions), hidden });
+    ctl.setItems({ pins: labelled(cur().pins).map((p) => (nums ? { ...p, num: nums.get(p.id) } : p)), regions: labelled(cur().regions).filter((r) => r.id !== reshaping), hidden }); // a region being reshaped shows as the draft
   };
   const persist = async (patch) => {
     await store.save('maps', { ...cur(), ...patch });
@@ -282,11 +284,19 @@ export async function viewMap(wid, mid, q) {
   // ---- viewer
   const ctl = mountMap(box, {
     src,
-    isDrawing: () => editing && tool === 'region',
+    isDrawing: () => editing && (tool === 'region' || !!reshaping),
     // Editing: the Pin tool drops pins anywhere, even inside regions; the
     // Region tool edits a region you tap before you start outlining a new one.
-    regionTaps: () => !editing || (tool === 'region' && !draft?.length),
-    onDraftChange: (points) => { draft = points; },
+    regionTaps: () => !reshaping && (!editing || (tool === 'region' && !draft?.length)),
+    onDraftChange: (points) => {
+      if (reshaping) shapeUndo.push(draft);
+      draft = points;
+      if (reshaping) renderEditBar();
+    },
+    onRegionMenu: (r, cx, cy) => {
+      const reg = (cur().regions || []).find((x) => x.id === r.id);
+      if (reg && !reshaping) regionMenu(reg, cx, cy);
+    },
     onPinClick: (p) => {
       const pin = (cur().pins || []).find((x) => x.id === p.id);
       if (!pin) return;
@@ -299,6 +309,7 @@ export async function viewMap(wid, mid, q) {
     },
     onBackgroundTap: (pt) => {
       info.hidden = true;
+      if (reshaping) return; // points are added from the edge handles
       if (moving) {
         const pins = cur().pins.map((p) => (p.id === moving ? { ...p, ...pt } : p));
         moving = null;
@@ -315,7 +326,65 @@ export async function viewMap(wid, mid, q) {
       }
     },
   });
-  state.cleanup = () => ctl.destroy();
+  const onKey = (e) => { if (e.key === 'Escape' && reshaping && !document.querySelector('#modal-root > *')) endReshape(false); };
+  document.addEventListener('keydown', onKey);
+  state.cleanup = () => { ctl.destroy(); document.removeEventListener('keydown', onKey); closeMenu(); };
+
+  // ---- editing a region's outline
+  function startReshape(reg) {
+    if (!editing) setEditing(true);
+    reshaping = reg.id;
+    shapeUndo = [];
+    draft = reg.points.map((pt) => [...pt]);
+    info.hidden = true;
+    ctl.setDraft(draft);
+    refresh();
+    renderEditBar();
+  }
+  async function endReshape(save) {
+    const id = reshaping, points = draft;
+    reshaping = null;
+    shapeUndo = [];
+    draft = tool === 'region' ? [] : null;
+    ctl.setDraft(draft);
+    if (save && points?.length > 2) await persist({ regions: (cur().regions || []).map((r) => (r.id === id ? { ...r, points } : r)) });
+    else refresh();
+    renderEditBar();
+  }
+
+  // ---- right-click menu on a region
+  let menu = null;
+  function closeMenu() { menu?.remove(); menu = null; document.removeEventListener('pointerdown', outside, true); }
+  const outside = (e) => { if (!menu?.contains(e.target)) closeMenu(); };
+  function regionMenu(reg, cx, cy) {
+    closeMenu();
+    menu = document.createElement('div');
+    menu.className = 'map-menu';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = `<div class="menu-title">${esc(itemTitle(reg) || 'Region')}</div>
+      <button type="button" role="menuitem" data-m="shape">${icon('polygon')} Edit shape</button>
+      <button type="button" role="menuitem" data-m="details">${icon('pencil-simple')} Edit details</button>
+      ${editing ? '' : `<button type="button" role="menuitem" data-m="info">${icon('info')} Show info</button>`}
+      <button type="button" role="menuitem" class="danger" data-m="delete">${icon('trash')} Delete region</button>`;
+    document.body.appendChild(menu);
+    const r = menu.getBoundingClientRect();
+    menu.style.left = Math.min(cx, innerWidth - r.width - 8) + 'px';
+    menu.style.top = Math.min(cy, innerHeight - r.height - 8) + 'px';
+    menu.querySelector('button').focus();
+    menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeMenu(); } });
+    menu.onclick = async (e) => {
+      const act = e.target.closest('[data-m]')?.dataset.m;
+      if (!act) return;
+      closeMenu();
+      if (act === 'shape') startReshape(reg);
+      else if (act === 'details') regionDialog(reg);
+      else if (act === 'info') showInfo(reg, 'region');
+      else if (act === 'delete' && await confirmDialog(`Delete the region “${itemTitle(reg) || 'Untitled'}”?`, 'Delete region')) {
+        persist({ regions: (cur().regions || []).filter((x) => x.id !== reg.id) });
+      }
+    };
+    setTimeout(() => document.addEventListener('pointerdown', outside, true));
+  }
   refresh();
 
   // ---- edit toolbar
@@ -323,7 +392,12 @@ export async function viewMap(wid, mid, q) {
     const bar = $('#editBar');
     bar.hidden = !editing;
     if (!editing) return;
-    if (moving) {
+    if (reshaping) {
+      bar.innerHTML = `<span class="hint">Drag points to move them, drag an edge’s middle handle to add one, double-click a point to remove it</span>
+        <button class="btn small" data-act="shape-undo" ${shapeUndo.length ? '' : 'disabled'}>${icon('arrow-counter-clockwise')} Undo</button>
+        <button class="btn small" data-act="shape-cancel">Cancel</button>
+        <button class="btn small primary" data-act="shape-save">${icon('check')} Save shape</button>`;
+    } else if (moving) {
       bar.innerHTML = `<span class="hint">Tap the new location for this pin</span>
         <button class="btn small" data-act="cancel-move">Cancel</button>`;
     } else if (tool === 'region' && draft?.length) {
@@ -346,6 +420,8 @@ export async function viewMap(wid, mid, q) {
     });
     $$('[data-act]', bar).forEach((b) => b.onclick = () => {
       const act = b.dataset.act;
+      if (act === 'shape-undo') { draft = shapeUndo.pop(); ctl.setDraft(draft); renderEditBar(); return; }
+      if (act === 'shape-cancel' || act === 'shape-save') { endReshape(act === 'shape-save'); return; }
       if (act === 'cancel-move') moving = null;
       if (act === 'undo') draft = draft.slice(0, -1);
       if (act === 'cancel') { draft = []; }
@@ -362,6 +438,7 @@ export async function viewMap(wid, mid, q) {
   function setEditing(on) {
     editing = on;
     moving = null;
+    if (!on && reshaping) { reshaping = null; shapeUndo = []; refresh(); }
     draft = on && tool === 'region' ? [] : null;
     ctl.setDraft(draft);
     const b = $('#editBtn');
@@ -856,7 +933,7 @@ export async function viewMap(wid, mid, q) {
         <div class="seg region-fill">${Object.entries(REGION_FILLS).map(([k, l]) => `<button type="button" data-fill="${k}" class="${(reg.fill || 'solid') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         ${colourField(reg.color || SWATCHES[3])}
         <div class="actions">
-          ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete</button><span class="spacer"></span>`}
+          ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete</button><button type="button" class="btn" data-shape>${icon('polygon')} Edit shape</button><span class="spacer"></span>`}
           <button class="btn primary">${isNew ? 'Add region' : 'Save'}</button>
         </div>
       </form>`, {
@@ -870,6 +947,7 @@ export async function viewMap(wid, mid, q) {
         $('[data-del]', el)?.addEventListener('click', async () => {
           await persist({ regions: (cur().regions || []).filter((r) => r.id !== reg.id) }); close();
         });
+        $('[data-shape]', el)?.addEventListener('click', () => { close(); startReshape(cur().regions.find((r) => r.id === reg.id) || reg); });
         f.onsubmit = async (e) => {
           e.preventDefault();
           const next = { ...reg, ...readName(f), mapId: f.mapId.value,

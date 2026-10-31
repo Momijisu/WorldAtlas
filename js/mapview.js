@@ -8,7 +8,7 @@ import { esc } from './util.js';
 const SVG = 'http://www.w3.org/2000/svg';
 
 // embedded: inside a page that scrolls, so the wheel zooms only with Ctrl/⌘.
-export function mountMap(container, { src, onPinClick, onRegionClick, onBackgroundTap, isDrawing, regionTaps, onDraftChange, embedded = false }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, embedded = false }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
@@ -181,8 +181,20 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       const d = document.createElement('span');
       d.className = 'draft-dot';
       d.dataset.vertex = i;
+      d.title = 'Drag to move; double-click or right-click to remove';
       d.style.left = px * 100 + '%';
       d.style.top = py * 100 + '%';
+      pinLayer.appendChild(d);
+    });
+    // Once the outline is closed, a handle mid-way along each edge: drag it to add a point there.
+    if (draft?.length > 2) draft.forEach(([px, py], i) => {
+      const [qx, qy] = draft[(i + 1) % draft.length];
+      const d = document.createElement('span');
+      d.className = 'draft-mid';
+      d.dataset.mid = i;
+      d.title = 'Drag to add a point here';
+      d.style.left = ((px + qx) / 2) * 100 + '%';
+      d.style.top = ((py + qy) / 2) * 100 + '%';
       pinLayer.appendChild(d);
     });
     placeLabels();
@@ -200,6 +212,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   const pts = new Map();
   let start = null, moved = false, pinch = null, downTarget = null, panOnly = false;
   let vertex = null; // index of a draft vertex being dragged
+  let vertexChanged = false, lastPress = null; // whether the drag changed the outline; the previous press on a point (for double presses)
   const toImage = (e) => {
     const r = container.getBoundingClientRect();
     return [Math.min(1, Math.max(0, (e.clientX - r.left - x) / s / w)), Math.min(1, Math.max(0, (e.clientY - r.top - y) / s / h))];
@@ -211,8 +224,33 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     if (pts.size === 0) { downTarget = e.target; panOnly = e.button === 1; }
     // Pressing a vertex of the region being drawn moves it instead of adding one.
     const v = pts.size === 0 && !panOnly && e.target.closest?.('[data-vertex]');
+    // Pressing an edge's middle handle adds a point there and drags it.
+    const mid = pts.size === 0 && !panOnly && !v && e.target.closest?.('[data-mid]');
+    if (mid) {
+      const i = +mid.dataset.mid + 1;
+      draft.splice(i, 0, toImage(e));
+      vertex = i;
+      vertexChanged = true;
+      draw();
+      moved = true;
+      container.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      return;
+    }
     if (v) {
-      vertex = +v.dataset.vertex;
+      // A second press on the same point straight after the first removes it (the
+      // points are redrawn after each press, so the browser's dblclick can't see it).
+      const now = performance.now(), i = +v.dataset.vertex;
+      if (lastPress && lastPress.i === i && now - lastPress.t < 400 && draft.length > 3) {
+        lastPress = null;
+        draft.splice(i, 1);
+        draw();
+        onDraftChange?.([...draft]);
+        return;
+      }
+      lastPress = { i, t: now };
+      vertexChanged = false;
+      vertex = i;
       moved = true;
       container.setPointerCapture(e.pointerId);
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -230,7 +268,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
   const onMove = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (vertex != null && draft?.[vertex]) { draft[vertex] = toImage(e); draw(); return; }
+    if (vertex != null && draft?.[vertex]) { draft[vertex] = toImage(e); vertexChanged = true; lastPress = null; draw(); return; }
     const r = container.getBoundingClientRect();
     if (pts.size === 2 && pinch) {
       const [a, b] = [...pts.values()];
@@ -248,7 +286,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     if (vertex != null) {
       vertex = null;
       if (pts.size === 0) { downTarget = null; start = null; }
-      onDraftChange?.([...draft]);
+      if (vertexChanged) onDraftChange?.([...draft]);
       return;
     }
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s }; } // a third finger lifted
@@ -287,6 +325,23 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
   };
   container.addEventListener('pointerdown', onDown);
+  // Right-click a point to remove it (an outline keeps at least three; double presses are handled above);
+  // right-click a region for its menu.
+  const removeVertex = (e) => {
+    const v = e.target.closest?.('[data-vertex]');
+    if (!v || !draft) return false;
+    e.preventDefault();
+    if (draft.length > 3) { draft.splice(+v.dataset.vertex, 1); draw(); onDraftChange?.([...draft]); }
+    return true;
+  };
+  container.addEventListener('contextmenu', (e) => {
+    if (removeVertex(e)) return;
+    const el = e.target.closest?.('[data-region]');
+    const reg = el && items.regions.find((g) => g.id === el.dataset.region);
+    if (!reg || !onRegionMenu) return;
+    e.preventDefault();
+    onRegionMenu(reg, e.clientX, e.clientY);
+  });
   container.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // middle-drag pans instead of autoscrolling
   container.addEventListener('pointermove', onMove);
   container.addEventListener('pointerup', onEnd);
