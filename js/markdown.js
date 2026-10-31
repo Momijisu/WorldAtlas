@@ -32,13 +32,18 @@ function linkify(src, wid) {
 // inside an excerpt are shown as plain links, so articles can't loop.
 const EXCERPT = /^!\[\[([^\]|#\n]+)(?:#([^\]|\n]+))?(?:\|([^\]\n]*))?\]\][ \t]*$/gm;
 
+// "##Heading" with no space is meant as a heading too (Markdown needs the
+// space); two or more marks only, so a line starting "#tag" stays as text.
+export const spaceHeadings = (src) => String(src || '').split(CODE)
+  .map((part, i) => (i % 2 ? part : part.replace(/^(#{2,6})(?=[^\s#])/gm, '$1 '))).join('');
+
 // The headings in an article's text, for [[Title#Section]] suggestions.
 export function headingsOf(body) {
-  return [...String(body || '').split(CODE).filter((_, i) => i % 2 === 0).join('\n').matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)].map((m) => m[1].trim());
+  return [...spaceHeadings(body).split(CODE).filter((_, i) => i % 2 === 0).join('\n').matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)].map((m) => m[1].trim());
 }
 
 function section(body, heading) {
-  const lines = String(body || '').split('\n');
+  const lines = spaceHeadings(body).split('\n');
   const want = heading.trim().toLowerCase();
   const start = lines.findIndex((l) => /^#{1,6}\s/.test(l) && l.replace(/^#+\s*/, '').trim().toLowerCase() === want);
   if (start < 0) return null;
@@ -64,7 +69,7 @@ function excerptHTML(wid, title, heading, caption, depth) {
 
 function renderBody(src, wid, depth = 0) {
   const boxes = [];
-  const withSlots = String(src || '').split(CODE).map((part, i) => (i % 2 ? part : part.replace(EXCERPT, (_, title, heading, caption) => {
+  const withSlots = spaceHeadings(src).split(CODE).map((part, i) => (i % 2 ? part : part.replace(EXCERPT, (_, title, heading, caption) => {
     boxes.push(excerptHTML(wid, title, heading, caption, depth));
     return `\n\nWAEXCERPT${boxes.length - 1}\n\n`;
   }))).join('');

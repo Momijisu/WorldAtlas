@@ -80,6 +80,13 @@ function build(view, opts) {
     });
     // [[Wiki links]]: link-coloured (red if missing); brackets hidden off the cursor line.
     const text = doc.sliceString(from, to);
+    // "##Heading" with no space: a heading too (the app renders it as one).
+    for (const m of text.matchAll(/^(#{2,6})(?=[^\s#])/gm)) {
+      const s = from + m.index;
+      if (code.some(([f, t]) => s >= f && s <= t)) continue;
+      add(s, s, line(`cm-h${m[1].length}`));
+      hideMark(s, s + m[1].length);
+    }
     // ![[Article#Section]] on a line of its own: an excerpt, shown as a quiet "from" line.
     for (const m of text.matchAll(EXCERPT)) {
       const s = from + m.index;

@@ -1,6 +1,7 @@
 // Guiding questions for each article template, shown in the editor.
 // Each entry is a section heading plus the questions that section might answer.
 // Choosing one inserts the heading into the article so the writer can fill it in.
+import { spaceHeadings } from './markdown.js';
 
 const G = (h, q) => ({ h, q });
 
@@ -236,5 +237,5 @@ export function setGuidanceEnabled(on) {
 
 // Headings already present in a Markdown body (lowercased), to tick off covered sections.
 export function headingsIn(body) {
-  return new Set([...String(body || '').matchAll(/^#{1,4}\s+(.+?)\s*#*$/gm)].map((m) => m[1].trim().toLowerCase()));
+  return new Set([...spaceHeadings(body).matchAll(/^#{1,4}\s+(.+?)\s*#*$/gm)].map((m) => m[1].trim().toLowerCase()));
 }

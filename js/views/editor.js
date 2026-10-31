@@ -495,7 +495,7 @@ function mdCommand(ta, cmd) {
   // A heading button sets the line's level: it replaces an existing heading
   // mark, and pressing the same level again turns the heading off.
   const heading = (level) => {
-    const old = /^#{1,6}[ \t]+/.exec(v.slice(lineStart))?.[0] || '';
+    const old = /^(#{2,6}[ \t]*(?=[^#\s])|#{1,6}[ \t]+)/.exec(v.slice(lineStart))?.[0] || ''; // "##Title" counts too
     const p = old.trim() === '#'.repeat(level) ? '' : '#'.repeat(level) + ' ';
     text = v.slice(0, lineStart) + p + v.slice(lineStart + old.length);
     const shift = (x) => Math.max(lineStart + p.length, x - old.length + p.length);
