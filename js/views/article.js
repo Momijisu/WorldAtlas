@@ -3,13 +3,14 @@ import * as store from '../store.js';
 import { TYPES, sectionsOf } from '../store.js';
 import { render, renderInline } from '../markdown.js';
 import { calendarOf, articleDateText } from '../calendar.js';
-import { relationsOf, REL_TYPES, REL_GROUPS, hasFamily } from '../relations.js';
+import { relationsOf, REL_TYPES, REL_GROUPS } from '../relations.js';
 import { $, esc, timeAgo } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS } from '../focus.js';
 import { mountMap } from '../mapview.js';
+import { drawTree, articleTreeKind } from './tree.js';
 import { itemTitle, linkedArticle, applyMarkers } from './maps.js';
 
 export function viewArticle(wid, id, { section } = {}) {
@@ -28,6 +29,7 @@ export function viewArticle(wid, id, { section } = {}) {
   const rels = relationsOf(a);
   const versions = store.historyOf(a.id).length;
   const map = a.mapId && store.map(a.mapId)?.worldId === wid ? store.map(a.mapId) : null;
+  const treeKind = articleTreeKind(a); // a family tree for people, a chart for organisations
 
   const relGroups = {};
   for (const r of rels) (relGroups[REL_TYPES[r.type].group] ||= []).push(r);
@@ -64,9 +66,11 @@ export function viewArticle(wid, id, { section } = {}) {
           <a class="btn small" href="#/w/${wid}/m/${map.id}">${icon('arrow-square-out')} Open ${esc(map.name)}</a></div>
           <div class="map-wrap article-map"><div class="map-box" id="articleMap" data-hint="${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} + scroll to zoom"></div>
             <div class="viz-zoom"><button type="button" class="icon-btn" data-z="in" aria-label="Zoom in">${icon('plus')}</button><button type="button" class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button><button type="button" class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button></div></div>` : ''}
+        ${treeKind ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>${treeKind === 'org' ? 'Organisation' : 'Family tree'}</h2>
+          <a class="btn small" href="#/w/${wid}/tree/${a.id}">${icon('arrow-square-out')} Open full view</a></div>
+          <div class="viz-wrap tree-wrap article-tree" id="articleTree"></div>` : ''}
         ${rels.length ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Relationships</h2>
           <div class="actions">
-            ${hasFamily(a) ? `<a class="btn small" href="#/w/${wid}/tree/${a.id}">${icon('tree-structure')} Family tree</a>` : ''}
             <a class="btn small" href="#/w/${wid}/graph?focus=${a.id}">${icon('graph')} Web</a>
           </div></div>${relHTML}` : ''}
         ${children.length ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Contains</h2></div>${articleRows(children, wid)}` : ''}
@@ -91,6 +95,11 @@ export function viewArticle(wid, id, { section } = {}) {
   hydrateImages();
   contents();
   if (map) embedMap(wid, map);
+  if (treeKind) {
+    const pz = drawTree($('#articleTree'), wid, a, { embedded: true });
+    const prev = state.cleanup;
+    state.cleanup = () => { prev?.(); pz.destroy(); };
+  }
   if (section) goToSection(section);
 }
 

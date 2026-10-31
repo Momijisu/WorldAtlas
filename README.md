@@ -11,7 +11,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - `[[Wiki links]]` with autocomplete, hover previews, backlinks, and links that update when an article is renamed; `[[Title#Section]]` links to a heading
 - Excerpts: `![[Title]]` shows another article's summary and `![[Title#Section]]` one of its sections, kept in step with the source and linking back to it
 - A contents box on articles with several headings
-- Typed relationships, family trees and a relationship web
+- Typed relationships, a relationship web, and trees on article pages: family trees for people and organisation charts (part of, leaders, sub-organisations, members) for organisations
 - Custom calendars with eras and moons, a calendar view and a timeline
 - Maps with pins, regions, layers and nested maps; optionally numbered pins with a key you can arrange into groups, and marker shapes (pin, circle, hexagon, diamond, square) in colour, ivory, parchment or hologram styles
 - Revision history with line diffs, restore, and recovery of deleted articles
@@ -84,7 +84,7 @@ index.html            app shell
 css/app.css           design system and both themes
 css/features.css      timeline, calendar, history, prompts, import
 css/maps.css          maps
-css/graph.css         family tree and relationship web
+css/graph.css         family trees, organisation charts and the relationship web
 js/app.js             boot, routing, top bar, sidebar
 js/views/*.js         one module per screen
 js/store.js           data, templates, version history, conflict merge
@@ -117,4 +117,4 @@ Run `tests/run.sh`, then bump `WA_VERSION` and `WA_BUILD` in `js/version.js`. In
 
 `tests/run.sh` runs the browser tests (Node with Playwright and Chromium; it serves the app on port 8766 if nothing is there already). `tests/run.sh maps` runs only the tests whose names contain "maps". Run them before every release; a failing test exits non-zero and names what broke.
 
-They cover: every main page opening (`smoke`), OneDrive sync end to end against a fake drive (`sync`: migration, a second device, merging, rename, delete, old-version files, throttling, retried downloads and server errors, one stuck world not blocking the others), the offline cache and updates (`offline`), links, excerpts and prompts (`articles`), the map key and arranging it (`maps-key`), region shape editing and region names (`maps-regions`), panning and place names (`maps-input`), marker shapes and styles (`markers`) and the right-click menu (`contextmenu`). The test map is drawn by the tests themselves (`tests/lib.js`).
+They cover: every main page opening (`smoke`), OneDrive sync end to end against a fake drive (`sync`: migration, a second device, merging, rename, delete, old-version files, throttling, retried downloads and server errors, one stuck world not blocking the others), the offline cache and updates (`offline`), links, excerpts and prompts (`articles`), the map key and arranging it (`maps-key`), region shape editing and region names (`maps-regions`), family trees and organisation charts (`trees`), panning and place names (`maps-input`), marker shapes and styles (`markers`) and the right-click menu (`contextmenu`). The test map is drawn by the tests themselves (`tests/lib.js`).

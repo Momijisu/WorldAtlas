@@ -4,7 +4,8 @@ import * as store from '../store.js';
 import { posCSS } from '../focus.js';
 import { TYPES } from '../store.js';
 import { familyOf } from '../templates.js';
-import { REL_TYPES, REL_GROUPS, worldEdges, relationsOf, hasFamily } from '../relations.js';
+import { REL_TYPES, REL_GROUPS, worldEdges, relationsOf } from '../relations.js';
+import { articleTreeKind } from './tree.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, typeLabel, hydrateImages, worldCrumb, sep } from '../ui.js';
 import { esc, $, $$ } from '../util.js';
 import { plain } from '../markdown.js';
@@ -463,7 +464,7 @@ export function viewGraph(wid, q) {
         ${rels.length > 12 ? `<li class="muted">and ${rels.length - 12} more…</li>` : ''}</ul>` : '<p class="muted small">No typed relationships.</p>'}
       <div class="gi-actions">
         <a class="btn small primary" href="#/w/${wid}/a/${id}">${icon('book-open-text')} Open</a>
-        ${hasFamily(a) ? `<a class="btn small" href="#/w/${wid}/tree/${id}">${icon('tree-structure')} Family tree</a>` : ''}
+        ${articleTreeKind(a) ? `<a class="btn small" href="#/w/${wid}/tree/${id}">${icon('tree-structure')} ${articleTreeKind(a) === 'org' ? 'Organisation' : 'Family tree'}</a>` : ''}
         ${id !== focusId ? `<a class="btn small" href="#/w/${wid}/graph?focus=${id}">${icon('funnel')} Focus</a>` : ''}
       </div>`;
     hydrateImages(info);

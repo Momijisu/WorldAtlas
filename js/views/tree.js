@@ -1,94 +1,184 @@
-// Family tree centred on one article: ancestors above, descendants below,
-// spouses/partners beside their partner, siblings beside the focus.
+// Trees centred on one article. People: a family tree (ancestors above,
+// descendants below, spouses/partners beside their partner, siblings beside
+// the focus). Organisations: a chart (any parent organisation above; its
+// leaders below it; then its sub-organisations, each with their own leaders,
+// and its members). Shown full-page at #/w/<world>/tree/<id> and embedded on
+// the article page.
 import * as store from '../store.js';
 import { posCSS } from '../focus.js';
-import { family } from '../relations.js';
+import { family, relationsOf } from '../relations.js';
+import { parentOf } from '../templates.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, hydrateImages, worldCrumb, sep } from '../ui.js';
 import { esc, $ } from '../util.js';
 
 const W = 176, H = 66, GAP = 28, COUPLE_GAP = 22, ROW = 124, DEPTH = 3;
 
-export function viewTree(wid, aid) {
-  const world = store.world(wid);
-  const focus = store.article(aid);
-  const cal = calendarOf(world);
-  setTitle('Family of ' + focus.title);
+const isOrg = (a) => parentOf(a?.type) === 'organization' || a?.type === 'religion';
 
+export function viewTree(wid, aid) {
+  const focus = store.article(aid);
+  const org = isOrg(focus);
+  setTitle((org ? 'Structure of ' : 'Family of ') + focus.title);
   const head = pageHead({
-    eyebrow: `${worldCrumb(wid)} ${sep} <a href="#/w/${wid}/a/${aid}">${esc(focus.title)}</a> ${sep} Family tree`,
-    title: `The House of ${esc(focus.title)}`,
+    eyebrow: `${worldCrumb(wid)} ${sep} <a href="#/w/${wid}/a/${aid}">${esc(focus.title)}</a> ${sep} ${org ? 'Organisation' : 'Family tree'}`,
+    title: org ? esc(focus.title) : `The House of ${esc(focus.title)}`,
     actions: `<a class="btn small" href="#/w/${wid}/graph?focus=${aid}">${icon('graph')} In graph</a>
       <a class="btn small" href="#/w/${wid}/a/${aid}">${icon('book-open-text')} Article</a>`,
   });
-
-  const layout = buildTree(focus);
-  if (layout.nodes.length < 2) {
+  if (!(org ? hasStructure(focus) : hasFamilyTree(focus))) {
     view.innerHTML = `<section class="page viz-page">${head}
-      <div class="empty-state small"><p>No family recorded for ${esc(focus.title)} yet. Add relationships such as <i>Parent of</i> or <i>Spouse of</i> in the editor.</p>
+      <div class="empty-state small"><p>${org ? `Nothing recorded about how ${esc(focus.title)} is organised yet. Add relationships such as <i>Led by</i> or <i>Has member</i>, or file other organisations under it.`
+        : `No family recorded for ${esc(focus.title)} yet. Add relationships such as <i>Parent of</i> or <i>Spouse of</i> in the editor.`}</p>
       <p style="margin-top:1rem"><a class="btn primary small" href="#/w/${wid}/a/${aid}/edit">${icon('pencil-simple')} Edit relationships</a></p></div>
     </section>`;
     return;
   }
+  view.innerHTML = `<section class="page viz-page">${head}<div class="viz-wrap tree-wrap" id="treeWrap"></div></section>`;
+  const pz = drawTree($('#treeWrap'), wid, focus);
+  state.cleanup = () => pz.destroy();
+}
 
-  view.innerHTML = `<section class="page viz-page">${head}
-    <div class="viz-wrap tree-wrap">
-      <div class="viz-box" id="treeBox"><div class="viz-stage" id="treeStage"></div></div>
-      <div class="viz-zoom">
-        <button class="icon-btn" data-z="in" aria-label="Zoom in">${icon('plus')}</button>
-        <button class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button>
-        <button class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button>
-      </div>
-      <div class="viz-legend tree-legend"><span><i class="lg-couple"></i>Spouse / partner</span><span><i class="lg-descent"></i>Parent → child</span></div>
+// The tree for an article page, if it has one: people with family, and
+// organisations with leaders, members or sub-organisations.
+export const articleTreeKind = (a) => (isOrg(a) ? (hasStructure(a) ? 'org' : null) : hasFamilyTree(a) ? 'family' : null);
+
+// Draw the tree for `focus` into `wrap` (a .viz-wrap). Embedded trees zoom with
+// Ctrl/⌘ + scroll so the page still scrolls, and a click opens the article.
+export function drawTree(wrap, wid, focus, { embedded = false } = {}) {
+  const org = isOrg(focus);
+  wrap.innerHTML = `<div class="viz-box" id="treeBox"${embedded ? ` data-hint="${/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'} + scroll to zoom"` : ''}><div class="viz-stage" id="treeStage"></div></div>
+    <div class="viz-zoom">
+      <button type="button" class="icon-btn" data-z="in" aria-label="Zoom in">${icon('plus')}</button>
+      <button type="button" class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button>
+      <button type="button" class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button>
     </div>
-  </section>`;
+    ${org ? '' : '<div class="viz-legend tree-legend"><span><i class="lg-couple"></i>Spouse / partner</span><span><i class="lg-descent"></i>Parent → child</span></div>'}`;
+  const box = wrap.querySelector('.viz-box'), stage = wrap.querySelector('.viz-stage');
+  const size = org ? drawOrg(stage, wid, focus) : drawFamily(stage, wid, focus);
+  hydrateImages(stage);
+  const pz = panZoom(box, stage, { ...size, embedded });
+  pz.fit();
 
-  const stage = $('#treeStage');
+  // Full page: a person re-centres the tree on them. Embedded: open the article.
+  stage.addEventListener('click', (e) => {
+    if (pz.dragged()) { e.preventDefault(); e.stopPropagation(); return; }
+    if (e.target.closest('.tn-open, .org-more a')) return;
+    const node = e.target.closest('[data-id]');
+    if (!node) return;
+    const id = node.dataset.id;
+    if (embedded || id === focus.id) location.hash = `#/w/${wid}/a/${id}`;
+    else location.hash = `#/w/${wid}/tree/${id}`;
+  }, true);
+  stage.addEventListener('keydown', (e) => {
+    const node = e.target.closest('[data-id]');
+    if (node && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); node.click(); }
+  });
+  wrap.querySelectorAll('[data-z]').forEach((b) => b.onclick = () => {
+    if (b.dataset.z === 'fit') pz.fit(); else pz.zoom(b.dataset.z === 'in' ? 1.3 : 1 / 1.3);
+  });
+  // Large trees: zoom to a readable scale around the focus instead of showing everything tiny.
+  const f = stage.querySelector('.focus');
+  if (f && pz.get().s < 0.55) {
+    pz.zoom(0.75 / pz.get().s);
+    pz.center(f.offsetLeft + f.offsetWidth / 2, f.offsetTop + f.offsetHeight / 2);
+  }
+  return pz;
+}
+
+// A person (or anything) as a card. `label` is a small line above the name.
+function card(wid, a, { label = '', focus = false, cal, style = '', cls = 'tree-node' } = {}) {
+  const dates = cal ? articleDateText(cal, a) : '';
+  return `<div class="${cls}${focus ? ' focus' : ''}" style="${style}" data-id="${a.id}" tabindex="0" role="button" aria-label="${esc(a.title)}">
+      ${a.image ? `<img class="tn-img" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="tn-img icon">${typeIcon(a.type)}</span>`}
+      <span class="tn-text">${label ? `<span class="tn-rel">${esc(label)}</span>` : ''}<span class="tn-title">${esc(a.title)}</span>${dates ? `<span class="tn-dates">${esc(dates)}</span>` : ''}</span>
+      <a class="tn-open" href="#/w/${wid}/a/${a.id}" title="Open article" aria-label="Open ${esc(a.title)}">${icon('arrow-square-out')}</a>
+    </div>`;
+}
+
+// ---------------------------------------------------------------- family
+
+const hasFamilyTree = (a) => { const f = family(a); return !!(f.parents.length || f.children.length || f.spouses.length || f.siblings.length); };
+
+function drawFamily(stage, wid, focus) {
+  const layout = buildTree(focus);
+  const cal = calendarOf(store.world(wid));
   const { minX, minY, maxX, maxY } = layout.bounds;
   const pad = 40;
   const ox = -minX + pad, oy = -minY + pad;
   const width = maxX - minX + pad * 2, height = maxY - minY + pad * 2;
   stage.style.width = width + 'px';
   stage.style.height = height + 'px';
-
   const svg = [`<svg class="tree-lines" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true">`];
   for (const l of layout.lines) svg.push(`<path class="${l.cls}" d="${l.d(ox, oy)}"/>`);
   svg.push('</svg>');
+  stage.innerHTML = svg.join('') + layout.nodes.map((n) => card(wid, n.a, {
+    label: n.label, focus: n.a.id === focus.id, cal,
+    style: `left:${n.x - W / 2 + ox}px;top:${n.y - H / 2 + oy}px;width:${W}px;height:${H}px`,
+  })).join('');
+  return { width, height };
+}
 
-  const cards = layout.nodes.map((n) => {
-    const a = n.a;
-    const dates = articleDateText(cal, a);
-    const rel = n.label ? `<span class="tn-rel">${n.label}</span>` : '';
-    return `<div class="tree-node${a.id === aid ? ' focus' : ''}" style="left:${n.x - W / 2 + ox}px;top:${n.y - H / 2 + oy}px;width:${W}px;height:${H}px" data-id="${a.id}" tabindex="0" role="button" aria-label="Show family of ${esc(a.title)}">
-      ${a.image ? `<img class="tn-img" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="tn-img icon">${typeIcon(a.type)}</span>`}
-      <span class="tn-text">${rel}<span class="tn-title">${esc(a.title)}</span>${dates ? `<span class="tn-dates">${esc(dates)}</span>` : ''}</span>
-      <a class="tn-open" href="#/w/${wid}/a/${a.id}" title="Open article" aria-label="Open ${esc(a.title)}">${icon('arrow-square-out')}</a>
+// ---------------------------------------------------------------- organisations
+
+const MEMBERS_SHOWN = 8;
+
+// Who leads an organisation, which organisations sit under it, who belongs to
+// it, and what it is part of.
+function structureOf(org) {
+  const rels = relationsOf(org);
+  const pick = (types) => rels.filter((r) => types.includes(r.type)).map((r) => r.other);
+  const uniq = (list) => [...new Map(list.filter(Boolean).map((a) => [a.id, a])).values()];
+  const leaders = uniq(pick(['ledBy', 'ruledBy']));
+  const below = uniq([
+    ...store.articlesOf(org.worldId).filter((c) => c.parentId === org.id && isOrg(c)),
+    ...pick(['hasMember', 'servedBy']).filter(isOrg),
+  ]);
+  const members = uniq(pick(['hasMember', 'servedBy']).filter((m) => !isOrg(m) && !leaders.some((l) => l.id === m.id)));
+  const parentArt = org.parentId && store.article(org.parentId);
+  const above = uniq([...(isOrg(parentArt) ? [parentArt] : []), ...pick(['member', 'serves']).filter(isOrg)]);
+  return { leaders, below, members, above };
+}
+const hasStructure = (org) => { const s = structureOf(org); return !!(s.leaders.length || s.below.length || s.members.length || s.above.length); };
+
+// The chart is nested lists laid out by CSS (lines drawn with borders), so it
+// grows to fit names; the stage takes its measured size.
+function drawOrg(stage, wid, focus) {
+  const seen = new Set();
+  const node = (org, depth) => {
+    seen.add(org.id);
+    const s = structureOf(org);
+    const below = depth < 2 ? s.below.filter((b) => !seen.has(b.id)) : [];
+    below.forEach((b) => seen.add(b.id));
+    const rest = [
+      ...below.map((b) => `<li>${node(b, depth + 1)}</li>`),
+      ...(s.members.length ? [`<li>${membersCard(wid, s.members)}</li>`] : []),
+    ];
+    const restHTML = rest.length ? `<ul>${rest.join('')}</ul>` : '';
+    // Leaders sit between the organisation and everything under it.
+    const lead = s.leaders.length
+      ? `<ul><li><div class="org-leaders">${s.leaders.map((l) => card(wid, l, { label: 'Leader', cls: 'tree-node org-node' })).join('')}</div>${restHTML}</li></ul>`
+      : restHTML;
+    return `${card(wid, org, { focus: org.id === focus.id, cls: 'tree-node org-node' })}${lead}`;
+  };
+  // Any organisation it belongs to sits above it (just that line, not their other parts).
+  const { above } = structureOf(focus);
+  above.forEach((a) => seen.add(a.id));
+  const inner = node(focus, 0);
+  const html = above.length
+    ? `<ul class="org-root"><li><div class="org-leaders">${above.map((a) => card(wid, a, { label: 'Part of', cls: 'tree-node org-node' })).join('')}</div><ul><li>${inner}</li></ul></li></ul>`
+    : `<ul class="org-root"><li>${inner}</li></ul>`;
+  stage.innerHTML = `<div class="org-chart">${html}</div>`;
+  const chart = stage.firstElementChild;
+  return { width: chart.offsetWidth, height: chart.offsetHeight };
+}
+
+function membersCard(wid, members) {
+  const shown = members.slice(0, MEMBERS_SHOWN);
+  return `<div class="tree-node org-node org-members">
+      <span class="tn-text"><span class="tn-rel">${members.length} member${members.length === 1 ? '' : 's'}</span>
+      <span class="org-more">${shown.map((m) => `<a href="#/w/${wid}/a/${m.id}" data-id="${m.id}">${typeIcon(m.type)}${esc(m.title)}</a>`).join('')}${members.length > shown.length ? `<span class="muted">and ${members.length - shown.length} more</span>` : ''}</span></span>
     </div>`;
-  }).join('');
-  stage.innerHTML = svg.join('') + cards;
-  hydrateImages(stage);
-
-  const pz = panZoom($('#treeBox'), stage, { width, height });
-  const focusNode = layout.nodes.find((n) => n.a.id === aid);
-  pz.fit();
-
-  stage.addEventListener('click', (e) => {
-    if (pz.dragged()) { e.preventDefault(); e.stopPropagation(); return; }
-    if (e.target.closest('.tn-open')) return;
-    const node = e.target.closest('.tree-node');
-    if (node && node.dataset.id !== aid) location.hash = `#/w/${wid}/tree/${node.dataset.id}`;
-    else if (node) location.hash = `#/w/${wid}/a/${aid}`;
-  }, true);
-  stage.addEventListener('keydown', (e) => {
-    const node = e.target.closest('.tree-node');
-    if (node && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); node.click(); }
-  });
-  view.querySelectorAll('[data-z]').forEach((b) => b.onclick = () => {
-    if (b.dataset.z === 'fit') pz.fit(); else pz.zoom(b.dataset.z === 'in' ? 1.3 : 1 / 1.3);
-  });
-  // Large trees: zoom to a readable scale around the focus person instead of showing everything tiny.
-  if (focusNode && pz.get().s < 0.55) { pz.zoom(0.75 / pz.get().s); pz.center(focusNode.x + ox, focusNode.y + oy); }
-  state.cleanup = () => pz.destroy();
 }
 
 // ---------------------------------------------------------------- layout
@@ -259,7 +349,7 @@ function buildTree(focus) {
 
 // Pan/zoom an absolutely positioned `stage` inside `box`. A drag only starts
 // after the pointer moves a few pixels, so plain clicks on children still work.
-export function panZoom(box, stage, { width, height, onTransform, maxScale = 3, minScale = 0.1 } = {}) {
+export function panZoom(box, stage, { width, height, onTransform, maxScale = 3, minScale = 0.1, embedded = false } = {}) {
   let s = 1, tx = 0, ty = 0;
   let w = width, h = height;
   const apply = () => {
@@ -329,7 +419,15 @@ export function panZoom(box, stage, { width, height, onTransform, maxScale = 3, 
       setTimeout(() => { moved = false; }, 0);
     }
   };
+  let hintTimer;
   const wheel = (e) => {
+    // Embedded in a page: plain scrolling scrolls the page; Ctrl/⌘ + scroll zooms.
+    if (embedded && !e.ctrlKey && !e.metaKey) {
+      box.classList.add('show-hint');
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => box.classList.remove('show-hint'), 1200);
+      return;
+    }
     e.preventDefault();
     const r = rect();
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
