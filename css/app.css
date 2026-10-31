@@ -689,3 +689,19 @@ option.opt-dim { color: var(--muted); }
 .excerpt:hover .excerpt-source, .excerpt-source:focus-visible { color: var(--brass) !important; opacity: 1; }
 .excerpt.missing { color: var(--rubric); font: italic .95rem var(--sans); }
 .excerpt.missing::before { background: var(--rubric); }
+
+/* The app's right-click menu (js/contextmenu.js) */
+.ctx-menu {
+  position: fixed; z-index: 2000; min-width: 190px; padding: .3rem; display: grid;
+  background: var(--ink-2); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--shadow);
+  font: 500 .9rem/1.2 var(--sans);
+}
+.ctx-menu button {
+  display: flex; align-items: center; gap: 1.5rem; padding: .42rem .6rem; border: 0; border-radius: 2px;
+  background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.ctx-menu button span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.ctx-menu button:hover:not([disabled]), .ctx-menu button:focus-visible { background: var(--ink-4); }
+.ctx-menu button[disabled] { color: var(--muted); opacity: .55; cursor: default; }
+.ctx-menu kbd { font: 500 .75rem/1 var(--sans); color: var(--muted); letter-spacing: .02em; background: none; border: 0; padding: 0; }
+.ctx-menu hr { margin: .25rem .3rem; border: 0; border-top: 1px solid var(--rule); }

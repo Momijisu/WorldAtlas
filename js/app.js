@@ -9,6 +9,7 @@ import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground } from './backgrounds.js';
 import { wirePreviews } from './preview.js';
+import './contextmenu.js';
 import { loadWorldFonts } from './scripts.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';

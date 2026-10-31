@@ -335,6 +335,9 @@ export async function viewMap(wid, mid, q) {
     if (!editing) setEditing(true);
     reshaping = reg.id;
     shapeUndo = [];
+    // Leaving the page with an edited outline asks first.
+    state.guard = () => !!reshaping && shapeUndo.length > 0;
+    state.guardMessage = 'Leave without saving the region’s new shape?';
     draft = reg.points.map((pt) => [...pt]);
     info.hidden = true;
     ctl.setDraft(draft);
@@ -344,6 +347,7 @@ export async function viewMap(wid, mid, q) {
   async function endReshape(save) {
     const id = reshaping, points = draft;
     reshaping = null;
+    state.guard = null;
     shapeUndo = [];
     draft = tool === 'region' ? [] : null;
     ctl.setDraft(draft);
@@ -438,7 +442,7 @@ export async function viewMap(wid, mid, q) {
   function setEditing(on) {
     editing = on;
     moving = null;
-    if (!on && reshaping) { reshaping = null; shapeUndo = []; refresh(); }
+    if (!on && reshaping) endReshape(true); // Done keeps the new outline, like Save shape
     draft = on && tool === 'region' ? [] : null;
     ctl.setDraft(draft);
     const b = $('#editBtn');
