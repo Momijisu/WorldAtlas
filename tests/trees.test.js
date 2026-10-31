@@ -16,7 +16,7 @@ run('trees: family and organisation', async ({ newPage }) => {
     const names = ['Anwen Brask', 'Corin Mire', 'Dagny Holt', 'Ewan Tallis', 'Fenna Roe', 'Gil Marsh', 'Hester Pike', 'Ivo Crane', 'Jessa Wren', 'Kell Ashby'];
     const mem = []; for (const n of names) mem.push(await mk(n, 'character'));
     const rel = (type, target) => ({ id: crypto.randomUUID(), type, target });
-    await s.save('articles', { ...s.article(guild.id), relations: [...(guild.relations || []), rel('member', order.id), rel('ledBy', sera.id), ...mem.map((m) => rel('hasMember', m.id))] });
+    await s.save('articles', { ...s.article(guild.id), relations: [...(guild.relations || []), rel('member', order.id), { ...rel('ledBy', sera.id), note: 'Guildmaster' }, rel('hasMember', ped.id), ...mem.map((m) => rel('hasMember', m.id))] });
     await s.save('articles', { ...s.article(ch1.id), relations: [rel('ledBy', ped.id)] });
     return { guild: guild.id, ysolde: s.byTitle(w, 'Queen Ysolde').id };
   }, wid);
@@ -26,8 +26,9 @@ run('trees: family and organisation', async ({ newPage }) => {
   check('organisation section shown', (await p.$$eval('.section-head h2', (l) => l.map((x) => x.textContent))).includes('Organisation'));
   await go(p, `#/w/${wid}/tree/${ids.guild}`, 900);
   const chart = await p.$$eval('#treeStage .org-node', (l) => l.map((x) => x.querySelector('.tn-rel')?.textContent + ':' + (x.querySelector('.tn-title')?.textContent || '')));
-  check('the chart shows the parent, the guild, both leaders and both chapters', ['Part of:The Ember Concord', 'Leader:Sera Vane', 'Leader:Mother Wick', 'Leader:Pedric Hollis'].every((x) => chart.includes(x)) && chart.some((x) => x.endsWith('Tallowmarket Chapter')) && chart.some((x) => x.endsWith('Drowns Watch')), chart);
+  check('the chart shows the parent, the guild, both leaders and both chapters', ['Part of:The Ember Concord', 'Guildmaster:Sera Vane', 'Leader:Mother Wick', 'Leader:Pedric Hollis'].every((x) => chart.includes(x)) && chart.some((x) => x.endsWith('Tallowmarket Chapter')) && chart.some((x) => x.endsWith('Drowns Watch')), chart);
   check('members are listed with a count', (await p.$eval('.org-members .tn-rel', (x) => x.textContent)) === '11 members' && (await p.$$('.org-more a')).length === 8);
+  check('a relationship note shows as the role, and someone shown under a chapter isn’t repeated', !(await p.$$eval('.org-more a', (l) => l.some((x) => x.textContent.includes('Pedric')))));
   await p.click('#treeStage [data-id] >> text=Tallowmarket Chapter');
   await p.waitForTimeout(500);
   check('clicking another organisation shows its chart', (await p.evaluate(() => location.hash)).includes('/tree/') && (await p.textContent('h1')).includes('Tallowmarket'));

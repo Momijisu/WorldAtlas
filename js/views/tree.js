@@ -77,11 +77,14 @@ export function drawTree(wrap, wid, focus, { embedded = false } = {}) {
   wrap.querySelectorAll('[data-z]').forEach((b) => b.onclick = () => {
     if (b.dataset.z === 'fit') pz.fit(); else pz.zoom(b.dataset.z === 'in' ? 1.3 : 1 / 1.3);
   });
-  // Large trees: zoom to a readable scale around the focus instead of showing everything tiny.
+  // Large trees: zoom to a readable scale instead of showing everything tiny.
+  // A family tree centres on the person; an organisation chart keeps its top
+  // (the organisation and what's directly under it) in view.
   const f = stage.querySelector('.focus');
-  if (f && pz.get().s < 0.55) {
-    pz.zoom(0.75 / pz.get().s);
-    pz.center(f.offsetLeft + f.offsetWidth / 2, f.offsetTop + f.offsetHeight / 2);
+  if (f && pz.get().s < (org ? 0.45 : 0.55)) {
+    pz.zoom((org ? 0.62 : 0.75) / pz.get().s);
+    const fx = f.offsetLeft + f.offsetWidth / 2, fy = f.offsetTop + f.offsetHeight / 2;
+    pz.center(fx, org ? fy + (box.clientHeight / 2 - 70) / pz.get().s : fy);
   }
   return pz;
 }
@@ -125,18 +128,19 @@ const MEMBERS_SHOWN = 8;
 
 // Who leads an organisation, which organisations sit under it, who belongs to
 // it, and what it is part of.
+// People come with the relationship's note, shown as their role ("Dean").
 function structureOf(org) {
   const rels = relationsOf(org);
-  const pick = (types) => rels.filter((r) => types.includes(r.type)).map((r) => r.other);
-  const uniq = (list) => [...new Map(list.filter(Boolean).map((a) => [a.id, a])).values()];
+  const pick = (types) => rels.filter((r) => types.includes(r.type)).map((r) => ({ a: r.other, note: (r.note || '').trim() }));
+  const uniq = (list) => [...new Map(list.filter((x) => x.a).map((x) => [x.a.id, x])).values()];
   const leaders = uniq(pick(['ledBy', 'ruledBy']));
   const below = uniq([
-    ...store.articlesOf(org.worldId).filter((c) => c.parentId === org.id && isOrg(c)),
-    ...pick(['hasMember', 'servedBy']).filter(isOrg),
-  ]);
-  const members = uniq(pick(['hasMember', 'servedBy']).filter((m) => !isOrg(m) && !leaders.some((l) => l.id === m.id)));
+    ...store.articlesOf(org.worldId).filter((c) => c.parentId === org.id && isOrg(c)).map((a) => ({ a, note: '' })),
+    ...pick(['hasMember', 'servedBy']).filter((x) => isOrg(x.a)),
+  ]).map((x) => x.a);
+  const members = uniq(pick(['hasMember', 'servedBy']).filter((x) => !isOrg(x.a) && !leaders.some((l) => l.a.id === x.a.id)));
   const parentArt = org.parentId && store.article(org.parentId);
-  const above = uniq([...(isOrg(parentArt) ? [parentArt] : []), ...pick(['member', 'serves']).filter(isOrg)]);
+  const above = uniq([...(isOrg(parentArt) ? [{ a: parentArt }] : []), ...pick(['member', 'serves']).filter((x) => isOrg(x.a))]).map((x) => x.a);
   return { leaders, below, members, above };
 }
 const hasStructure = (org) => { const s = structureOf(org); return !!(s.leaders.length || s.below.length || s.members.length || s.above.length); };
@@ -145,19 +149,24 @@ const hasStructure = (org) => { const s = structureOf(org); return !!(s.leaders.
 // grows to fit names; the stage takes its measured size.
 function drawOrg(stage, wid, focus) {
   const seen = new Set();
+  const placed = new Set(); // people already shown lower down, under a sub-organisation
   const node = (org, depth) => {
     seen.add(org.id);
     const s = structureOf(org);
     const below = depth < 2 ? s.below.filter((b) => !seen.has(b.id)) : [];
     below.forEach((b) => seen.add(b.id));
+    const belowHTML = below.map((b) => `<li>${node(b, depth + 1)}</li>`);
+    // Someone who appears under one of its parts isn't listed again here.
+    const members = s.members.filter((m) => !placed.has(m.a.id));
+    for (const p of [...s.leaders, ...members]) placed.add(p.a.id);
     const rest = [
-      ...below.map((b) => `<li>${node(b, depth + 1)}</li>`),
-      ...(s.members.length ? [`<li>${membersCard(wid, s.members)}</li>`] : []),
+      ...belowHTML,
+      ...(members.length ? [`<li>${membersCard(wid, members)}</li>`] : []),
     ];
     const restHTML = rest.length ? `<ul>${rest.join('')}</ul>` : '';
     // Leaders sit between the organisation and everything under it.
     const lead = s.leaders.length
-      ? `<ul><li><div class="org-leaders">${s.leaders.map((l) => card(wid, l, { label: 'Leader', cls: 'tree-node org-node' })).join('')}</div>${restHTML}</li></ul>`
+      ? `<ul><li><div class="org-leaders">${s.leaders.map((l) => card(wid, l.a, { label: l.note || 'Leader', cls: 'tree-node org-node' })).join('')}</div>${restHTML}</li></ul>`
       : restHTML;
     return `${card(wid, org, { focus: org.id === focus.id, cls: 'tree-node org-node' })}${lead}`;
   };
@@ -174,10 +183,12 @@ function drawOrg(stage, wid, focus) {
 }
 
 function membersCard(wid, members) {
+  // Members with a role (a note on the relationship) first.
+  members = [...members].sort((x, y) => (!x.note - !y.note) || x.a.title.localeCompare(y.a.title));
   const shown = members.slice(0, MEMBERS_SHOWN);
   return `<div class="tree-node org-node org-members">
       <span class="tn-text"><span class="tn-rel">${members.length} member${members.length === 1 ? '' : 's'}</span>
-      <span class="org-more">${shown.map((m) => `<a href="#/w/${wid}/a/${m.id}" data-id="${m.id}">${typeIcon(m.type)}${esc(m.title)}</a>`).join('')}${members.length > shown.length ? `<span class="muted">and ${members.length - shown.length} more</span>` : ''}</span></span>
+      <span class="org-more">${shown.map(({ a: m, note }) => `<a href="#/w/${wid}/a/${m.id}" data-id="${m.id}">${typeIcon(m.type)}<span>${esc(m.title)}${note ? ` <small>${esc(note)}</small>` : ''}</span></a>`).join('')}${members.length > shown.length ? `<span class="muted">and ${members.length - shown.length} more</span>` : ''}</span></span>
     </div>`;
 }
 

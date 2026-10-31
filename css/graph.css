@@ -208,10 +208,11 @@
 /* the line down from a parent to its children's bus */
 .org-chart ul ul::before { content: ""; position: absolute; top: 0; left: 50%; height: 26px; border-left: 1.5px solid var(--org-line); }
 .org-node { position: relative; width: 196px; min-height: 64px; padding: .45rem .5rem; text-align: left; }
-.org-leaders { display: flex; gap: 12px; justify-content: center; position: relative; }
-/* co-leaders share one bracket */
+/* Co-leaders stack under their organisation, joined by a short line, so a
+   chart with many groups stays narrow. */
+.org-leaders { display: flex; flex-direction: column; gap: 10px; align-items: center; position: relative; }
 .org-leaders > .org-node + .org-node::before {
-  content: ""; position: absolute; left: -13px; top: 50%; width: 12px; border-top: 1.5px solid var(--org-line);
+  content: ""; position: absolute; left: 50%; top: -11px; height: 10px; border-left: 1.5px solid var(--org-line);
 }
 .org-members { width: 236px; align-items: flex-start; cursor: default; }
 .org-members:hover { border-color: var(--rule-strong); background: var(--ink-2); }
@@ -219,3 +220,4 @@
 .org-more a { display: flex; align-items: center; gap: .35rem; color: var(--text); text-decoration: none; border-radius: 2px; padding: 1px 2px; }
 .org-more a:hover { color: var(--brass); background: var(--ink-4); }
 .org-more .i { width: .85rem; height: .85rem; color: var(--brass); flex-shrink: 0; }
+.org-more a small { color: var(--muted); font-size: .78em; margin-left: .2rem; }
