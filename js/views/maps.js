@@ -488,7 +488,7 @@ export async function viewMap(wid, mid, q) {
     panel.classList.toggle('keyed', listed);
     panel.classList.toggle('arranging', arranging);
     panel.classList.toggle('two-col', listed && !arranging && rows > 16 && layers.length > 1); // arranging keeps one roomy column
-    const count = (l) => all.filter((it) => (it.layer || '') === l).length;
+    const count = (l) => pins.filter((it) => (it.layer || '') === l).length; // places only, not the group's regions
     // A group holding regions stands for them (a district and the places in it): its name highlights and shows them.
     const regionsOf = (l) => regions.filter((r) => (r.layer || '') === l && r.points?.length > 2);
     panel.innerHTML = `<div class="map-panel-head"><span class="field-label">${arranging ? 'Arrange the key' : nums ? 'Key' : 'Layers'}</span><button class="icon-btn sm" data-close>${icon('x')}</button></div>
@@ -496,7 +496,7 @@ export async function viewMap(wid, mid, q) {
         <div class="layer-line">${grip(layerName(l))}<label class="check layer-row">
           <input type="checkbox" data-layer="${esc(l)}" ${hidden.has(l) ? '' : 'checked'}>
           ${regionsOf(l).length ? `<button type="button" class="group-link" data-group-regions="${regionsOf(l).map((r) => r.id).join(' ')}" title="Show ${regionsOf(l).length === 1 ? esc(itemTitle(regionsOf(l)[0]) || layerName(l)) : `${regionsOf(l).length} regions`} on the map">${esc(layerName(l))}</button>`
-            : `<span>${esc(layerName(l))}</span>`}<span class="count">${count(l)}</span>
+            : `<span>${esc(layerName(l))}</span>`}${count(l) ? `<span class="count">${count(l)}</span>` : ''}
         </label>${arranging && l ? `<button type="button" class="icon-btn sm" data-rename="${esc(l)}" title="Rename group">${icon('pencil-simple')}</button><button type="button" class="icon-btn sm" data-remove="${esc(l)}" title="Remove group (its places move to General)">${icon('trash')}</button>` : ''}
         ${listed && (count(l) || arranging) ? `<button type="button" class="icon-btn sm fold" data-fold="${esc(l)}" aria-expanded="${!folded.has(l)}" title="${folded.has(l) ? 'Show' : 'Hide'} this layer’s places">${icon('caret-down')}</button>` : ''}</div>${keyFor(l)}</div>`).join('')}</div>`
         : '<p class="muted small">No places yet. Assign pins and regions to layers in edit mode.</p>'}
