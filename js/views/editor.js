@@ -492,12 +492,21 @@ function mdCommand(ta, cmd) {
   let text, cs, ce;
   const wrap = (l, r, ph) => { const inner = sel || ph; text = v.slice(0, s) + l + inner + r + v.slice(e); cs = s + l.length; ce = cs + inner.length; };
   const prefix = (p) => { text = v.slice(0, lineStart) + p + v.slice(lineStart); cs = s + p.length; ce = e + p.length; };
+  // A heading button sets the line's level: it replaces an existing heading
+  // mark, and pressing the same level again turns the heading off.
+  const heading = (level) => {
+    const old = /^#{1,6}[ \t]+/.exec(v.slice(lineStart))?.[0] || '';
+    const p = old.trim() === '#'.repeat(level) ? '' : '#'.repeat(level) + ' ';
+    text = v.slice(0, lineStart) + p + v.slice(lineStart + old.length);
+    const shift = (x) => Math.max(lineStart + p.length, x - old.length + p.length);
+    cs = shift(s); ce = shift(e);
+  };
   switch (cmd) {
     case 'bold': wrap('**', '**', 'bold text'); break;
     case 'italic': wrap('*', '*', 'italic text'); break;
     case 'link': wrap('[[', ']]', 'Article title'); break;
-    case 'h2': prefix('## '); break;
-    case 'h3': prefix('### '); break;
+    case 'h2': heading(2); break;
+    case 'h3': heading(3); break;
     case 'ul': prefix('- '); break;
     case 'quote': prefix('> '); break;
     case 'hr': text = v.slice(0, s) + '\n\n---\n\n' + v.slice(e); cs = ce = s + 7; break;
