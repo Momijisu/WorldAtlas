@@ -111,4 +111,10 @@ vendor/               marked, DOMPurify, live-editor.js (CodeMirror 6, MIT; rebu
 
 ## Releasing
 
-Bump `WA_VERSION` and `WA_BUILD` in `js/version.js`. Installed apps pick up the new version and replace their offline cache. Settings → About shows the running and latest versions. When adding or removing files, update `SHELL` in `sw.js`.
+Run `tests/run.sh`, then bump `WA_VERSION` and `WA_BUILD` in `js/version.js`. Installed apps pick up the new version and replace their offline cache. Settings → About shows the running and latest versions. When adding or removing files, update `SHELL` in `sw.js`.
+
+## Testing
+
+`tests/run.sh` runs the browser tests (Node with Playwright and Chromium; it serves the app on port 8766 if nothing is there already). `tests/run.sh maps` runs only the tests whose names contain "maps". Run them before every release; a failing test exits non-zero and names what broke.
+
+They cover: every main page opening (`smoke`), OneDrive sync end to end against a fake drive (`sync`: migration, a second device, merging, rename, delete, old-version files, throttling), links, excerpts and prompts (`articles`), the map key and arranging it (`maps-key`), region shape editing and region names (`maps-regions`), panning and place names (`maps-input`), marker shapes and styles (`markers`) and the right-click menu (`contextmenu`). The test map is drawn by the tests themselves (`tests/lib.js`).
