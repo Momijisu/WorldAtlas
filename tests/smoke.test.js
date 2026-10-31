@@ -16,6 +16,6 @@ run('smoke: pages open', async ({ newPage }) => {
   for (const [name, hash] of Object.entries(pages)) {
     await go(p, hash, 700);
     const text = await p.evaluate(() => document.querySelector('#view, main, body').innerText);
-    check(`${name} renders`, text.length > 40 && !/Not found/.test(await p.evaluate(() => document.querySelector('.toast')?.textContent || '')));
+    check(`${name} renders`, text.length > 40 && !/Not found/.test(await p.evaluate(() => document.querySelector('#toast')?.textContent || '')));
   }
 });

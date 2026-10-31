@@ -8,6 +8,41 @@ import { scriptExtensions } from './scripts.js';
 let renderingWid = null; // the world being rendered, for its fonts
 marked.use({ gfm: true, breaks: true, extensions: scriptExtensions(() => renderingWid) });
 
+// Callouts, written as in Obsidian and GitHub so they stay portable:
+//   > [!warning] Beware the bridge
+//   > It floods at high tide.
+// The title is optional; [!note]- starts folded, [!note]+ foldable but open.
+export const CALLOUTS = {
+  note: { label: 'Note', icon: 'feather' }, info: { label: 'Info', icon: 'info' }, tip: { label: 'Tip', icon: 'sparkle' },
+  important: { label: 'Important', icon: 'star' }, warning: { label: 'Warning', icon: 'warning' },
+  danger: { label: 'Danger', icon: 'skull' }, quote: { label: 'Quote', icon: 'quotes' },
+};
+const CALLOUT_ALIAS = { caution: 'danger', error: 'danger', hint: 'tip', abstract: 'note', summary: 'note', todo: 'note', question: 'info', example: 'info', cite: 'quote' };
+marked.use({ extensions: [{
+  name: 'callout',
+  level: 'block',
+  start: (src) => src.match(/^ {0,3}> ?\[!/m)?.index,
+  tokenizer(src) {
+    const m = /^ {0,3}> ?\[!([A-Za-z]+)\]([+-]?)[ \t]*([^\n]*)\n?((?: {0,3}>[^\n]*(?:\n|$))*)/.exec(src);
+    if (!m) return undefined;
+    const raw = m[0];
+    const kind = m[1].toLowerCase();
+    const type = CALLOUTS[kind] ? kind : CALLOUT_ALIAS[kind] || 'note';
+    const body = m[4].split('\n').map((l) => l.replace(/^ {0,3}> ?/, '')).join('\n').trim();
+    const token = { type: 'callout', raw, kind: type, fold: m[2], title: m[3].trim(), tokens: [] };
+    this.lexer.blockTokens(body, token.tokens);
+    return token;
+  },
+  renderer(t) {
+    const c = CALLOUTS[t.kind];
+    const title = `${icon(c.icon)}<span>${t.title ? this.parser.parseInline(marked.Lexer.lexInline(t.title)) : c.label}</span>`;
+    const inner = `<div class="callout-body">${this.parser.parse(t.tokens)}</div>`;
+    return t.fold
+      ? `<details class="callout callout-${t.kind}"${t.fold === '+' ? ' open' : ''}><summary class="callout-title">${title}</summary>${inner}</details>\n`
+      : `<div class="callout callout-${t.kind}"><div class="callout-title">${title}</div>${inner}</div>\n`;
+  },
+}] });
+
 // Code fences and `code spans` are left alone, so [[...]] can be shown literally.
 const CODE = /(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`[^`\n]*`)/;
 
@@ -18,7 +53,7 @@ function wikiLinks(src, wid) {
 // [[Title]], [[Title|label]], and [[Title#Section]] for a heading in that article.
 function linkify(src, wid) {
   return src.replace(/\[\[([^\]|#\n]+)(?:#([^\]|\n]*))?(?:\|([^\]\n]*))?\]\]/g, (_, title, sec, label) => {
-    const a = store.byTitle(wid, title);
+    const a = store.byName(wid, title);
     sec = sec?.trim();
     const text = esc((label || (sec ? `${title.trim()} › ${sec}` : title)).trim());
     if (a) return `<a class="wikilink type-${a.type}" href="#/w/${wid}/a/${a.id}${sec ? `?s=${encodeURIComponent(sec)}` : ''}" title="${esc(a.summary || a.title)}">${text}</a>`;
@@ -53,7 +88,7 @@ function section(body, heading) {
 }
 
 function excerptHTML(wid, title, heading, caption, depth) {
-  const a = store.byTitle(wid, title.trim());
+  const a = store.byName(wid, title.trim());
   const where = esc(title.trim()) + (heading ? ` › ${esc(heading.trim())}` : '');
   if (!a) return `<div class="excerpt missing">No article called “${esc(title.trim())}” to quote from.</div>`;
   const text = heading ? section(a.body, heading) : (a.summary || a.body.split(/\n\s*\n/)[0]);

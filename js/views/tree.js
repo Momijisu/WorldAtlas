@@ -543,7 +543,7 @@ function addDialog(wid, org, kind, done) {
       f.onsubmit = async (e) => {
         e.preventDefault();
         const name = f.q.value.trim();
-        let who = chosen || store.byTitle(wid, name);
+        let who = chosen || store.byName(wid, name);
         if (who && (wantOrg ? !isOrg(who) : isOrg(who))) who = null;
         if (!who) {
           if (!name) return;

@@ -306,7 +306,7 @@ Reply with only a JSON object shaped like this:
   "world": { "name": "...", "description": "...", "calendar": { "months": [{"name": "...", "days": 30}], "weekdays": ["..."], "eras": [{"name": "...", "abbr": "...", "start": 0}], "moons": [{"name": "...", "cycle": 30}], "currentYear": 1043 } },
   "articles": [
     { "title": "...", "type": "character|species|culture|profession|title|location|settlement|building|organization|religion|event|conflict|plot|myth|spell|law|condition|technology|item|vehicle|material|tradition|language|lore|article",
-      "summary": "one or two lines", "body": "Markdown, with [[Other Article Title]] links",
+      "aliases": ["other names it goes by"], "summary": "one or two lines", "body": "Markdown, with [[Other Article Title]] links",
       "parent": "Title of the article this belongs to", "tags": ["..."],
       "fields": { "Type": "what kind of thing it is, e.g. Ruin, Port town, Guild", "Occupation": "for characters" },
       "date": "12 Frostmoot 1042", "endDate": "1060",
@@ -318,6 +318,8 @@ Reply with only a JSON object shaped like this:
 Rules:
 - Use unique titles, and the exact title in [[links]], "parent" and "target".
 - To show a section of another article inside this one, put ![[Title#Heading]] on its own line (![[Title]] shows its summary) instead of repeating the text.
+- Put rumours, warnings and asides in callouts: a line "> [!note] Optional title" (or tip, info, important, warning, danger, quote) followed by "> text" lines.
+- List other names an article goes by in "aliases".
 - Leave out "calendar" if my world has no custom calendar. Dates use its month names; a bare year is fine.
 - Only use facts from my material. Put anything uncertain in "secrets".
 - Split large topics into several linked articles.

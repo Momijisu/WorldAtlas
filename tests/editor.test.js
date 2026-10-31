@@ -23,4 +23,14 @@ run('editor: heading buttons', async ({ newPage }) => {
     check(`${mode}: H3 again turns the heading off`, a2 === 'Section', a2);
     check(`${mode}: H2 on a plain line makes it ##`, a3 === '## Section', a3);
   }
+  // Leaving the editor: only a real change asks first (opening Live used to count as one).
+  const q = await newPage({ init: () => localStorage.setItem('wa.editMode', 'live') });
+  const wid2 = await openExample(q);
+  const vid = await store(q, (s, w) => s.byTitle(w, 'Varenhold').id, wid2);
+  const leave = async () => { await q.evaluate((w) => { location.hash = `#/w/${w}`; }, wid2); await q.waitForTimeout(400); return q.evaluate(() => !!document.querySelector('#modal-root .modal')); };
+  await go(q, `#/w/${wid2}/a/${vid}/edit`, 1200);
+  check('Live: leaving an unchanged article doesn’t ask', !(await leave()));
+  await go(q, `#/w/${wid2}/a/${vid}/edit`, 1200);
+  await q.click('.cm-content'); await q.keyboard.type('x');
+  check('Live: leaving after typing asks first', await leave());
 });

@@ -41,7 +41,7 @@ export const itemTitle = (it) => it.label || store.article(it.articleId)?.title 
 // The article a place or region stands for: the one it links to, or else the
 // article its name matches (so naming a place before writing its article
 // works like a [[link]] to a page that doesn't exist yet).
-export const linkedArticle = (wid, it) => store.article(it.articleId) || (it.label ? store.byTitle(wid, it.label) : null);
+export const linkedArticle = (wid, it) => store.article(it.articleId) || (it.label ? store.byName(wid, it.label) : null);
 
 // A layer is a template key (pins for Settlements, Characters…), a name the
 // user made up, or '' for General.
@@ -838,7 +838,7 @@ export async function viewMap(wid, mid, q) {
       showStatus();
     };
     input.addEventListener('input', () => {
-      f.articleId.value = store.byTitle(wid, input.value.trim())?.id || '';
+      f.articleId.value = store.byName(wid, input.value.trim())?.id || '';
       idx = -1;
       draw();
       showStatus();

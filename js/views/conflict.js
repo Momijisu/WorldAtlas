@@ -29,6 +29,7 @@ function blocksFor(cur, other, cal) {
   for (const k of keys) {
     if (!same(cur.fields?.[k] ?? '', other.fields?.[k] ?? '')) add({ id: 'field:' + k, label: 'Infobox · ' + k, fmt: (v) => v.fields?.[k] ?? 'Not set' });
   }
+  if (!same([...(cur.aliases || [])].sort(), [...(other.aliases || [])].sort())) add({ id: 'aliases', label: 'Also known as', kind: 'set', fmt: (v) => (v.aliases || []).join(', ') || 'None' });
   if (!same([...(cur.tags || [])].sort(), [...(other.tags || [])].sort())) add({ id: 'tags', label: 'Tags', kind: 'set', fmt: (v) => (v.tags || []).map((t) => '#' + t).join('  ') || 'None' });
   if (!same((cur.relations || []).map(relKey).sort(), (other.relations || []).map(relKey).sort()) || !same(cur.relations, other.relations)) {
     add({ id: 'relations', label: 'Relationships', kind: 'set', fmt: (v) => (v.relations || []).map(relText).join('\n') || 'None' });
@@ -136,7 +137,8 @@ export function viewResolve(wid, aid) {
         const k = b.id.slice(6);
         out.fields ||= {};
         if (src.fields && k in src.fields) out.fields[k] = src.fields[k]; else delete out.fields[k];
-      } else if (b.id === 'tags') out.tags = c === 'both' ? [...new Set([...(cur.tags || []), ...(other.tags || [])])] : [...(src.tags || [])];
+      } else if (b.id === 'aliases') out.aliases = c === 'both' ? [...new Set([...(cur.aliases || []), ...(other.aliases || [])])] : [...(src.aliases || [])];
+      else if (b.id === 'tags') out.tags = c === 'both' ? [...new Set([...(cur.tags || []), ...(other.tags || [])])] : [...(src.tags || [])];
       else if (b.id === 'relations') {
         if (c === 'both') {
           const seen = new Set();

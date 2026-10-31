@@ -194,6 +194,10 @@ export function planImport(json, targetWid = null) {
     const base = e.prior ? structuredClone(e.prior) : store.newArticle(world.id, 'article');
     const rec = { ...base, title: e.title, worldId: world.id, id: e.id };
     if (has('type') || !e.prior) rec.type = resolveType(r.type ?? r.template ?? r.category, warn, e.title);
+    if (has('aliases') || has('alsoKnownAs')) {
+      const list = r.aliases ?? r.alsoKnownAs;
+      rec.aliases = [...new Set((Array.isArray(list) ? list : String(list || '').split(',')).map((x) => String(x).trim()).filter((x) => x && x.toLowerCase() !== e.title.toLowerCase()))];
+    }
     if (has('summary')) rec.summary = String(r.summary ?? '');
     if (has('body') || has('content') || has('text')) rec.body = String(r.body ?? r.content ?? r.text ?? '');
     if (has('secrets') || has('gmNotes')) rec.gmNotes = String(r.secrets ?? r.gmNotes ?? '');

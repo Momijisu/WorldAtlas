@@ -157,9 +157,10 @@ export async function resolveConflict(id, content) {
 // Every save of an article stores a snapshot. History syncs (append-only) via
 // its own OneDrive file and is pruned to the newest HISTORY_LIMIT per article.
 
-const CONTENT_KEYS = ['title', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'banner', 'bannerPos', 'mapId',
+const CONTENT_KEYS = ['title', 'aliases', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'banner', 'bannerPos', 'mapId',
   'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations'];
-export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, a[k] ?? null]));
+// (No aliases and an empty list read the same, so older articles don't look changed.)
+export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, k === 'aliases' ? (a.aliases?.length ? a.aliases : null) : a[k] ?? null]));
 
 async function recordVersion(a) {
   const last = historyOf(a.id)[0];
@@ -220,6 +221,15 @@ export const byTitle = (wid, title) => {
   const t = title.trim().toLowerCase();
   return articlesOf(wid).find((a) => a.title.trim().toLowerCase() === t) || null;
 };
+// An article's title and its other names ("Also known as").
+export const namesOf = (a) => [a.title, ...(a.aliases || [])];
+// The article a name refers to: its title first, else one of its aliases.
+// Links, link suggestions and searches use this; uniqueness checks use byTitle.
+export const byName = (wid, name) => {
+  const t = String(name || '').trim().toLowerCase();
+  if (!t) return null;
+  return byTitle(wid, t) || articlesOf(wid).find((a) => (a.aliases || []).some((x) => x.trim().toLowerCase() === t)) || null;
+};
 
 export function ancestors(a) {
   const out = [];
@@ -247,8 +257,8 @@ export function articleText(a) {
 }
 
 export function backlinks(a) {
-  const t = a.title.trim().toLowerCase();
-  return articlesOf(a.worldId).filter((o) => o.id !== a.id && linkedTitles(articleText(o)).includes(t));
+  const names = new Set(namesOf(a).map((n) => n.trim().toLowerCase()));
+  return articlesOf(a.worldId).filter((o) => o.id !== a.id && linkedTitles(articleText(o)).some((t) => names.has(t)));
 }
 
 // Rewrite [[Old]] / [[Old#Section]] / [[Old|label]] references after a rename.
@@ -339,6 +349,6 @@ export function newArticle(worldId, type = 'article', extra = {}) {
     id: uid(), worldId, type, title: '', parentId: null, tags: [], summary: '', body: '',
     fields: Object.fromEntries((TYPES[type]?.fields || []).map((f) => [f, ''])),
     gmNotes: '', image: null, banner: null, mapId: null, start: null, startM: null, startD: null, end: null, endM: null, endD: null,
-    dateLabel: '', relations: [], ...extra,
+    dateLabel: '', relations: [], aliases: [], ...extra,
   };
 }

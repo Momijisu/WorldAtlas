@@ -97,7 +97,8 @@ Only `title` is required.
 | `title` | Unique name. Other articles refer to it by this. |
 | `type` | One of `character`, `species`, `culture`, `profession`, `title`, `location`, `settlement`, `building`, `organization`, `religion`, `event`, `conflict`, `plot`, `myth`, `spell`, `law` (natural law / magic system), `condition`, `technology`, `item`, `vehicle`, `material`, `tradition`, `language`, `lore`, `article`. Synonyms such as NPC, city, castle, faction, war, quest, legend, disease, ship or festival also work. Anything else becomes `article`. `settlement` and `building` are listed under Locations, and `conflict` under Events; use the most specific one. |
 | `summary` | A line or two for lists and link previews. |
-| `body` | Markdown. Link with `[[Title]]`, `[[Title|shown text]]` or `[[Title#Heading]]`. A line `![[Title#Heading]]` shows that section of another article (`![[Title]]` its summary), so write a topic once and excerpt it elsewhere. Handwritten passages (letters, notes) go in a `:::cursive` … `:::` block (or `:::print`). |
+| `aliases` | Other names it goes by, as a list (`["The Iron Duke"]`). `[[links]]` to any of them lead to this article. Alias: `alsoKnownAs`. |
+| `body` | Markdown. Link with `[[Title]]`, `[[Title|shown text]]` or `[[Title#Heading]]`. A line `![[Title#Heading]]` shows that section of another article (`![[Title]]` its summary), so write a topic once and excerpt it elsewhere. Handwritten passages (letters, notes) go in a `:::cursive` … `:::` block (or `:::print`). A callout box is a quote starting `> [!note]` (or `tip`, `info`, `important`, `warning`, `danger`, `quote`), optionally with a title after it, its text on the following `> ` lines. |
 | `secrets` | GM notes in Markdown, collapsed when reading. Alias: `gmNotes`. |
 | `parent` | Title of the article this belongs to, e.g. a district's city. |
 | `tags` | A list, or a comma-separated string. |

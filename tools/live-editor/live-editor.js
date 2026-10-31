@@ -27,6 +27,7 @@ const mark = (cls, attributes) => Decoration.mark({ class: cls, attributes });
 
 const HEADINGS = { ATXHeading1: 'cm-h1', ATXHeading2: 'cm-h2', ATXHeading3: 'cm-h3', ATXHeading4: 'cm-h4', ATXHeading5: 'cm-h5', ATXHeading6: 'cm-h6' };
 const WIKI = /\[\[([^\]|\n]+)(?:\|([^\]\n]*))?\]\]/g;
+const CALLOUT_KIND = { note: 'note', info: 'info', tip: 'tip', important: 'important', warning: 'warning', danger: 'danger', quote: 'quote', caution: 'danger', error: 'danger', hint: 'tip', question: 'info', example: 'info', cite: 'quote' };
 const EXCERPT = /^!\[\[[^\]\n]+\]\][ \t]*$/gm;
 const INLINE_SCRIPT = /\{\{([^|{}\n]+)\|([^{}\n]+)\}\}/g;
 
@@ -80,6 +81,16 @@ function build(view, opts) {
     });
     // [[Wiki links]]: link-coloured (red if missing); brackets hidden off the cursor line.
     const text = doc.sliceString(from, to);
+    // > [!type] Title: a callout's first line, in the callout's colour; the
+    // [!type] mark is hidden off the cursor line and its name shown instead.
+    for (const m of text.matchAll(/^( {0,3}> ?)\[!([A-Za-z]+)\][+-]?[ \t]*/gm)) {
+      const s = from + m.index;
+      if (code.some(([f, t]) => s >= f && s <= t)) continue;
+      const kind = m[2].toLowerCase();
+      const off = !isActive(s);
+      add(s, s, line(`cm-callout cm-callout-${CALLOUT_KIND[kind] || 'note'}${off ? ' cm-callout-named' : ''}`, { 'data-callout': kind[0].toUpperCase() + kind.slice(1) }));
+      if (off) add(s + m[1].length, s + m[0].length, hide);
+    }
     // "##Heading" with no space: a heading too (the app renders it as one).
     for (const m of text.matchAll(/^(#{2,6})(?=[^\s#])/gm)) {
       const s = from + m.index;
@@ -152,7 +163,8 @@ const wikiCompletions = (titles, headings) => (ctx) => {
   }
   return {
     from: m.from + 2,
-    options: titles().map((t) => ({ label: t, apply: closed ? t : t + ']]' })),
+    // a title, or { label, detail } for another name (an alias) of an article
+    options: titles().map((t) => (typeof t === 'string' ? { label: t, apply: closed ? t : t + ']]' } : { label: t.label, detail: t.detail, apply: closed ? t.label : t.label + ']]' })),
     validFor: /^[^\]\n|]*$/,
   };
 };

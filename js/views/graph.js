@@ -536,7 +536,7 @@ function wikiEdges(wid, relEdges) {
   const seen = new Set(relEdges.map((e) => [e.from, e.to].sort().join('|')));
   for (const a of store.articlesOf(wid)) {
     for (const t of new Set(store.linkedTitles(store.articleText(a)))) {
-      const b = store.byTitle(wid, t);
+      const b = store.byName(wid, t);
       if (!b || b.id === a.id) continue;
       const k = [a.id, b.id].sort().join('|');
       if (seen.has(k)) continue;

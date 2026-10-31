@@ -1,7 +1,7 @@
 // Article editor: content, infobox fields, calendar dates, relationships.
 import * as store from '../store.js';
 import { TYPES, GROUPS } from '../store.js';
-import { render, headingsOf } from '../markdown.js';
+import { render, headingsOf, CALLOUTS } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
@@ -53,6 +53,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     <div class="editor-grid">
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
+        <label>Also known as <small>other names, comma separated · [[links]] to them come here</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
         <div class="row">
           <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
           <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
@@ -70,6 +71,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <button type="button" data-md="quote" title="Quote">${icon('quotes')}</button>
           <button type="button" data-md="link" title="Link to article">${icon('link-simple')}</button>
           <button type="button" data-md="hr" title="Divider">${icon('minus')}</button>
+          <span class="md-script"><button type="button" id="calloutBtn" title="Callout: a note, tip or warning box" aria-haspopup="true">${icon('info')}<span class="hide-sm">Callout</span></button>
+            <span class="script-menu" id="calloutMenu" hidden>${Object.entries(CALLOUTS).map(([k, c]) => `<button type="button" data-callout="${k}" class="callout-pick callout-${k}">${icon(c.icon)}<span>${c.label}</span></button>`).join('')}</span></span>
           <span class="md-script"><button type="button" id="scriptBtn" title="Handwriting or a world font" aria-haspopup="true">${icon('feather')}<span class="hide-sm">Script</span></button>
             <span class="script-menu" id="scriptMenu" hidden></span></span>
           <span class="spacer"></span>
@@ -334,7 +337,16 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     menu.hidden = true;
     scriptCommand(body, b.dataset.script);
   };
-  f.addEventListener('click', (e) => { if (!e.target.closest('.md-script')) menu.hidden = true; });
+  // Callout menu: wraps the selected lines (or a placeholder) in > [!type].
+  const cmenu = $('#calloutMenu');
+  $('#calloutBtn').onclick = (e) => { e.stopPropagation(); menu.hidden = true; cmenu.hidden = !cmenu.hidden; };
+  cmenu.onclick = (e) => {
+    const b = e.target.closest('[data-callout]');
+    if (!b) return;
+    cmenu.hidden = true;
+    calloutCommand(body, b.dataset.callout);
+  };
+  f.addEventListener('click', (e) => { if (!e.target.closest('.md-script')) { menu.hidden = true; cmenu.hidden = true; } });
 
   // Editing views. Live shows formatting as you type (CodeMirror, loaded on
   // first use); Markdown is the plain textarea; Preview is read-only. The
@@ -347,13 +359,14 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     live = createLiveEditor(liveBox, {
       doc: body.value,
       label: 'Article content',
-      titles: () => store.articlesOf(wid).filter((x) => x.id !== a.id).map((x) => x.title),
-      isKnown: (t) => { const [title, sec] = t.split('#'); const x = store.byTitle(wid, title.trim()); return !!x && (sec == null || headingsOf(x.body).some((h) => h.toLowerCase() === sec.trim().toLowerCase())); },
-      headings: (t) => headingsOf(store.byTitle(wid, t)?.body),
+      titles: () => store.articlesOf(wid).filter((x) => x.id !== a.id).flatMap((x) => [x.title, ...(x.aliases || []).map((al) => ({ label: al, detail: '→ ' + x.title }))]),
+      isKnown: (t) => { const [title, sec] = t.split('#'); const x = store.byName(wid, title.trim()); return !!x && (sec == null || headingsOf(x.body).some((h) => h.toLowerCase() === sec.trim().toLowerCase())); },
+      headings: (t) => headingsOf(store.byName(wid, t)?.body),
       fontFor: (n) => familyFor(n, wid),
       isHand: (n) => !!HANDS[n.toLowerCase()],
       onUpdate: (u) => {
-        if (u.docChanged) {
+        // Only real changes count: loading the same text into Live isn't an edit.
+        if (u.docChanged && live.getValue() !== body.value) {
           fromLive = true;
           body.value = live.getValue();
           body.dispatchEvent(new Event('input', { bubbles: true }));
@@ -404,6 +417,12 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     if (!title) return toast('Give it a title');
     const clash = store.byTitle(wid, title);
     if (clash && clash.id !== a.id) return toast(`Another article is already called “${title}”`);
+    // Other names: each must be free (not another article's title or alias), or links would be ambiguous.
+    const aliases = [...new Map(f.aliases.value.split(',').map((x) => x.trim().replace(/[[\]|#]/g, '')).filter((x) => x && x.toLowerCase() !== title.toLowerCase()).map((x) => [x.toLowerCase(), x])).values()];
+    for (const al of aliases) {
+      const other = store.byName(wid, al);
+      if (other && other.id !== a.id) return toast(`“${al}” already leads to ${other.title}`);
+    }
     const fields = {};
     for (const [k, v] of readFields()) fields[k] = v;
     const seen = new Set();
@@ -421,7 +440,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const s = readDate('start');
     const en = s ? readDate('end') : null;
     Object.assign(a, {
-      title, type: f.type.value, parentId: f.parentId.value || null,
+      title, aliases, type: f.type.value, parentId: f.parentId.value || null,
       summary: f.summary.value, body: f.body.value, gmNotes: f.gmNotes.value,
       tags: [...new Set(f.tags.value.split(',').map((t) => t.trim().replace(/^#/, '')).filter(Boolean))],
       fields, relations,
@@ -482,6 +501,23 @@ function scriptCommand(ta, name) {
   ta.value = v.slice(0, s) + insert + v.slice(e);
   ta.focus();
   ta.setSelectionRange(cs, ce);
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function calloutCommand(ta, type) {
+  const { selectionStart: s, selectionEnd: e, value: v } = ta;
+  const start = v.lastIndexOf('\n', s - 1) + 1;
+  const endNl = v.indexOf('\n', Math.max(e - 1, s));
+  const end = endNl < 0 ? v.length : endNl;
+  const lines = e > s ? v.slice(start, end).split('\n') : ['Write here.'];
+  const before = start && v[start - 2] !== '\n' ? '\n' : '';
+  const block = `${before}> [!${type}]\n${lines.map((l) => '> ' + l).join('\n')}`;
+  const from = e > s ? start : s, to = e > s ? end : s;
+  const pre = e > s || !v.slice(0, s).trim() || v[s - 1] === '\n' ? '' : '\n\n';
+  ta.value = v.slice(0, from) + pre + block + (v.slice(to).startsWith('\n') || !v.slice(to) ? '' : '\n') + v.slice(to);
+  const at = from + pre.length + before.length + `> [!${type}]\n> `.length;
+  ta.focus();
+  ta.setSelectionRange(at, e > s ? at : at + 'Write here.'.length);
   ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
@@ -548,7 +584,7 @@ function attachAutocomplete(ta, wid) {
     if (!m) return close();
     startPos = ta.selectionStart - m[1].length;
     const q = m[1].toLowerCase();
-    const titles = store.articlesOf(wid).map((x) => x.title);
+    const titles = store.articlesOf(wid).flatMap((x) => store.namesOf(x));
     items = titles.filter((t) => t.toLowerCase().includes(q))
       .sort((x, y) => (y.toLowerCase().startsWith(q) - x.toLowerCase().startsWith(q)) || x.localeCompare(y)).slice(0, 8);
     if (m[1].trim() && !titles.some((t) => t.toLowerCase() === q.trim())) items.push(m[1].trim());
@@ -559,8 +595,9 @@ function attachAutocomplete(ta, wid) {
   const draw = () => {
     pop.hidden = false;
     pop.innerHTML = items.map((t, i) => {
-      const exists = store.byTitle(wid, t);
-      return `<li class="${i === idx ? 'on' : ''}" data-i="${i}">${exists ? `${typeIcon(exists.type)} ${esc(t)}` : `${icon('plus')} New article: ${esc(t)}`}</li>`;
+      const exists = store.byName(wid, t);
+      const alias = exists && exists.title.toLowerCase() !== t.toLowerCase();
+      return `<li class="${i === idx ? 'on' : ''}" data-i="${i}">${exists ? `${typeIcon(exists.type)} ${esc(t)}${alias ? ` <small class="muted">→ ${esc(exists.title)}</small>` : ''}` : `${icon('plus')} New article: ${esc(t)}`}</li>`;
     }).join('');
   };
   ta.addEventListener('input', update);

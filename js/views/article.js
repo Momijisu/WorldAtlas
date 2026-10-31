@@ -46,6 +46,7 @@ export function viewArticle(wid, id, { section } = {}) {
       <div>
         <div class="eyebrow"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` ${sep} <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')}</div>
         <h1>${esc(a.title)}</h1>
+        ${a.aliases?.length ? `<div class="aka">Also known as ${a.aliases.map((x) => `<b>${esc(x)}</b>`).join(', ')}</div>` : ''}
       </div>
       <div class="actions">
         <button class="btn quiet" id="addChild" title="Create an article nested under this one">${icon('plus')} Sub-article</button>

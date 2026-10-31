@@ -76,6 +76,7 @@ function diffSnapshots(wid, prev, cur) {
   scalar('Part of', titleOf(p.parentId), titleOf(cur.parentId));
   scalar('Date', prev ? articleDateText(cal, p) : '', articleDateText(cal, cur));
   scalar('Summary', p.summary, cur.summary);
+  scalar('Also known as', (p.aliases || []).join(', '), (cur.aliases || []).join(', '));
   scalar('Tags', (p.tags || []).join(', '), (cur.tags || []).join(', '));
   if ((p.banner || null) !== (cur.banner || null)) out.push(`<div class="diff-field"><div class="field-label">Header image</div><div class="muted small">${cur.banner ? 'Header image changed' : 'Header image removed'}</div></div>`);
   if ((p.image || null) !== (cur.image || null)) out.push(`<div class="diff-field"><div class="field-label">Image</div><div class="muted small">${cur.image ? 'Image changed' : 'Image removed'}</div></div>`);

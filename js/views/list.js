@@ -57,7 +57,7 @@ export function viewList(wid, { type, tag }) {
   // template, or (on mixed lists) via the template picker. An article with that
   // title elsewhere is linked instead.
   const createRow = (title) => {
-    const existing = store.byTitle(wid, title);
+    const existing = store.byName(wid, title);
     if (existing) {
       return list.includes(existing) ? '' : `<div class="create-row">${icon('arrow-right')} <a href="#/w/${wid}/a/${existing.id}">“${esc(existing.title)}”</a> already exists as a ${esc(TYPES[existing.type].label.toLowerCase())}.</div>`;
     }
@@ -105,7 +105,7 @@ export function viewSearch(wid, q) {
   const scored = [];
   for (const a of store.articlesOf(wid)) {
     const title = a.title.toLowerCase();
-    const text = (store.articleText(a) + ' ' + (a.tags || []).join(' ')).toLowerCase();
+    const text = (store.articleText(a) + ' ' + (a.tags || []).join(' ') + ' ' + (a.aliases || []).join(' ')).toLowerCase();
     if (!terms.length || !terms.every((t) => title.includes(t) || text.includes(t))) continue;
     scored.push([a, terms.reduce((s, t) => s + (title.includes(t) ? 10 : 0) + (title.startsWith(t) ? 5 : 0), 0)]);
   }
@@ -115,7 +115,7 @@ export function viewSearch(wid, q) {
     <form class="toolbar" id="sf"><input type="search" name="q" value="${esc(q)}" placeholder="Search titles, text, fields and tags…"><button class="btn">${icon('magnifying-glass')} Search</button></form>
     <p class="eyebrow">${q ? `${scored.length} result${scored.length === 1 ? '' : 's'}` : ''}</p>
     ${articleRows(scored.map((s) => s[0]), wid)}
-    ${q && !store.byTitle(wid, q) ? `<p style="margin-top:1.4rem"><a class="btn" href="#/w/${wid}/new/article?title=${encodeURIComponent(q)}" data-create="${esc(q)}">${icon('plus')} Create “${esc(q)}”</a></p>` : ''}
+    ${q && !store.byName(wid, q) ? `<p style="margin-top:1.4rem"><a class="btn" href="#/w/${wid}/new/article?title=${encodeURIComponent(q)}" data-create="${esc(q)}">${icon('plus')} Create “${esc(q)}”</a></p>` : ''}
   </section>`;
   $('#sf').onsubmit = (e) => { e.preventDefault(); location.hash = `#/w/${wid}/search?q=${encodeURIComponent(e.target.q.value.trim())}`; };
   hydrateImages();
