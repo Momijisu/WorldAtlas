@@ -1,7 +1,8 @@
 // A fake OneDrive (Microsoft Graph) for the sync tests: the app-folder
 // endpoints WorldAtlas uses, with eTags (If-Match / If-None-Match), folder
 // listing, move/rename, delete, sign-in tokens, and an optional throttle that
-// answers 429 with Retry-After. Real OneDrive refuses folder creation by POST
+// answers 429 with Retry-After, and injectable faults (any status, on any
+// request, downloads included). Real OneDrive refuses folder creation by POST
 // to the app root, so this does too.
 module.exports = function fakeDrive() {
   const files = new Map(); let n = 0; const log = []; const extraFolders = new Set(); const throttle = { left: 0, after: 1 };
@@ -12,8 +13,15 @@ module.exports = function fakeDrive() {
     if (folderExists(p)) return { id: 'f:' + p, name: p.split('/').pop(), folder: {} }; return null; };
   const move = (from, to) => { for (const k of [...files.keys()]) if (k === from || k.startsWith(from + '/')) { files.set(to + k.slice(from.length), files.get(k)); files.delete(k); }
     for (const f of [...extraFolders]) if (f === from || f.startsWith(from + '/')) { extraFolders.delete(f); extraFolders.add(to + f.slice(from.length)); } };
+  // Injected faults: { match: RegExp on "METHOD url", status, times, after? }.
+  const faults = [];
   async function graph(route) {
     const req = route.request(); const u = new URL(req.url()); const m = req.method();
+    const fault = faults.find((f) => f.times > 0 && f.match.test(`${m} ${decodeURIComponent(req.url())}`));
+    if (fault) {
+      fault.times--; log.push(`fault ${fault.status} ${m} ${decodeURIComponent(u.pathname).slice(0, 60)}`);
+      return route.fulfill({ status: fault.status, headers: { ...cors, ...(fault.after ? { 'Retry-After': String(fault.after), 'access-control-expose-headers': 'Retry-After' } : {}) }, json: { error: { message: 'injected ' + fault.status } } });
+    }
     if (u.hostname === 'login.microsoftonline.com') return route.fulfill({ headers: cors, json: { access_token: 'AT', refresh_token: 'RT2', expires_in: 3600 } });
     if (u.hostname === 'dl.example') { const f = files.get(decodeURIComponent(u.pathname.slice(1))); return f ? route.fulfill({ body: f.body, headers: cors }) : route.fulfill({ status: 404, headers: cors }); }
     const path = decodeURIComponent(u.pathname);
@@ -42,5 +50,5 @@ module.exports = function fakeDrive() {
     for (const [k, f] of files) if (/^Worlds\/[^/]+\/world\.json$/.test(k)) { const j = JSON.parse(f.body.toString()); for (const s of Object.keys(out)) out[s].push(...(j[s] || [])); }
     return out; };
   const history = () => [...files].filter(([k]) => /^Worlds\/[^/]+\/history\.json$/.test(k)).flatMap(([, f]) => JSON.parse(f.body.toString()).history || []);
-  return { files, log, graph, all, history, throttle, bump: () => ++n };
+  return { files, log, graph, all, history, throttle, faults, bump: () => ++n };
 };

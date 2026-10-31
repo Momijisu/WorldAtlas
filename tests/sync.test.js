@@ -91,7 +91,36 @@ run('sync: OneDrive lifecycle', async ({ browser, errors }) => {
   const cls = await L.$eval('#syncBtn', (e) => e.className);
   check('long throttle pauses quietly (no error state)', !/error/.test(cls), cls);
 
-  // 8. A sync with nothing changed is cheap.
+  // 8. Downloads follow the same rules: a throttled or failing download is retried.
+  // (L is now paused by the long throttle, as it should be; a new device N joins.)
+  drive.throttle.left = 0;
+  drive.faults.push({ match: /^GET https:\/\/dl\.example\/Worlds\/Aerthal Reborn\/world\.json/, status: 429, after: 1, times: 1 }, { match: /^GET https:\/\/dl\.example\/Worlds\/Aerthal Reborn\/world\.json/, status: 503, after: 1, times: 1 });
+  log.length = 0;
+  const N = await device();
+  await sync(N);
+  const nBody = await N.evaluate(async () => [...(await import('./js/store.js')).data.articles.values()].find((a) => a.title === 'River Ost')?.body);
+  check('a throttled download is waited out', log.filter((x) => x.startsWith('fault')).length === 2 && nBody === 'AFTER A SHORT THROTTLE', nBody);
+  drive.faults.push({ match: /^GET .*approot:\/deleted\.json$/, status: 502, times: 1 });
+  log.length = 0;
+  await sync(M);
+  check('a passing server error is retried', log.some((x) => x.startsWith('fault 502')) && !/error/.test(await M.$eval('#syncBtn', (e) => e.className)));
+
+  // 9. One world that keeps failing doesn't stop the others (worlds sync in the
+  // order they were made, so the stuck one is the first).
+  const third = await M.evaluate(async () => { const s = await import('./js/store.js'); const w = { id: crypto.randomUUID(), name: 'Third World' }; await s.save('worlds', w); return w.id; });
+  await sync(M);
+  drive.faults.push({ match: /^PUT .*Worlds\/Aerthal Reborn\/world\.json/, status: 500, times: 99 });
+  await editBody(M, 'Lantern Guild', 'STUCK FOR NOW');
+  await M.evaluate(async (wid) => { const s = await import('./js/store.js'); await s.save('worlds', { ...s.world(wid), description: 'uploaded despite the stuck world' }); }, third);
+  await sync(M);
+  const thirdRemote = () => JSON.parse(files.get('Worlds/Third World/world.json').body.toString()).worlds[0].description;
+  check('other worlds still sync when one fails', thirdRemote() === 'uploaded despite the stuck world', thirdRemote());
+  check('the failure is still reported', /error/.test(await M.$eval('#syncBtn', (e) => e.className)));
+  drive.faults.length = 0;
+  await sync(M);
+  check('once it clears, the stuck world uploads', remoteBody('Aerthal Reborn', 'Lantern Guild') === 'STUCK FOR NOW' && !/error/.test(await M.$eval('#syncBtn', (e) => e.className)));
+
+  // 10. A sync with nothing changed is cheap.
   log.length = 0;
   await M.evaluate(async () => (await import('./js/sync.js')).sync());
   check('a quiet sync makes few requests', log.length <= 6, log);

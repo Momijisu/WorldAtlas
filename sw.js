@@ -1,7 +1,10 @@
-// Offline support: the app shell is pre-cached, then served stale-while-revalidate
-// so the app opens instantly (even offline) and picks up new versions on the next launch.
-// The cache is named after the app version in js/version.js; bump that on release,
-// and keep SHELL in step when files are added or removed.
+// Offline support: each version's files are cached together when it installs and
+// served from that cache, so the app opens instantly (even offline) and never mixes
+// files from two versions. A new version arrives as a new service worker: it
+// downloads all of SHELL into its own cache (all or nothing), then takes over and
+// the page reloads (js/app.js). The cache is named after the app version in
+// js/version.js; bump that on release, and keep SHELL in step when files are
+// added or removed.
 importScripts('js/version.js');
 const CACHE = 'worldatlas-' + self.WA_VERSION;
 const SHELL = [
@@ -50,11 +53,10 @@ self.addEventListener('fetch', (e) => {
   const key = req.mode === 'navigate' ? './' : req;
   e.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(key, { ignoreSearch: req.mode === 'navigate' });
-    const network = fetch(req.url, { cache: 'no-cache' }).then((res) => {
-      if (res.ok && res.type === 'basic') cache.put(key, res.clone());
-      return res;
-    }).catch(() => cached);
-    if (cached) { e.waitUntil(network); return cached; }
-    return network;
+    if (cached) return cached;
+    // Not part of the shell (or not cached yet): fetch it, and keep a copy for offline use.
+    const res = await fetch(req);
+    if (res.ok && res.type === 'basic') cache.put(key, res.clone());
+    return res;
   }));
 });

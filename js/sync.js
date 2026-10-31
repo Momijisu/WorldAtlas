@@ -59,10 +59,21 @@ async function run() {
     const spec = deletedSpec();
     await withRetries('deleted.json', () => syncFile(spec, dirty && store.hasUnsynced(spec.scope)));
     const folders = await listWorldFolders();
-    for (const wid of await worldsToSync(folders)) await syncWorld(wid, folders, dirty && store.hasUnsynced(isWorldRec(wid)));
-    await store.saveMeta({ syncedRev: rev });
+    // A problem with one world (or its pictures) doesn't stop the others; it's
+    // reported once the rest are done. Throttling and sign-in stop everything.
+    let failed = null;
+    const each = async (fn) => {
+      try { return await fn(); } catch (e) {
+        if (e instanceof auth.Throttled || e instanceof auth.ReauthRequired || !navigator.onLine) throw e;
+        failed ||= e;
+        return false;
+      }
+    };
+    for (const wid of await worldsToSync(folders)) await each(() => syncWorld(wid, folders, dirty && store.hasUnsynced(isWorldRec(wid))));
+    if (!failed) await store.saveMeta({ syncedRev: rev });
     let complete = true;
-    for (const wid of liveWorlds()) complete = (await syncImages(wid)) && complete;
+    for (const wid of liveWorlds()) complete = (await each(() => syncImages(wid))) && complete;
+    if (failed) throw failed;
     await removeDeletedFolders(folders);
     // The old layout is retired only once every world folder holds its pictures.
     if (legacy && complete) await retireLegacy();
@@ -84,6 +95,10 @@ async function run() {
     else setStatus('error', e.message || String(e));
   }
 }
+
+// A file's contents, from the download link OneDrive gives with its details
+// (same retry rules as other OneDrive requests).
+const download = (item) => auth.patient(() => fetch(item['@microsoft.graph.downloadUrl']));
 
 async function check(res, what) {
   if (res.ok) return res;
@@ -235,7 +250,7 @@ async function readJSON(path) {
   const res = await auth.graph(pathURL(path));
   if (res.status === 404) return null;
   const item = await (await check(res, 'Reading OneDrive')).json();
-  return (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + path)).json();
+  return (await check(await download(item), 'Downloading ' + path)).json();
 }
 
 // Sync one file. Returns false on an eTag race (merge again), else 'changed'
@@ -250,7 +265,7 @@ async function syncFile(spec, dirty) {
     const item = await (await check(metaRes, 'Reading OneDrive')).json();
     remoteETag = item.eTag;
     if (remoteETag !== eTags[spec.key]) {
-      const content = await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading ' + spec.path);
+      const content = await check(await download(item), 'Downloading ' + spec.path);
       localAhead = await spec.merge(await content.json());
       changed = true;
     } else {
@@ -293,7 +308,7 @@ async function syncImages(wid) {
     if (metaRes.status === 404 && legacyImages) metaRes = await auth.graph(pathURL(`images/${id}`));
     if (metaRes.status === 404) { complete = false; missingUntil.set(id, Date.now() + 30 * 60e3); continue; } // not uploaded yet by the other device
     const item = await (await check(metaRes, 'Reading image')).json();
-    const blob = await (await check(await fetch(item['@microsoft.graph.downloadUrl']), 'Downloading image')).blob();
+    const blob = await (await check(await download(item), 'Downloading image')).blob();
     // Found in the old images/ folder: not yet in the world's folder.
     const inFolder = !item.parentReference?.path || item.parentReference.path.includes('/Worlds/');
     await store.putImage({ id, blob, type: item.file?.mimeType || blob.type, uploaded: true, world: inFolder ? wid : null });

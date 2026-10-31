@@ -167,19 +167,35 @@ export class Throttled extends Error {
   constructor(seconds) { super('OneDrive is busy. Syncing again shortly.'); this.seconds = seconds; }
 }
 
-// fetch() against Microsoft Graph with the bearer token, retrying once on 401.
-// When OneDrive throttles (429/503), waits as long as it asks (Retry-After)
-// if that's short, up to twice; otherwise throws Throttled.
-export async function graph(path, opts = {}) {
-  const url = path.startsWith('http') ? path : 'https://graph.microsoft.com/v1.0' + path;
-  const go = async (force) => fetch(url, { ...opts, headers: { ...opts.headers, Authorization: 'Bearer ' + (await accessToken(force)) } });
-  for (let attempt = 0; ; attempt++) {
-    let res = await go(false);
-    if (res.status === 401) res = await go(true);
-    if (res.status === 401) throw new ReauthRequired('Your Microsoft sign-in has expired. Reconnect to keep syncing.');
+// Run a request with OneDrive's retry rules. Throttling (429/503): wait as long
+// as it asks (Retry-After) if that's short, up to twice; otherwise throw
+// Throttled. A passing server error (500/502/504) or a dropped connection:
+// try once more after a moment.
+export async function patient(request) {
+  for (let attempt = 0, blips = 0; ; attempt++) {
+    let res;
+    try { res = await request(); } catch (e) {
+      if (e instanceof ReauthRequired || blips++ || !navigator.onLine) throw e;
+      await new Promise((r) => setTimeout(r, 2000));
+      continue;
+    }
+    if ([500, 502, 504].includes(res.status) && !blips++) { await new Promise((r) => setTimeout(r, 2000)); continue; }
     if (res.status !== 429 && res.status !== 503) return res;
     const wait = Math.max(1, +res.headers.get('Retry-After') || 10);
     if (attempt >= 2 || wait > 20) throw new Throttled(wait);
     await new Promise((r) => setTimeout(r, wait * 1000));
   }
+}
+
+// fetch() against Microsoft Graph with the bearer token, retrying once on 401,
+// with OneDrive's retry rules (patient).
+export function graph(path, opts = {}) {
+  const url = path.startsWith('http') ? path : 'https://graph.microsoft.com/v1.0' + path;
+  const go = async (force) => fetch(url, { ...opts, headers: { ...opts.headers, Authorization: 'Bearer ' + (await accessToken(force)) } });
+  return patient(async () => {
+    let res = await go(false);
+    if (res.status === 401) res = await go(true);
+    if (res.status === 401) throw new ReauthRequired('Your Microsoft sign-in has expired. Reconnect to keep syncing.');
+    return res;
+  });
 }
