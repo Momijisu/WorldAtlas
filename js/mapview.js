@@ -97,9 +97,11 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onBackgrou
       for (const step of [0, 0.6, 1.2, 1.8, 2.4]) {
         for (const [dx, dy] of step ? [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]] : [[0, 0]]) {
           const cx = bx + dx * step * lh * (dx && !dy ? 2.2 : 1), cy = by + dy * step * lh;
-          if (step && !inside([cx / k, cy / kh], l.points)) continue;
+          // A moved name must stay wholly inside its region (its centre and the corners of its text).
+          if (step && ![[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]].every(([ex, ey]) => inside([(cx + ex * lw / 2) / k, (cy + ey * lh / 2) / kh], l.points))) continue;
           const o = overlap(cx, cy, lw, lh);
-          if (!best || o < best.o) best = { o, cx, cy };
+          if (!best) best = { o, cx, cy, home: o };
+          else if (o < best.o && o < best.home * 0.5) best = { o, cx, cy, home: best.home }; // only move for a clear gain
           if (!o) break;
         }
         if (best && !best.o) break;
