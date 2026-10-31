@@ -199,11 +199,12 @@
 }
 .org-chart li::before { right: 50%; }
 .org-chart li::after { left: 50%; border-left: 1.5px solid var(--org-line); }
-.org-chart li:first-child::before, .org-chart li:last-child::after { border-top: 0; }
+/* the ends of the bus: the first child's line comes from ::after, the last child's from ::before (with its curved corner) */
+.org-chart li:first-child::before, .org-chart li:last-child::after { border: 0; }
 .org-chart li:last-child::before { border-right: 1.5px solid var(--org-line); border-radius: 0 6px 0 0; }
 .org-chart li:first-child::after { border-radius: 6px 0 0 0; }
 .org-chart li:only-child::before { display: none; }
-.org-chart li:only-child::after { border-radius: 0; border-top: 0; }
+.org-chart li:only-child::after { border: 0; border-left: 1.5px solid var(--org-line); border-radius: 0; }
 .org-chart ul.org-root > li::before, .org-chart ul.org-root > li::after { display: none; }
 /* the line down from a parent to its children's bus */
 .org-chart ul ul::before { content: ""; position: absolute; top: 0; left: 50%; height: 26px; border-left: 1.5px solid var(--org-line); }
