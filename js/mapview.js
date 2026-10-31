@@ -44,7 +44,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
     stage.style.setProperty('--inv', 1 / s);
     // Pins and labels keep their size on screen, so what overlaps changes with zoom.
-    if (Math.abs(s / placedAt - 1) > 0.04) { clearTimeout(placeTimer); placeTimer = setTimeout(placeLabels, 90); }
+    if (Math.abs(s / placedAt - 1) > 0.04) { clearTimeout(placeTimer); placeTimer = setTimeout(() => { placeLabels(); fitMids(); }, 90); }
   };
   const fit = () => {
     const r = container.getBoundingClientRect();
@@ -153,10 +153,13 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       }
     }
     if (draft?.length) {
-      const pl = document.createElementNS(SVG, draft.length > 2 ? 'polygon' : 'polyline');
-      pl.setAttribute('points', draft.map(([px, py]) => `${px * w},${py * h}`).join(' '));
-      pl.setAttribute('class', 'region-draft');
-      svg.appendChild(pl);
+      // A dark line under the dashed one, so the outline reads on any map (crisp at any zoom, unlike a filter).
+      for (const cls of ['region-draft-under', 'region-draft']) {
+        const pl = document.createElementNS(SVG, draft.length > 2 ? 'polygon' : 'polyline');
+        pl.setAttribute('points', draft.map(([px, py]) => `${px * w},${py * h}`).join(' '));
+        pl.setAttribute('class', cls);
+        svg.appendChild(pl);
+      }
     }
     // pins + draft vertices
     pinLayer.innerHTML = '';
@@ -177,15 +180,6 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       el.addEventListener('click', (e) => { if (e.detail || isDrawing?.()) return; e.stopPropagation(); onPinClick?.(p, el); });
       pinLayer.appendChild(el);
     }
-    (draft || []).forEach(([px, py], i) => {
-      const d = document.createElement('span');
-      d.className = 'draft-dot';
-      d.dataset.vertex = i;
-      d.title = 'Drag to move; double-click or right-click to remove';
-      d.style.left = px * 100 + '%';
-      d.style.top = py * 100 + '%';
-      pinLayer.appendChild(d);
-    });
     // Once the outline is closed, a handle mid-way along each edge: drag it to add a point there.
     if (draft?.length > 2) draft.forEach(([px, py], i) => {
       const [qx, qy] = draft[(i + 1) % draft.length];
@@ -197,7 +191,27 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       d.style.top = ((py + qy) / 2) * 100 + '%';
       pinLayer.appendChild(d);
     });
+    (draft || []).forEach(([px, py], i) => {
+      const d = document.createElement('span');
+      d.className = 'draft-dot';
+      d.dataset.vertex = i;
+      d.title = 'Drag to move; double-click or right-click to remove';
+      d.style.left = px * 100 + '%';
+      d.style.top = py * 100 + '%';
+      pinLayer.appendChild(d);
+    });
     placeLabels();
+    fitMids();
+  }
+
+  // An edge's handle only shows when the edge is long enough on screen to hold it
+  // clear of the points at its ends; points are drawn above handles either way.
+  function fitMids() {
+    if (!draft || draft.length < 3) return;
+    pinLayer.querySelectorAll('.draft-mid').forEach((d) => {
+      const i = +d.dataset.mid, [px, py] = draft[i], [qx, qy] = draft[(i + 1) % draft.length];
+      d.hidden = Math.hypot((qx - px) * w * s, (qy - py) * h * s) < 34;
+    });
   }
 
   img.onload = () => {

@@ -43,26 +43,27 @@
 .map-regions { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .map-labels, .map-pins { position: absolute; inset: 0; pointer-events: none; }
 
-/* regions */
+/* regions (the map zooms with a CSS transform, which non-scaling-stroke ignores,
+   so line widths are divided by the zoom via --inv to stay the same on screen) */
 .region {
   fill: color-mix(in srgb, var(--rc) 24%, transparent);
-  stroke: var(--rc); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round;
+  stroke: var(--rc); stroke-width: calc(1.6px * var(--inv, 1)); stroke-linejoin: round;
   pointer-events: visiblePainted; cursor: pointer; transition: fill .15s;
 }
 .region:hover { fill: color-mix(in srgb, var(--rc) 38%, transparent); }
 /* Outline: the map shows through. Transparent ('hidden'): only the name
    shows; the area is outlined while hovered, and faintly while editing. */
-.region-outline { fill: transparent; stroke-width: 2.2; }
+.region-outline { fill: transparent; stroke-width: calc(2.2px * var(--inv, 1)); }
 .region-outline:hover { fill: color-mix(in srgb, var(--rc) 16%, transparent); }
 .region-hidden { fill: transparent; stroke: transparent; }
-.region-hidden:hover { fill: color-mix(in srgb, var(--rc) 16%, transparent); stroke: var(--rc); stroke-dasharray: 6 4; }
+.region-hidden:hover { fill: color-mix(in srgb, var(--rc) 16%, transparent); stroke: var(--rc); stroke-dasharray: calc(6px * var(--inv, 1)) calc(4px * var(--inv, 1)); }
 .map-box.editing .region-hidden { stroke: color-mix(in srgb, var(--rc) 60%, transparent); }
-.map-box.editing .region { stroke-dasharray: 5 3; }
+.map-box.editing .region { stroke-dasharray: calc(5px * var(--inv, 1)) calc(3px * var(--inv, 1)); }
 .region-draft {
   fill: color-mix(in srgb, #f0c878 22%, transparent);
-  stroke: #f0c878; stroke-width: 2.5; stroke-dasharray: 7 4; vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, .9));  /* reads on pale and busy maps alike */
+  stroke: #f0c878; stroke-width: calc(2.5px * var(--inv, 1)); stroke-dasharray: calc(7px * var(--inv, 1)) calc(4px * var(--inv, 1));
 }
+.region-draft-under { fill: none; stroke: rgba(0, 0, 0, .75); stroke-width: calc(4.5px * var(--inv, 1)); pointer-events: none; }
 .region-label {
   position: absolute; transform: translate(-50%, -50%) scale(var(--inv, 1));
   font: 600 italic 17px/1.1 var(--display); letter-spacing: .04em; white-space: nowrap;
@@ -280,8 +281,8 @@
   font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; text-align: left;
 }
 .group-link:hover, .group-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
-.region.lit { fill: color-mix(in srgb, var(--rc) 45%, transparent); stroke-width: 3; }
-.region-hidden.lit { stroke: var(--rc); stroke-dasharray: 6 4; }
+.region.lit { fill: color-mix(in srgb, var(--rc) 45%, transparent); stroke-width: calc(3px * var(--inv, 1)); }
+.region-hidden.lit { stroke: var(--rc); stroke-dasharray: calc(6px * var(--inv, 1)) calc(4px * var(--inv, 1)); }
 
 /* ---- Marker shapes and finishes (set on the map box: data-shape, data-finish) */
 .mk-fill { display: none; }
@@ -369,7 +370,8 @@
   transform: scale(var(--inv, 1)) rotate(45deg); background: rgba(255, 255, 255, .85); border: 1.5px solid var(--brass);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .45); cursor: copy; touch-action: none; pointer-events: auto; opacity: .8;
 }
-.draft-mid::after { content: ""; position: absolute; inset: -6px; }
+.draft-mid::after { content: ""; position: absolute; inset: -3px; }
+.draft-mid[hidden] { display: none; }
 .draft-mid:hover { opacity: 1; background: var(--brass); }
 
 /* Right-click menu on a region */
