@@ -94,3 +94,35 @@ export const hasFamily = (a) => {
   const f = family(a);
   return f.parents.length + f.children.length + f.spouses.length + f.siblings.length > 0;
 };
+
+// ---- editing a relationship from either side (used by the organisation chart)
+
+// Where "a <type> b" is stored: on a as { type, target: b }, or on b as the
+// inverse. Returns { owner, rel } or null.
+export function findRelation(a, type, b) {
+  const inv = REL_TYPES[type]?.inverse;
+  const onA = (a.relations || []).find((r) => r.type === type && r.target === b.id);
+  if (onA) return { owner: a, rel: onA };
+  const onB = (b.relations || []).find((r) => r.type === inv && r.target === a.id);
+  return onB ? { owner: b, rel: onB } : null;
+}
+
+// Add "a <type> b" with a note, or update the note where it's already stored.
+export async function setRelation(a, type, b, note = '') {
+  const found = findRelation(a, type, b);
+  if (found) {
+    const owner = store.article(found.owner.id);
+    await store.save('articles', { ...owner, relations: owner.relations.map((r) => (r.id === found.rel.id ? { ...r, note } : r)) });
+    return;
+  }
+  const fresh = store.article(a.id);
+  await store.save('articles', { ...fresh, relations: [...(fresh.relations || []), { id: crypto.randomUUID(), type, target: b.id, note }] });
+}
+
+// Remove "a <type> b" from whichever article stores it.
+export async function removeRelation(a, type, b) {
+  const found = findRelation(a, type, b);
+  if (!found) return;
+  const owner = store.article(found.owner.id);
+  await store.save('articles', { ...owner, relations: owner.relations.filter((r) => r.id !== found.rel.id) });
+}

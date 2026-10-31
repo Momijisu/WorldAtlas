@@ -6,11 +6,11 @@
 // the article page.
 import * as store from '../store.js';
 import { posCSS } from '../focus.js';
-import { family, relationsOf } from '../relations.js';
+import { family, relationsOf, setRelation, removeRelation } from '../relations.js';
 import { parentOf } from '../templates.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, hydrateImages, worldCrumb, sep } from '../ui.js';
-import { esc, $ } from '../util.js';
+import { esc, $, $$, modal, toast, confirmDialog } from '../util.js';
 
 const W = 176, H = 66, GAP = 28, COUPLE_GAP = 22, ROW = 124, DEPTH = 3;
 
@@ -53,16 +53,45 @@ export function drawTree(wrap, wid, focus, { embedded = false } = {}) {
       <button type="button" class="icon-btn" data-z="out" aria-label="Zoom out">${icon('minus')}</button>
       <button type="button" class="icon-btn" data-z="fit" aria-label="Fit">${icon('corners-out')}</button>
     </div>
-    ${org ? '' : '<div class="viz-legend tree-legend"><span><i class="lg-couple"></i>Spouse / partner</span><span><i class="lg-descent"></i>Parent → child</span></div>'}`;
+    ${org ? `<button type="button" class="btn small chart-edit" aria-pressed="false">${icon('pencil-simple')} Edit</button>` : '<div class="viz-legend tree-legend"><span><i class="lg-couple"></i>Spouse / partner</span><span><i class="lg-descent"></i>Parent → child</span></div>'}`;
   const box = wrap.querySelector('.viz-box'), stage = wrap.querySelector('.viz-stage');
+  let editing = false;
   const size = org ? drawOrg(stage, wid, focus) : drawFamily(stage, wid, focus);
   hydrateImages(stage);
   const pz = panZoom(box, stage, { ...size, embedded });
   pz.fit();
+  // Redraw the chart in place (after an edit), keeping the view where it is.
+  const redraw = () => {
+    const sz = drawOrg(stage, wid, store.article(focus.id), { editing });
+    hydrateImages(stage);
+    pz.setSize(sz.width, sz.height);
+    const { s, tx, ty } = pz.get();
+    stage.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  };
+  const editBtn = wrap.querySelector('.chart-edit');
+  if (editBtn) editBtn.onclick = () => {
+    editing = !editing;
+    editBtn.setAttribute('aria-pressed', String(editing));
+    editBtn.innerHTML = editing ? `${icon('check')} Done` : `${icon('pencil-simple')} Edit`;
+    wrap.classList.toggle('chart-editing', editing);
+    redraw();
+  };
+  // Editing: the cards' buttons add, change and remove people and groups.
+  stage.addEventListener('click', (e) => {
+    if (!editing || pz.dragged()) return;
+    const t = e.target.closest('[data-add], [data-person], [data-group]');
+    if (!t) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (t.dataset.add) addDialog(wid, store.article(t.dataset.org), t.dataset.add, redraw);
+    else if (t.dataset.person) personDialog(wid, t.dataset, stage, redraw);
+    else groupDialog(t.dataset, redraw);
+  }, true);
 
   // Full page: a person re-centres the tree on them. Embedded: open the article.
   stage.addEventListener('click', (e) => {
     if (pz.dragged()) { e.preventDefault(); e.stopPropagation(); return; }
+    if (editing) { e.preventDefault(); return; }
     if (e.target.closest('.tn-open, .org-more a')) return;
     const node = e.target.closest('[data-id]');
     if (!node) return;
@@ -90,9 +119,9 @@ export function drawTree(wrap, wid, focus, { embedded = false } = {}) {
 }
 
 // A person (or anything) as a card. `label` is a small line above the name.
-function card(wid, a, { label = '', focus = false, cal, style = '', cls = 'tree-node' } = {}) {
+function card(wid, a, { label = '', focus = false, cal, style = '', cls = 'tree-node', attrs = '' } = {}) {
   const dates = cal ? articleDateText(cal, a) : '';
-  return `<div class="${cls}${focus ? ' focus' : ''}" style="${style}" data-id="${a.id}" tabindex="0" role="button" aria-label="${esc(a.title)}">
+  return `<div class="${cls}${focus ? ' focus' : ''}" style="${style}" data-id="${a.id}"${attrs} tabindex="0" role="button" aria-label="${esc(a.title)}">
       ${a.image ? `<img class="tn-img" data-img="${a.image}" style="object-position:${posCSS(a.imagePos)}" alt="">` : `<span class="tn-img icon">${typeIcon(a.type)}</span>`}
       <span class="tn-text">${label ? `<span class="tn-rel">${esc(label)}</span>` : ''}<span class="tn-title">${esc(a.title)}</span>${dates ? `<span class="tn-dates">${esc(dates)}</span>` : ''}</span>
       <a class="tn-open" href="#/w/${wid}/a/${a.id}" title="Open article" aria-label="Open ${esc(a.title)}">${icon('arrow-square-out')}</a>
@@ -131,13 +160,13 @@ const MEMBERS_SHOWN = 8;
 // People come with the relationship's note, shown as their role ("Dean").
 function structureOf(org) {
   const rels = relationsOf(org);
-  const pick = (types) => rels.filter((r) => types.includes(r.type)).map((r) => ({ a: r.other, note: (r.note || '').trim() }));
+  const pick = (types) => rels.filter((r) => types.includes(r.type)).map((r) => ({ a: r.other, note: (r.note || '').trim(), type: r.type }));
   const uniq = (list) => [...new Map(list.filter((x) => x.a).map((x) => [x.a.id, x])).values()];
   const leaders = uniq(pick(['ledBy', 'ruledBy']));
   const below = uniq([
-    ...store.articlesOf(org.worldId).filter((c) => c.parentId === org.id && isOrg(c)).map((a) => ({ a, note: '' })),
+    ...store.articlesOf(org.worldId).filter((c) => c.parentId === org.id && isOrg(c)).map((a) => ({ a, note: '', type: 'parent' })),
     ...pick(['hasMember', 'servedBy']).filter((x) => isOrg(x.a)),
-  ]).map((x) => x.a);
+  ]);
   const members = uniq(pick(['hasMember', 'servedBy']).filter((x) => !isOrg(x.a) && !leaders.some((l) => l.a.id === x.a.id)));
   const parentArt = org.parentId && store.article(org.parentId);
   const above = uniq([...(isOrg(parentArt) ? [{ a: parentArt }] : []), ...pick(['member', 'serves']).filter((x) => isOrg(x.a))]).map((x) => x.a);
@@ -147,28 +176,35 @@ const hasStructure = (org) => { const s = structureOf(org); return !!(s.leaders.
 
 // The chart is nested lists laid out by CSS (lines drawn with borders), so it
 // grows to fit names; the stage takes its measured size.
-function drawOrg(stage, wid, focus) {
+function drawOrg(stage, wid, focus, { editing = false } = {}) {
   const seen = new Set();
   const placed = new Set(); // people already shown lower down, under a sub-organisation
-  const node = (org, depth) => {
+  // In edit mode, each organisation gets buttons to add people and groups.
+  const adders = (org) => (editing ? `<div class="org-add">
+      <button type="button" data-add="leader" data-org="${org.id}">${icon('plus')} Leader</button>
+      <button type="button" data-add="member" data-org="${org.id}">${icon('plus')} Member</button>
+      <button type="button" data-add="group" data-org="${org.id}">${icon('plus')} Group</button></div>` : '');
+  const personAttrs = (org, x) => (editing ? ` data-person="${x.a.id}" data-org="${org.id}" data-rel="${x.type}" data-note="${esc(x.note)}"` : '');
+  const node = (org, depth, via) => {
     seen.add(org.id);
     const s = structureOf(org);
-    const below = depth < 2 ? s.below.filter((b) => !seen.has(b.id)) : [];
-    below.forEach((b) => seen.add(b.id));
-    const belowHTML = below.map((b) => `<li>${node(b, depth + 1)}</li>`);
+    const below = depth < 2 ? s.below.filter((b) => !seen.has(b.a.id)) : [];
+    below.forEach((b) => seen.add(b.a.id));
+    const belowHTML = below.map((b) => `<li>${node(b.a, depth + 1, { parent: org, type: b.type })}</li>`);
     // Someone who appears under one of its parts isn't listed again here.
     const members = s.members.filter((m) => !placed.has(m.a.id));
     for (const p of [...s.leaders, ...members]) placed.add(p.a.id);
     const rest = [
       ...belowHTML,
-      ...(members.length ? [`<li>${membersCard(wid, members)}</li>`] : []),
+      ...(members.length ? [`<li>${membersCard(wid, members, editing ? org : null)}</li>`] : []),
     ];
     const restHTML = rest.length ? `<ul>${rest.join('')}</ul>` : '';
     // Leaders sit between the organisation and everything under it.
     const lead = s.leaders.length
-      ? `<ul><li><div class="org-leaders">${s.leaders.map((l) => card(wid, l.a, { label: l.note || 'Leader', cls: 'tree-node org-node' })).join('')}</div>${restHTML}</li></ul>`
+      ? `<ul><li><div class="org-leaders">${s.leaders.map((l) => card(wid, l.a, { label: l.note || 'Leader', cls: 'tree-node org-node', attrs: personAttrs(org, l) })).join('')}</div>${restHTML}</li></ul>`
       : restHTML;
-    return `${card(wid, org, { focus: org.id === focus.id, cls: 'tree-node org-node' })}${lead}`;
+    const groupAttrs = editing && via ? ` data-group="${org.id}" data-parent="${via.parent.id}" data-via="${via.type}"` : '';
+    return `<div class="org-unit">${card(wid, org, { focus: org.id === focus.id, cls: 'tree-node org-node', attrs: groupAttrs })}${adders(org)}</div>${lead}`;
   };
   // Any organisation it belongs to sits above it (just that line, not their other parts).
   const { above } = structureOf(focus);
@@ -177,18 +213,18 @@ function drawOrg(stage, wid, focus) {
   const html = above.length
     ? `<ul class="org-root"><li><div class="org-leaders">${above.map((a) => card(wid, a, { label: 'Part of', cls: 'tree-node org-node' })).join('')}</div><ul><li>${inner}</li></ul></li></ul>`
     : `<ul class="org-root"><li>${inner}</li></ul>`;
-  stage.innerHTML = `<div class="org-chart">${html}</div>`;
+  stage.innerHTML = `<div class="org-chart${editing ? ' editing' : ''}">${html}</div>`;
   const chart = stage.firstElementChild;
   return { width: chart.offsetWidth, height: chart.offsetHeight };
 }
 
-function membersCard(wid, members) {
+function membersCard(wid, members, editOrg = null) {
   // Members with a role (a note on the relationship) first.
   members = [...members].sort((x, y) => (!x.note - !y.note) || x.a.title.localeCompare(y.a.title));
   const shown = members.slice(0, MEMBERS_SHOWN);
   return `<div class="tree-node org-node org-members">
       <span class="tn-text"><span class="tn-rel">${members.length} member${members.length === 1 ? '' : 's'}</span>
-      <span class="org-more">${shown.map(({ a: m, note }) => `<a href="#/w/${wid}/a/${m.id}" data-id="${m.id}">${typeIcon(m.type)}<span>${esc(m.title)}${note ? ` <small>${esc(note)}</small>` : ''}</span></a>`).join('')}${members.length > shown.length ? `<span class="muted">and ${members.length - shown.length} more</span>` : ''}</span></span>
+      <span class="org-more">${(editOrg ? members : shown).map(({ a: m, note, type }) => `<a href="#/w/${wid}/a/${m.id}" data-id="${m.id}"${editOrg ? ` data-person="${m.id}" data-org="${editOrg.id}" data-rel="${type}" data-note="${esc(note)}"` : ''}>${typeIcon(m.type)}<span>${esc(m.title)}${note ? ` <small>${esc(note)}</small>` : ''}</span></a>`).join('')}${!editOrg && members.length > shown.length ? `<span class="muted">and ${members.length - shown.length} more</span>` : ''}</span></span>
     </div>`;
 }
 
@@ -465,4 +501,105 @@ export function panZoom(box, stage, { width, height, onTransform, maxScale = 3, 
     setSize: (nw, nh) => { w = nw; h = nh; },
     destroy: () => { ro.disconnect(); },
   };
+}
+
+// ---------------------------------------------------------------- editing the chart
+
+const ROLE_HINT = { leader: 'e.g. Dean, Guildmaster', member: 'e.g. Head Librarian, Master' };
+
+// Find an article (people for leaders and members, organisations for groups),
+// or type a new name to create one.
+function addDialog(wid, org, kind, done) {
+  const wantOrg = kind === 'group';
+  const label = { leader: 'Add a leader', member: 'Add a member', group: 'Add a group' }[kind];
+  const pool = () => store.articlesOf(wid).filter((x) => x.id !== org.id && (wantOrg ? isOrg(x) : !isOrg(x)));
+  const rank = (x) => (wantOrg || parentOf(x.type) === 'character' ? 0 : 1); // people first
+  modal(`${label} to ${org.title}`, `<form class="form" id="chartAdd">
+      <label>${wantOrg ? 'Organisation' : 'Person'}<input name="q" autocomplete="off" placeholder="Find an article, or type a new name"></label>
+      <ul class="pick-list" id="pickList"></ul>
+      ${wantOrg ? '' : `<label>Role <small>optional, shown on the chart</small><input name="note" placeholder="${ROLE_HINT[kind]}"></label>`}
+      <div class="actions"><button class="btn primary" disabled>Add</button></div></form>`, {
+    onMount: (el, close) => {
+      const f = $('#chartAdd', el);
+      let chosen = null;
+      const draw = () => {
+        const q = f.q.value.trim().toLowerCase();
+        const hits = pool().filter((x) => !q || x.title.toLowerCase().includes(q))
+          .sort((x, y) => (rank(x) - rank(y)) || (!x.title.toLowerCase().startsWith(q) - !y.title.toLowerCase().startsWith(q)) || x.title.localeCompare(y.title)).slice(0, 8);
+        const exact = hits.find((x) => x.title.toLowerCase() === q);
+        $('#pickList', el).innerHTML = (q && !exact ? `<li><button type="button" data-new>${icon('plus')} Create “${esc(f.q.value.trim())}” as ${wantOrg ? 'an organisation' : 'a character'}</button></li>` : '')
+          + hits.map((x) => `<li><button type="button" data-pick="${x.id}" class="${chosen?.id === x.id ? 'on' : ''}">${typeIcon(x.type)} ${esc(x.title)}</button></li>`).join('');
+        f.querySelector('.btn.primary').disabled = !chosen && !q;
+      };
+      f.q.addEventListener('input', () => { chosen = null; draw(); });
+      $('#pickList', el).addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        if (b.dataset.pick) { chosen = store.article(b.dataset.pick); f.q.value = chosen.title; }
+        else chosen = null;
+        draw();
+        if (b.dataset.new !== undefined) f.requestSubmit();
+      });
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = f.q.value.trim();
+        let who = chosen || store.byTitle(wid, name);
+        if (who && (wantOrg ? !isOrg(who) : isOrg(who))) who = null;
+        if (!who) {
+          if (!name) return;
+          who = store.newArticle(wid, wantOrg ? 'organization' : 'character', { title: name });
+          await store.save('articles', who);
+        }
+        if (kind === 'group') await store.save('articles', { ...store.article(who.id), parentId: org.id });
+        else await setRelation(store.article(org.id), kind === 'leader' ? 'ledBy' : 'hasMember', who, f.note.value.trim());
+        close();
+        toast(`${who.title} added to ${org.title}`);
+        done();
+      };
+      draw();
+      f.q.focus();
+    },
+  });
+}
+
+// A leader or member: their role, which group they're in, or remove them.
+function personDialog(wid, d, stage, done) {
+  const person = store.article(d.person), org = store.article(d.org);
+  const groups = [...new Set($$('[data-add="member"]', stage).map((b) => b.dataset.org))].map((id) => store.article(id)).filter(Boolean);
+  const leaderRel = d.rel === 'ledBy' || d.rel === 'ruledBy';
+  modal(person.title, `<form class="form" id="chartPerson">
+      <p class="muted small" style="margin-top:0">${leaderRel ? 'Leads' : 'Member of'} <b>${esc(org.title)}</b></p>
+      <label>Role <small>shown on the chart</small><input name="note" value="${esc(d.note || '')}" placeholder="${ROLE_HINT[leaderRel ? 'leader' : 'member']}"></label>
+      <div class="row">
+        <label>In<select name="org">${groups.map((g) => `<option value="${g.id}" ${g.id === org.id ? 'selected' : ''}>${esc(g.title)}</option>`).join('')}</select></label>
+        <label>As<select name="as"><option value="lead" ${leaderRel ? 'selected' : ''}>Leader</option><option value="member" ${leaderRel ? '' : 'selected'}>Member</option></select></label>
+      </div>
+      <div class="actions"><button type="button" class="btn danger" data-remove>${icon('trash')} Remove from ${esc(org.title)}</button><span class="spacer"></span>
+        <a class="btn" href="#/w/${wid}/a/${person.id}">Open article</a><button class="btn primary">Save</button></div></form>`, {
+    onMount: (el, close) => {
+      const f = $('#chartPerson', el);
+      $('[data-remove]', el).onclick = async () => {
+        await removeRelation(org, d.rel, person);
+        close(); done();
+      };
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const to = store.article(f.org.value);
+        const type = f.as.value === 'lead' ? (d.rel === 'ruledBy' ? 'ruledBy' : 'ledBy') : (d.rel === 'servedBy' ? 'servedBy' : 'hasMember');
+        if (to.id !== org.id || type !== d.rel) await removeRelation(store.article(org.id), d.rel, store.article(person.id));
+        await setRelation(store.article(to.id), type, store.article(person.id), f.note.value.trim());
+        close(); done();
+      };
+      f.note.focus();
+    },
+  });
+}
+
+// A sub-group: detach it from the organisation above it.
+async function groupDialog(d, done) {
+  const group = store.article(d.group), parent = store.article(d.parent);
+  if (!(await confirmDialog(`Take ${group.title} out of ${parent.title}? Its own article and people stay as they are.`, 'Take it out'))) return;
+  if (d.via === 'parent') await store.save('articles', { ...store.article(group.id), parentId: null });
+  else await removeRelation(parent, d.via, group);
+  done();
 }

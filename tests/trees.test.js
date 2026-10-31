@@ -49,4 +49,37 @@ run('trees: family and organisation', async ({ newPage }) => {
   await p.click('#articleTree [data-id] >> text=Prince Corin');
   await p.waitForTimeout(500);
   check('clicking a person in an embedded tree opens their article', (await p.textContent('h1')) === 'Prince Corin');
+
+  // Editing the chart (on the guild): roles, adding (new or existing), moving, removing, groups.
+  await go(p, `#/w/${wid}/tree/${ids.guild}`, 900);
+  const tapName = (name, attr) => p.evaluate(([n, a]) => { const el = [...document.querySelectorAll(`[data-${a}]`)].find((x) => ((x.querySelector('.tn-title') || x.querySelector('span'))?.firstChild?.textContent || '').trim() === n); if (!el) throw new Error('no ' + n); el.click(); }, [name, attr]).then(() => p.waitForTimeout(150));
+  const adder = (org, kind) => p.evaluate(([o, k]) => [...document.querySelectorAll(`[data-add="${k}"]`)].find((b) => b.closest('.org-unit').querySelector('.tn-title').textContent === o).click(), [org, kind]).then(() => p.waitForTimeout(150));
+  const art = (t) => store(p, (s, a) => s.byTitle(a.w, a.t), { w: wid, t });
+  const roleOf = (n) => p.evaluate((x) => [...document.querySelectorAll('.org-node')].find((c) => c.querySelector('.tn-title')?.textContent === x)?.querySelector('.tn-rel')?.textContent, n);
+  await p.click('.chart-edit'); await p.waitForTimeout(250);
+  check('Edit adds buttons to each group', (await p.$$('[data-add="leader"]')).length === 3);
+  await tapName('Mother Wick', 'person');
+  await p.fill('#chartPerson input[name=note]', 'Elder'); await p.click('#chartPerson .btn.primary'); await p.waitForTimeout(300);
+  check('a role set on the chart shows', (await roleOf('Mother Wick')) === 'Elder');
+  await adder('Drowns Watch', 'member');
+  await p.fill('#chartAdd input[name=q]', 'New Recruit'); await p.fill('#chartAdd input[name=note]', 'Watchman');
+  await p.click('#chartAdd .btn.primary'); await p.waitForTimeout(300);
+  check('adding a new person creates their article', (await art('New Recruit'))?.type === 'character');
+  await tapName('Anwen Brask', 'person');
+  await p.selectOption('#chartPerson select[name=org]', { label: 'Drowns Watch' });
+  await p.click('#chartPerson .btn.primary'); await p.waitForTimeout(300);
+  const anwen = (await art('Anwen Brask')).id;
+  const holds = (t) => art(t).then((x) => (x.relations || []).some((r) => r.type === 'hasMember' && r.target === anwen));
+  check('moving a member re-files them in the other group', (await holds('Drowns Watch')) && !(await holds('Lantern Guild')));
+  await tapName('Corin Mire', 'person');
+  await p.click('#chartPerson [data-remove]'); await p.waitForTimeout(300);
+  check('removing someone takes them off the chart but keeps the article', !(await p.$('[data-person] >> text=Corin Mire')) && !!(await art('Corin Mire')));
+  await adder('Lantern Guild', 'group');
+  await p.fill('#chartAdd input[name=q]', 'Wick Street Lamplighters'); await p.click('#chartAdd .btn.primary'); await p.waitForTimeout(300);
+  check('a new group is filed under the organisation', (await art('Wick Street Lamplighters')).parentId === ids.guild);
+  await tapName('Drowns Watch', 'group');
+  await p.click('#modal-root .modal .btn.primary, #modal-root .modal .btn.danger'); await p.waitForTimeout(300);
+  check('a group can be taken out', !(await art('Drowns Watch')).parentId);
+  await p.click('.chart-edit'); await p.waitForTimeout(250);
+  check('Done ends editing', !(await p.$('[data-add]')));
 });

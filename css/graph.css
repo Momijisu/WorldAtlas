@@ -222,3 +222,23 @@
 .org-more a:hover { color: var(--brass); background: var(--ink-4); }
 .org-more .i { width: .85rem; height: .85rem; color: var(--brass); flex-shrink: 0; }
 .org-more a small { color: var(--muted); font-size: .78em; margin-left: .2rem; }
+
+/* ---- Editing an organisation chart */
+.chart-edit { position: absolute; left: .6rem; top: .6rem; z-index: 3; background: var(--ink-2); }
+.chart-edit[aria-pressed="true"] { border-color: var(--brass); color: var(--brass); }
+.org-unit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.org-add { display: flex; gap: 4px; }
+.org-add button {
+  display: inline-flex; align-items: center; gap: .2rem; padding: .15rem .45rem; border: 1px dashed var(--rule-strong); border-radius: 2px;
+  background: var(--ink-1); color: var(--muted); font: 500 .72rem/1.2 var(--sans); cursor: pointer;
+}
+.org-add button .i { width: .75rem; height: .75rem; }
+.org-add button:hover, .org-add button:focus-visible { border-color: var(--brass); color: var(--brass); }
+.org-chart.editing [data-person], .org-chart.editing [data-group] { cursor: pointer; }
+.org-chart.editing .org-node[data-person]:hover, .org-chart.editing .org-node[data-group]:hover { border-style: dashed; border-color: var(--brass); }
+.org-chart.editing .org-more a[data-person]:hover { outline: 1px dashed var(--brass); }
+.org-chart.editing .tn-open { display: none; }
+.pick-list { list-style: none; margin: -.4rem 0 .2rem; padding: 0; display: grid; gap: 2px; max-height: 15rem; overflow: auto; }
+.pick-list button { display: flex; align-items: center; gap: .45rem; width: 100%; padding: .35rem .5rem; border: 0; border-radius: 2px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.pick-list button:hover, .pick-list button.on { background: var(--ink-4); }
+.pick-list button .i { color: var(--brass); width: 1rem; height: 1rem; }
