@@ -765,3 +765,11 @@ details.callout:not([open]) { padding-bottom: .7rem; }
 .apick-list li.on, .apick-list li:hover { background: var(--ink-4); }
 .apick-list li.sel > span { color: var(--brass); }
 .apick-list li.apick-new { color: var(--brass); border-top: 1px solid var(--rule); margin-top: 2px; }
+/* a relationship to a name with no article yet */
+.rel-card.missing { border-style: dashed; }
+.rel-card.missing .rel-name { color: var(--rubric); }
+.rel-card.missing > .i { color: var(--rubric); }
+.apick-note { display: block; margin-top: .2rem; font-size: .8rem; color: var(--rubric); }
+.apick-note:empty { display: none; }
+.apick-list li.apick-keep { border-top: 1px solid var(--rule); margin-top: 2px; }
+.apick-list li.apick-keep + li.apick-new { border-top: 0; margin-top: 0; }

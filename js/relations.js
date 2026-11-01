@@ -38,9 +38,16 @@ export const REL_GROUPS = {
   family: 'Family', bond: 'Bonds', conflict: 'Conflict', affiliation: 'Affiliation', other: 'Other',
 };
 
+// A relationship points at an article (target), or just names one that may
+// not be written yet (name): it links up once an article has that title or
+// alias, like a [[link]] to a page that doesn't exist yet.
+export const relTarget = (wid, r) => store.article(r.target) || (r.name ? store.byName(wid, r.name) : null);
+
 // All relationships touching article `a`, from both directions, deduplicated.
 // Each item: { type, other, note, source } where type is from a's perspective.
-export function relationsOf(a) {
+// named: also list a's relationships to names with no article yet, as
+// { type, other: null, name, note }.
+export function relationsOf(a, { named = false } = {}) {
   const out = [];
   const seen = new Set();
   const add = (type, other, note, source) => {
@@ -50,11 +57,18 @@ export function relationsOf(a) {
     seen.add(key);
     out.push({ type, other, note, source });
   };
-  for (const r of a.relations || []) add(r.type, store.article(r.target), r.note, a.id);
+  for (const r of a.relations || []) {
+    const other = relTarget(a.worldId, r);
+    if (other) add(r.type, other, r.note, a.id);
+    else if (named && r.name && REL_TYPES[r.type] && !seen.has(r.type + ':' + r.name.toLowerCase())) {
+      seen.add(r.type + ':' + r.name.toLowerCase());
+      out.push({ type: r.type, other: null, name: r.name, note: r.note, source: a.id });
+    }
+  }
   for (const o of store.articlesOf(a.worldId)) {
     if (o.id === a.id) continue;
     for (const r of o.relations || []) {
-      if (r.target === a.id) add(REL_TYPES[r.type]?.inverse, o, r.note, o.id);
+      if (relTarget(a.worldId, r)?.id === a.id) add(REL_TYPES[r.type]?.inverse, o, r.note, o.id);
     }
   }
   return out;
@@ -66,13 +80,14 @@ export function worldEdges(wid) {
   const seen = new Set();
   for (const a of store.articlesOf(wid)) {
     for (const r of a.relations || []) {
-      if (!store.article(r.target) || !REL_TYPES[r.type]) continue;
+      const to = relTarget(wid, r)?.id;
+      if (!to || to === a.id || !REL_TYPES[r.type]) continue;
       const inv = REL_TYPES[r.type].inverse;
-      const key = [a.id, r.type, r.target].join('|');
-      const invKey = [r.target, inv, a.id].join('|');
+      const key = [a.id, r.type, to].join('|');
+      const invKey = [to, inv, a.id].join('|');
       if (seen.has(key) || seen.has(invKey)) continue;
       seen.add(key);
-      edges.push({ from: a.id, to: r.target, type: r.type, note: r.note || '' });
+      edges.push({ from: a.id, to, type: r.type, note: r.note || '' });
     }
   }
   return edges;
@@ -101,9 +116,9 @@ export const hasFamily = (a) => {
 // inverse. Returns { owner, rel } or null.
 export function findRelation(a, type, b) {
   const inv = REL_TYPES[type]?.inverse;
-  const onA = (a.relations || []).find((r) => r.type === type && r.target === b.id);
+  const onA = (a.relations || []).find((r) => r.type === type && relTarget(a.worldId, r)?.id === b.id);
   if (onA) return { owner: a, rel: onA };
-  const onB = (b.relations || []).find((r) => r.type === inv && r.target === a.id);
+  const onB = (b.relations || []).find((r) => r.type === inv && relTarget(b.worldId, r)?.id === a.id);
   return onB ? { owner: b, rel: onB } : null;
 }
 

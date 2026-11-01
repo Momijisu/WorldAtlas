@@ -236,11 +236,15 @@ export function planImport(json, targetWid = null) {
         const type = resolveRel(typeTxt);
         const target = idForTitle(rel?.target ?? rel?.to ?? rel?.with ?? '');
         if (!type) { warn(`${label}: unknown relationship “${typeTxt}”.`); continue; }
-        if (!target) { warn(`${label}: relationship target “${rel?.target ?? rel?.to ?? rel?.with}” wasn’t found.`); continue; }
-        if (target === rec.id || seen.has(type + target)) continue;
-        seen.add(type + target);
-        const old = (e.prior?.relations || []).find((x) => x.type === type && x.target === target);
-        out.push({ id: old?.id || uid(), type, target, note: String(rel.note || '') });
+        const named = String(rel?.target ?? rel?.to ?? rel?.with ?? '').trim();
+        if (!target && !named) continue;
+        if (target === rec.id) continue;
+        // No article by that name: keep the name; it links up once one is written.
+        const key = type + (target || 'name:' + named.toLowerCase());
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const old = (e.prior?.relations || []).find((x) => x.type === type && (target ? x.target === target : (x.name || '').toLowerCase() === named.toLowerCase()));
+        out.push(target ? { id: old?.id || uid(), type, target, note: String(rel.note || '') } : { id: old?.id || uid(), type, target: '', name: named, note: String(rel.note || '') });
       }
       rec.relations = out;
     }
@@ -310,7 +314,7 @@ export function exportSimple(wid) {
         tags: a.tags?.length ? a.tags : undefined,
         date: dateOut(articleStart(a)), endDate: dateOut(articleEnd(a)), dateText: a.dateLabel || undefined,
         fields: Object.keys(fields).length ? fields : undefined,
-        relationships: (a.relations || []).filter((r) => title(r.target)).map((r) => ({ type: r.type, target: title(r.target), ...(r.note ? { note: r.note } : {}) })),
+        relationships: (a.relations || []).filter((r) => title(r.target) || r.name).map((r) => ({ type: r.type, target: title(r.target) || r.name, ...(r.note ? { note: r.note } : {}) })),
         body: a.body || undefined,
         secrets: a.gmNotes || undefined,
       };

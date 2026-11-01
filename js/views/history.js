@@ -82,7 +82,7 @@ function diffSnapshots(wid, prev, cur) {
   if ((p.image || null) !== (cur.image || null)) out.push(`<div class="diff-field"><div class="field-label">Image</div><div class="muted small">${cur.image ? 'Image changed' : 'Image removed'}</div></div>`);
   const keys = new Set([...Object.keys(p.fields || {}), ...Object.keys(cur.fields || {})]);
   for (const k of keys) scalar('Infobox · ' + esc(k), p.fields?.[k], cur.fields?.[k]);
-  const relStr = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target) || '(deleted)'}${r.note ? ` (${r.note})` : ''}`;
+  const relStr = (r) => `${REL_TYPES[r.type]?.label || r.type} ${r.target ? titleOf(r.target) || '(deleted)' : `${r.name} (no article yet)`}${r.note ? ` (${r.note})` : ''}`;
   const pr = new Set((p.relations || []).map(relStr)), cr = new Set((cur.relations || []).map(relStr));
   const relLines = [...[...pr].filter((x) => !cr.has(x)).map((x) => `<div class="diff-old">${esc(x)}</div>`),
     ...[...cr].filter((x) => !pr.has(x)).map((x) => `<div class="diff-new">${esc(x)}</div>`)];

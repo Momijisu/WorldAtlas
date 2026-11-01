@@ -26,7 +26,7 @@ export function viewArticle(wid, id, { section } = {}) {
   const sections = sectionsOf(a.type, a.fields || {});
   const fieldCount = sections.reduce((n, sec) => n + sec.entries.length, 0);
   const date = articleDateText(cal, a);
-  const rels = relationsOf(a);
+  const rels = relationsOf(a, { named: true });
   const versions = store.historyOf(a.id).length;
   const map = a.mapId && store.map(a.mapId)?.worldId === wid ? store.map(a.mapId) : null;
   const treeKind = articleTreeKind(a); // a family tree for people, a chart for organisations
@@ -36,8 +36,9 @@ export function viewArticle(wid, id, { section } = {}) {
   const relHTML = Object.keys(REL_GROUPS).filter((g) => relGroups[g]).map((g) => `
     <div class="field-label" style="margin-top:1rem">${REL_GROUPS[g]}</div>
     <div class="rel-list">${relGroups[g].map((r) => `
-      <a class="rel-card" href="#/w/${wid}/a/${r.other.id}">${typeIcon(r.other.type)}
-        <span><span class="rel-kind">${REL_TYPES[r.type].label}</span><br><span class="rel-name">${esc(r.other.title)}</span>
+      ${r.other ? `<a class="rel-card" href="#/w/${wid}/a/${r.other.id}">${typeIcon(r.other.type)}`
+        : `<a class="rel-card missing" href="#/w/${wid}/new/article?title=${encodeURIComponent(r.name)}" data-create="${esc(r.name)}" title="No article yet: write it">${icon('plus')}`}
+        <span><span class="rel-kind">${REL_TYPES[r.type].label}</span><br><span class="rel-name">${esc(r.other ? r.other.title : r.name)}</span>
         ${r.note ? `<br><span class="rel-note">${esc(r.note)}</span>` : ''}</span></a>`).join('')}</div>`).join('');
 
   view.innerHTML = `<article class="page article">

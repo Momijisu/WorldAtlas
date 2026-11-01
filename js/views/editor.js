@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import { TYPES, GROUPS } from '../store.js';
 import { render, headingsOf, CALLOUTS } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
-import { REL_TYPES, REL_GROUPS } from '../relations.js';
+import { REL_TYPES, REL_GROUPS, relTarget } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
@@ -183,7 +183,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     if (from) row.dataset.from = from;
     row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
-      ${pickerHTML({ cls: 'rtarget', value: r.target || '', placeholder: 'Type to find an article', label: 'Related article' })}
+      ${pickerHTML({ cls: 'rtarget', value: relTarget(wid, r)?.id || r.target || '', nameCls: 'rname', named: r.name || '', placeholder: 'Type a name or find an article', label: 'Related article' })}
       <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">
       ${from ? `<small class="muted rel-from">Added on ${esc(store.article(from)?.title || 'another article')}</small>` : ''}`;
     row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
@@ -195,9 +195,9 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   a.relations.forEach((r) => addRel(r));
   // Relationships added on other articles that point here, shown from this
   // side. Changing or removing one here updates the article it's stored on.
-  const own = new Set(a.relations.map((r) => r.type + r.target));
+  const own = new Set(a.relations.map((r) => r.type + (relTarget(wid, r)?.id || r.target)));
   const incoming = isNew ? [] : store.articlesOf(wid).filter((o) => o.id !== a.id)
-    .flatMap((o) => (o.relations || []).filter((r) => r.target === a.id && REL_TYPES[r.type]).map((rel) => ({ from: o.id, rel })))
+    .flatMap((o) => (o.relations || []).filter((r) => REL_TYPES[r.type] && relTarget(wid, r)?.id === a.id).map((rel) => ({ from: o.id, rel })))
     .filter(({ from, rel }) => !own.has(REL_TYPES[rel.type].inverse + from));
   incoming.forEach(({ from, rel }) => addRel({ id: rel.id, type: REL_TYPES[rel.type].inverse, target: from, note: rel.note }, from));
   $('#addRel').onclick = () => addRel().querySelector('.apick-q').focus();
@@ -436,8 +436,12 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const onSource = new Map(); // incoming relationship id → note, for those left where they are
     for (const row of $$('.rel-row', relsEl)) {
       const r = { id: row.dataset.id, type: row.querySelector('.rt').value, target: row.querySelector('.rtarget').value, note: row.querySelector('.rnote').value.trim() };
-      if (!r.target || seen.has(r.type + r.target)) continue;
-      seen.add(r.type + r.target);
+      // A name with no article: kept as a name, and linked once an article has it.
+      const name = row.querySelector('.rname')?.value.trim();
+      if (!r.target && name) { const found = store.byName(wid, name); if (found && found.id !== a.id) r.target = found.id; else r.name = name; }
+      const key = r.type + (r.target || 'name:' + (r.name || '').toLowerCase());
+      if ((!r.target && !r.name) || seen.has(key)) continue;
+      seen.add(key);
       const inc = row.dataset.from && incoming.find((i) => i.rel.id === r.id && i.from === row.dataset.from);
       // Unchanged apart from its note: it stays on the other article.
       if (inc && r.target === inc.from && r.type === REL_TYPES[inc.rel.type].inverse) { onSource.set(r.id, r.note); continue; }

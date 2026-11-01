@@ -10,14 +10,18 @@ import { icon, typeIcon } from './ui.js';
 const MAX = 8;
 
 // value: the selected article id (or ''). name/cls: put on the hidden input.
-export function pickerHTML({ name = '', cls = '', value = '', placeholder = 'Type to find an article', label = '' } = {}) {
+// nameCls: allow a name with no article yet (kept in a hidden input with this
+// class; `named` is its current value), for things you'll write up later.
+export function pickerHTML({ name = '', cls = '', value = '', placeholder = 'Type to find an article', label = '', nameCls = '', named = '' } = {}) {
   const a = value && store.article(value);
-  const shown = a ? a.title : value ? '(deleted article)' : '';
-  return `<span class="apick">
+  const shown = a ? a.title : named || (value ? '(deleted article)' : '');
+  return `<span class="apick"${nameCls ? ' data-names' : ''}>
     <input type="hidden"${name ? ` name="${name}"` : ''}${cls ? ` class="${cls}"` : ''} value="${esc(value || '')}">
+    ${nameCls ? `<input type="hidden" class="${nameCls}" value="${esc(a ? '' : named)}">` : ''}
     <input class="apick-q" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}" value="${esc(shown)}"${label ? ` aria-label="${esc(label)}"` : ''}
       role="combobox" aria-autocomplete="list" aria-expanded="false">
     <ul class="apick-list" role="listbox" hidden></ul>
+    ${nameCls ? '<small class="apick-note"></small>' : ''}
   </span>`;
 }
 
@@ -29,16 +33,22 @@ export function wirePickers(root, wid, { exclude = new Set(), createType = 'arti
 
 function wire(el, wid, { exclude, createType }) {
   el.dataset.wired = '1';
-  const hidden = el.querySelector('input[type=hidden]'), q = el.querySelector('.apick-q'), list = el.querySelector('.apick-list');
+  const [hidden, nameIn] = el.querySelectorAll('input[type=hidden]'), q = el.querySelector('.apick-q'), list = el.querySelector('.apick-list');
+  const names = el.hasAttribute('data-names'), note = el.querySelector('.apick-note');
   let items = [], idx = -1;
   const current = () => store.article(hidden.value);
-  const set = (a) => {
-    const before = hidden.value;
+  const showNote = () => { if (note) note.textContent = !hidden.value && nameIn.value ? `No article called “${nameIn.value}” yet. You can write it later.` : ''; };
+  // a: an article; or text: a name with no article (when names are allowed)
+  const set = (a, text = '') => {
+    const before = hidden.value + '|' + (nameIn?.value || '');
     hidden.value = a ? a.id : '';
-    q.value = a ? a.title : '';
+    if (nameIn) nameIn.value = a ? '' : text;
+    q.value = a ? a.title : text;
     close();
-    if (hidden.value !== before) hidden.dispatchEvent(new Event('change', { bubbles: true }));
+    showNote();
+    if (hidden.value + '|' + (nameIn?.value || '') !== before) hidden.dispatchEvent(new Event('change', { bubbles: true }));
   };
+  showNote();
   const close = () => { list.hidden = true; q.setAttribute('aria-expanded', 'false'); idx = -1; };
   const pool = () => store.articlesOf(wid).filter((a) => !exclude.has(a.id));
   const draw = () => {
@@ -48,21 +58,24 @@ function wire(el, wid, { exclude, createType }) {
     const hits = pool().filter((a) => !t || named(a)).sort((x, y) => rank(x) - rank(y) || x.title.localeCompare(y.title)).slice(0, MAX);
     const exact = t && store.byName(wid, text);
     items = hits.map((a) => ({ a, alias: t && !a.title.toLowerCase().includes(t) ? named(a) : '' }));
+    if (text && !exact && names) items.push({ keep: text });
     if (text && !exact) items.push({ create: text });
     if (!items.length) return close();
-    list.innerHTML = items.map((it, i) => (it.create
+    list.innerHTML = items.map((it, i) => (it.keep
+      ? `<li role="option" data-i="${i}" class="apick-keep${i === idx ? ' on' : ''}">${icon('pencil-simple')}<span>Use “${esc(it.keep)}” for now <small>no article yet</small></span></li>`
+      : it.create
       ? `<li role="option" data-i="${i}" class="apick-new${i === idx ? ' on' : ''}">${icon('plus')}<span>Create “${esc(it.create)}”</span></li>`
       : `<li role="option" data-i="${i}" class="${i === idx ? 'on' : ''}${it.a.id === hidden.value ? ' sel' : ''}">${typeIcon(it.a.type)}<span>${esc(it.a.title)}${it.alias ? ` <small>also ${esc(it.alias)}</small>` : ''}</span><small>${esc(TYPES[it.a.type]?.label || '')}</small></li>`)).join('');
     list.hidden = false;
     q.setAttribute('aria-expanded', 'true');
   };
-  const choose = (it) => (it.create ? createDialog(wid, it.create, typeof createType === 'function' ? createType(el) : createType, (a) => { set(a); q.focus(); }) : set(it.a));
+  const choose = (it) => (it.keep ? set(null, it.keep) : it.create ? createDialog(wid, it.create, typeof createType === 'function' ? createType(el) : createType, (a) => { set(a); q.focus(); }) : set(it.a));
 
   q.addEventListener('focus', () => { q.select(); draw(); });
   q.addEventListener('input', (e) => {
     e.stopPropagation(); // typing to search isn't an edit until something is picked
     idx = -1;
-    if (!q.value.trim() && hidden.value) set(null); // cleared: no article
+    if (!q.value.trim() && (hidden.value || nameIn?.value)) set(null); // cleared: nothing
     draw();
   });
   q.addEventListener('keydown', (e) => {
@@ -87,7 +100,8 @@ function wire(el, wid, { exclude, createType }) {
     const text = q.value.trim();
     const match = text && pool().find((a) => store.namesOf(a).some((n) => n.toLowerCase() === text.toLowerCase()));
     if (match) set(match);
-    else { const c = current(); q.value = c ? c.title : hidden.value ? '(deleted article)' : ''; close(); }
+    else if (names && text) set(null, text); // a name to write up later
+    else { const c = current(); q.value = c ? c.title : nameIn?.value || (hidden.value ? '(deleted article)' : ''); close(); }
   }, 150));
   list.addEventListener('mousedown', (e) => {
     const li = e.target.closest('[data-i]');

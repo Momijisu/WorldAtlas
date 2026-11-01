@@ -106,7 +106,7 @@ Only `title` is required.
 | `date` | When it happened or began. Alias: `start`. |
 | `endDate` | When it ended. Alias: `end`. |
 | `dateText` | Optional text shown instead of the date. |
-| `relationships` | `{ "type", "target", "note" }`, see below. |
+| `relationships` | `{ "type", "target", "note" }`, see below. A `target` with no article of that title (or alias) is kept as a name and links up once one is written. |
 | `image`, `headerImage` | Optional `data:` URL or web address. Some sites block downloads; images can be added in the app instead. |
 
 ### Dates

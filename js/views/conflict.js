@@ -11,8 +11,8 @@ import { lineDiff } from './history.js';
 const DATE_KEYS = ['start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel'];
 const titleOf = (id) => (id ? store.data.articles.get(id)?.title || '(deleted article)' : 'None');
 const same = (x, y) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
-const relKey = (r) => r.type + '|' + r.target;
-const relText = (r) => `${REL_TYPES[r.type]?.label || r.type} ${titleOf(r.target)}${r.note ? ` (${r.note})` : ''}`;
+const relKey = (r) => r.type + '|' + (r.target || 'name:' + (r.name || '').toLowerCase());
+const relText = (r) => `${REL_TYPES[r.type]?.label || r.type} ${r.target ? titleOf(r.target) : `${r.name} (no article yet)`}${r.note ? ` (${r.note})` : ''}`;
 
 // The fields that differ between the two versions, as resolver blocks.
 function blocksFor(cur, other, cal) {

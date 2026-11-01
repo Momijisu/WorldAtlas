@@ -60,4 +60,40 @@ run('editor: article pickers', async ({ newPage }) => {
   await p.click('button:has-text("Save")'); await p.waitForTimeout(600);
   const corin = await store(p, (s, i) => s.article(i), ids.corin);
   check('saved: parent and relationships', corin.parentId === ids.guild && corin.relations.some((r) => r.target === ids.ysolde) && corin.relations.some((r) => r.type === 'member' && r.target === made.id), corin.relations);
+
+  // A relationship to someone not written yet: keep the name; it links up once they exist.
+  await go(p, `#/w/${wid}/a/${ids.corin}/edit`, 900);
+  await p.click('#addRel'); await p.selectOption('.rel-row:last-child .rt', 'mentor');
+  await p.keyboard.type('Old Maester Hob', { delay: 15 });
+  const opts = await list(rel);
+  check('an unknown name offers “Use … for now” before “Create”', opts[0].startsWith('Use “Old Maester Hob” for now') && opts[1] === 'Create “Old Maester Hob”', opts);
+  if (SHOTS) { const b = await (await p.$(rel)).boundingBox(); await p.screenshot({ path: `${SHOTS}/name-options.png`, clip: { x: b.x - 15, y: b.y - 50, width: b.width + 30, height: 170 } }); }
+  await p.keyboard.press('Enter');
+  check('Enter keeps the name, with a note', (await p.textContent('.rel-row:last-child .apick-note')).includes('No article called “Old Maester Hob” yet'));
+  await p.click('button:has-text("Save")'); await p.waitForTimeout(600);
+  const hobRel = (await store(p, (s, i) => s.article(i), ids.corin)).relations.find((r) => r.type === 'mentor');
+  check('it saves as a name with no article', hobRel && !hobRel.target && hobRel.name === 'Old Maester Hob', hobRel);
+  check('the article shows it as not written yet', (await p.$eval('.rel-card.missing .rel-name', (x) => x.textContent)) === 'Old Maester Hob');
+  if (SHOTS) { await p.$eval('.rel-card.missing', (x) => x.scrollIntoView({ block: 'center' })); const b = await (await p.$('.rel-card.missing')).boundingBox(); await p.screenshot({ path: `${SHOTS}/name-card.png`, clip: { x: b.x - 360, y: b.y - 120, width: 700, height: 250 } }); }
+  // write him later (with a different title, found by alias): the relationship links up both ways
+  const hob = await store(p, async (s, w) => { const x = { ...s.newArticle(w, 'character'), title: 'Hobart Venn', aliases: ['Old Maester Hob'] }; await s.save('articles', x); return x.id; }, wid);
+  await go(p, `#/w/${wid}`, 300); // (the page is already showing Corin, so go away and back)
+  await go(p, `#/w/${wid}/a/${ids.corin}`, 700);
+  check('once written, the card links to him', !(await p.$('.rel-card.missing')) && (await p.$$eval('.rel-card', (l, h) => l.some((x) => x.getAttribute('href').endsWith(`/a/${h}`)), hob)));
+  await go(p, `#/w/${wid}/a/${hob}`, 700);
+  check('and his page shows the other side', await p.$$eval('.rel-card', (l) => l.some((x) => x.textContent.includes('Student of') && x.textContent.includes('Prince Corin'))));
+  await go(p, `#/w/${wid}/a/${ids.corin}/edit`, 900);
+  check('the editor shows it linked', (await p.$$eval('.rel-row .apick-q', (l) => l.map((x) => x.value))).includes('Hobart Venn'));
+  await p.click('button:has-text("Save")'); await p.waitForTimeout(600);
+  const now = (await store(p, (s, i) => s.article(i), ids.corin)).relations.find((r) => r.type === 'mentor');
+  check('saving again stores the link to the article', now.target === hob && !now.name, now);
+
+  // import keeps unknown targets as names
+  const imp = await p.evaluate(async () => {
+    const im = await import('./js/importer.js'); const s = await import('./js/store.js'); const w = location.hash.split('/')[2];
+    const plan = im.planImport({ format: 'worldatlas-import', version: 1, articles: [{ title: 'Sister Ama', type: 'character', relationships: [{ type: 'member', target: 'The Pale Choir' }] }] }, w);
+    await im.applyImport(plan);
+    return { rel: s.byTitle(w, 'Sister Ama').relations[0], warnings: plan.warnings };
+  });
+  check('imported relationships to unwritten articles keep the name', imp.rel.name === 'The Pale Choir' && !imp.rel.target && !imp.warnings.length, imp);
 });
