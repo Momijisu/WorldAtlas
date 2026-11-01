@@ -2,6 +2,7 @@
 import * as store from '../store.js';
 import { TYPES } from '../store.js';
 import { familyOf, parentOf } from '../templates.js';
+import { findDuplicates } from '../duplicates.js';
 import { $, esc } from '../util.js';
 import { view, setTitle, hydrateImages, articleRows, pageHead, icon, worldCrumb, sep } from '../ui.js';
 
@@ -22,6 +23,7 @@ export function viewList(wid, { type, tag }) {
   else { list = all; title = 'All articles'; }
   setTitle(title);
   const sortKey = localStorage.getItem('wa.sort') || 'title';
+  const dupes = !tag && title === 'All articles' ? findDuplicates(wid).length : 0;
   // Tags used in this list, most used first; the rest behind a button.
   const tagCounts = new Map();
   for (const a of list) for (const t of a.tags || []) tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
@@ -32,6 +34,7 @@ export function viewList(wid, { type, tag }) {
       title: esc(title),
       actions: `<a class="btn primary" id="newOfType" href="#/w/${wid}/new/${newType}">${icon('plus')} New ${TYPES[newType].label.toLowerCase()}</a>`,
     })}
+    ${dupes ? `<a class="dup-banner" href="#/w/${wid}/duplicates">${icon('arrows-merge')} ${dupes} pair${dupes === 1 ? '' : 's'} of articles may be duplicates <b>Review</b></a>` : ''}
     ${family.length > 1 ? `<div class="chips" id="kinds">${[['all', 'All', list.length], ...family.map((k) => [k, TYPES[k].plural, list.filter((a) => a.type === k).length])]
       .filter(([, , n]) => n).map(([k, label, n]) => `<button type="button" class="chip" data-k="${k}">${esc(label)} <small>${n}</small></button>`).join('')}</div>` : ''}
     <div class="toolbar">

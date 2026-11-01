@@ -15,6 +15,7 @@ import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';
 import { viewEditor } from './views/editor.js';
 import { viewHistory, viewTrash } from './views/history.js';
+import { viewDuplicates } from './views/duplicates.js';
 import { viewTimeline } from './views/timeline.js';
 import { viewCalendar, viewCalendarEdit } from './views/calendar.js';
 import { viewMaps, viewMap } from './views/maps.js';
@@ -228,6 +229,7 @@ export function route({ keepScroll = false } = {}) {
     tree: () => (store.article(id)?.worldId === wid ? viewTree(wid, id) : null),
     graph: () => viewGraph(wid, q),
     trash: () => viewTrash(wid),
+    duplicates: () => viewDuplicates(wid),
     prompts: () => viewPrompts(wid),
     new: () => {
       const type = Object.hasOwn(TYPES, id || '') ? id : 'article';

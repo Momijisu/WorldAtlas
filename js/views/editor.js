@@ -11,6 +11,7 @@ import { wireFocus, BANNER_POS } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { pickerHTML, wirePickers } from '../picker.js';
+import { similarTo } from '../duplicates.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
@@ -54,6 +55,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     <div class="editor-grid">
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
+        <p class="similar-note" id="similarNote" hidden></p>
         <label>Also known as <small>comma separated</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
         <div class="row">
           <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
@@ -150,6 +152,14 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   f.addEventListener('input', markDirty);
   f.addEventListener('change', markDirty);
   f.title.addEventListener('input', () => { $('.page-head h1', f).textContent = f.title.value || 'Untitled'; });
+  // A heads-up when the title looks like an article that already exists.
+  const similarNote = () => {
+    const near = similarTo(wid, f.title.value, a.id).filter((x) => x.title.toLowerCase() !== f.title.value.trim().toLowerCase()).slice(0, 3);
+    $('#similarNote').hidden = !near.length;
+    $('#similarNote').innerHTML = near.length ? `${icon('warning')} Similar to ${near.map((x) => `<a href="#/w/${wid}/a/${x.id}" target="_blank">${esc(x.title)}</a> <small>${esc(TYPES[x.type]?.label || '')}</small>`).join(', ')}. Same thing?` : '';
+  };
+  f.title.addEventListener('input', similarNote);
+  if (isNew) similarNote();
 
   // Dates
   const readDate = (p) => {
