@@ -10,7 +10,8 @@ import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js'
 import { wireFocus, BANNER_POS } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { scriptsFor, familyFor, HANDS } from '../scripts.js';
-import { view, state, setTitle, hydrateImages, icon, typeIcon, articleOptions, pageHead, worldCrumb, sep } from '../ui.js';
+import { pickerHTML, wirePickers } from '../picker.js';
+import { view, state, setTitle, hydrateImages, icon, typeIcon, pageHead, worldCrumb, sep } from '../ui.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const prompt = promptKey ? resolvePrompt(wid, promptKey) : null;
@@ -56,7 +57,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         <label>Also known as <small>comma separated</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
         <div class="row">
           <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
-          <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
+          <label>Part of <small>(parent article)</small>${pickerHTML({ name: 'parentId', value: a.parentId || '', placeholder: 'None · type to find one', label: 'Part of' })}</label>
         </div>
         <p class="tpl-hint" id="tplHint"></p>
         <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
@@ -169,6 +170,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
 
   // Relationships
   const relsEl = $('#rels');
+  const REL_NEW_TYPE = { member: 'organization', leader: 'organization', serves: 'organization', rules: 'location', locatedIn: 'location', locationOf: 'building',
+    worships: 'religion', owns: 'item', created: 'item', hasMember: 'character', ledBy: 'character', ruledBy: 'character', servedBy: 'character' };
   const relTypeOptions = (sel) => Object.entries(REL_GROUPS).map(([g, gl]) =>
     `<optgroup label="${gl}">${Object.entries(REL_TYPES).filter(([, t]) => t.group === g)
       .map(([k, t]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('');
@@ -180,11 +183,13 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     if (from) row.dataset.from = from;
     row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
-      <select class="rtarget" aria-label="Related article">${articleOptions(wid, r.target, { exclude: new Set([a.id]), none: 'Choose an article' })}${r.target && !store.article(r.target) ? `<option value="${esc(r.target)}" selected>(deleted article)</option>` : ''}</select>
+      ${pickerHTML({ cls: 'rtarget', value: r.target || '', placeholder: 'Type to find an article', label: 'Related article' })}
       <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">
       ${from ? `<small class="muted rel-from">Added on ${esc(store.article(from)?.title || 'another article')}</small>` : ''}`;
     row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
     relsEl.appendChild(row);
+    // A new article made from here starts as the template the relationship suggests.
+    wirePickers(row, wid, { exclude: new Set([a.id]), createType: () => REL_NEW_TYPE[row.querySelector('.rt').value] || 'character' });
     return row;
   };
   a.relations.forEach((r) => addRel(r));
@@ -195,7 +200,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     .flatMap((o) => (o.relations || []).filter((r) => r.target === a.id && REL_TYPES[r.type]).map((rel) => ({ from: o.id, rel })))
     .filter(({ from, rel }) => !own.has(REL_TYPES[rel.type].inverse + from));
   incoming.forEach(({ from, rel }) => addRel({ id: rel.id, type: REL_TYPES[rel.type].inverse, target: from, note: rel.note }, from));
-  $('#addRel').onclick = () => addRel().querySelector('.rtarget').focus();
+  $('#addRel').onclick = () => addRel().querySelector('.apick-q').focus();
+  wirePickers($('#ed'), wid, { exclude: excluded });
 
   // Infobox fields, grouped by the template's sections; extra fields go under "Other".
   const fieldsEl = $('#fields');
