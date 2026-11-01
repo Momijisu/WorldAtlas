@@ -53,7 +53,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     <div class="editor-grid">
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
-        <label>Also known as <small>other names, comma separated · [[links]] to them come here</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
+        <label>Also known as <small>comma separated</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
         <div class="row">
           <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
           <label>Part of <small>(parent article)</small><select name="parentId">${articleOptions(wid, a.parentId, { exclude: excluded })}</select></label>
@@ -565,6 +565,29 @@ function attachAutocomplete(ta, wid) {
   wrap.appendChild(pop);
   let items = [], idx = 0, startPos = 0;
 
+  // Where the caret is inside the textarea (px from its top-left), measured
+  // with a hidden copy of the text laid out the same way.
+  const caretPos = () => {
+    const cs = getComputedStyle(ta);
+    const m = document.createElement('div');
+    for (const k of ['font', 'letterSpacing', 'wordSpacing', 'lineHeight', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderLeftWidth', 'borderRightWidth', 'boxSizing', 'tabSize', 'textIndent']) m.style[k] = cs[k];
+    Object.assign(m.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', width: ta.clientWidth + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth) + 'px', top: '0', left: '-9999px' });
+    m.textContent = ta.value.slice(0, ta.selectionStart);
+    const mark = document.createElement('span');
+    mark.textContent = '\u200b';
+    m.appendChild(mark);
+    document.body.appendChild(m);
+    const pos = { top: mark.offsetTop - ta.scrollTop, left: mark.offsetLeft, line: parseFloat(cs.lineHeight) || 24 };
+    m.remove();
+    return pos;
+  };
+  // The list opens just below the line being typed on, not below the whole box.
+  const place = () => {
+    const c = caretPos();
+    pop.style.top = Math.min(c.top + c.line + 4, ta.offsetHeight) + 'px';
+    pop.style.left = Math.max(0, Math.min(c.left - 8, ta.clientWidth - 280)) + 'px';
+  };
+
   const close = () => { pop.hidden = true; items = []; };
   const choose = (title) => {
     const caret = ta.selectionStart;
@@ -591,6 +614,7 @@ function attachAutocomplete(ta, wid) {
     if (!items.length) return close();
     idx = 0;
     draw();
+    place();
   };
   const draw = () => {
     pop.hidden = false;
