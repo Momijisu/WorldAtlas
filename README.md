@@ -15,7 +15,7 @@ A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works of
 - A contents box on articles with several headings
 - Typed relationships, a relationship web, and trees on article pages: family trees for people and organisation charts (part of, leaders, sub-organisations, members) for organisations
 - Custom calendars with eras and moons, a calendar view and a timeline
-- Measuring distances on maps: set a map's scale once from two points, then click a route (pins snap) for its length and a travel time
+- Measuring distances on maps: set a map's scale once from two points, then click a route (pins snap, points can be dragged) for its length and a travel time on foot, on horseback or by ship; a scale bar in the corner
 - Maps with pins, regions, layers and nested maps; optionally numbered pins with a key you can arrange into groups, and marker shapes (pin, circle, hexagon, diamond, square) in colour, ivory, parchment or hologram styles
 - Revision history with line diffs, restore, and recovery of deleted articles
 - A writing guide for each template, and 353 writing prompts, some naming your own articles

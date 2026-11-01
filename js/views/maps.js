@@ -86,6 +86,13 @@ function pinNumbers(m) {
 const UNITS = ['miles', 'km', 'leagues', 'hexes', 'days'];
 const UNIT_ONE = { miles: 'mile', km: 'km', leagues: 'league', hexes: 'hex', days: 'day' };
 const DEFAULT_PACE = { miles: 24, km: 38, leagues: 8, days: 1 };
+// A day's travel in miles, and the hours of it: walking and riding stop for the
+// night; a ship sails on (about 3 knots, day and night).
+const TRAVEL = {
+  foot: { name: 'On foot', label: 'on foot', icon: 'person-simple', miles: 24, hours: 8, title: 'Walking: about 24 miles a day (or the map’s own walking pace)' },
+  horse: { name: 'Horseback', label: 'on horseback', icon: 'horseshoe', miles: 40, hours: 8, title: 'Riding: about 40 miles a day' },
+  sail: { name: 'Sailing', label: 'by ship', icon: 'boat', miles: 80, hours: 24, title: 'Sailing: about 80 miles a day, day and night' },
+};
 
 // Marker shape and style, set per map (see the map settings dialog).
 export const MARKER_SHAPES = { pin: 'Pin', circle: 'Circle', hexagon: 'Hexagon', diamond: 'Diamond', square: 'Square' };
@@ -210,6 +217,8 @@ export async function viewMap(wid, mid, q) {
   let shapeUndo = [];       // earlier outlines while reshaping
   let moving = null;        // pin id waiting for its new location
   let hidden = loadHidden(mid);
+  let zoom = 0; // screen pixels per image pixel, for the scale bar
+  let showScale = true; try { showScale = localStorage.getItem('wa.map.scalebar') !== 'off'; } catch { /* storage unavailable */ }
   let folded = new Set(); // layers whose key list is folded away
   try { folded = new Set(JSON.parse(localStorage.getItem('wa.map.folded.' + mid) || '[]')); } catch { /* storage unavailable */ }
   const cur = () => store.map(mid) || m;
@@ -241,6 +250,7 @@ export async function viewMap(wid, mid, q) {
       </div>
       <div class="map-toolbar" id="editBar" hidden></div>
       <div class="map-toolbar measure-bar" id="measureBar" hidden></div>
+      <div class="map-scalebar" id="scaleBar" hidden aria-hidden="true"><span class="sb-line"></span><span class="sb-text"></span></div>
       <div class="map-info" id="mapInfo" hidden></div>
     </div>
   </section>`;
@@ -304,6 +314,8 @@ export async function viewMap(wid, mid, q) {
       draft = points;
       if (reshaping) renderEditBar();
     },
+    onZoom: (z) => { zoom = z; drawScaleBar(); },
+    onMeasureChange: (points) => { mPts = points; showMeasure(); },
     onRegionMenu: (r, cx, cy) => {
       const reg = (cur().regions || []).find((x) => x.id === r.id);
       if (reg && !reshaping) regionMenu(reg, cx, cy);
@@ -569,6 +581,15 @@ export async function viewMap(wid, mid, q) {
     });
     panel.querySelector('[data-close]').onclick = () => { panel.hidden = true; $('#layersBtn').classList.remove('on'); rememberLayers(false); };
     if (arranging) wireArrange(panel);
+    // A switch for the map's scale bar, once it has a scale.
+    if (cur().scale) {
+      panel.insertAdjacentHTML('beforeend', `<label class="check layer-row scale-toggle"><input type="checkbox" id="scaleToggle" ${showScale ? 'checked' : ''}><span>${icon('ruler')} Scale bar</span></label>`);
+      $('#scaleToggle', panel).onchange = (e) => {
+        showScale = e.target.checked;
+        try { localStorage.setItem('wa.map.scalebar', showScale ? 'on' : 'off'); } catch { /* storage unavailable */ }
+        drawScaleBar();
+      };
+    }
   }
 
   // ---- arranging the key
@@ -797,20 +818,50 @@ export async function viewMap(wid, mid, q) {
   $('#placesBtn').onclick = () => togglePanel('#placesPanel', '#placesBtn', '#layersPanel', '#layersBtn');
   $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true) });
 
+  // ---- the scale bar (bottom right): a round length that's 80–200 px on screen at this zoom
+  function drawScaleBar() {
+    const bar = $('#scaleBar');
+    const sc = cur().scale;
+    if (!bar) return;
+    bar.hidden = !(sc && showScale && zoom);
+    if (bar.hidden) return;
+    const perScreenPx = sc.perPx / zoom;
+    const raw = perScreenPx * 140;
+    const p10 = 10 ** Math.floor(Math.log10(raw));
+    const nice = [5, 2, 1].map((m) => m * p10).find((v) => v <= raw) || p10;
+    bar.querySelector('.sb-line').style.width = Math.round(nice / perScreenPx) + 'px';
+    bar.querySelector('.sb-text').textContent = `${nice.toLocaleString()} ${nice === 1 ? UNIT_ONE[sc.unit] || sc.unit : sc.unit}`;
+  }
+
   // ---- measuring distances (nothing is saved but the map's scale)
   // map.scale: { perPx: distance per image pixel, unit }, and map.pace: distance a day.
   let measuring = false, calibrating = false, mPts = [];
+  // After the scale is set or changed, the bar and the Layers switch follow.
+  const scaleChanged = () => { drawScaleBar(); renderLayers(); };
   const pxLen = (pts) => { const { w, h } = ctl.size(); let n = 0; for (let i = 1; i < pts.length; i++) n += Math.hypot((pts[i][0] - pts[i - 1][0]) * w, (pts[i][1] - pts[i - 1][1]) * h); return n; };
   const unitOf = () => cur().scale?.unit || 'miles';
   const fmtDist = (d) => `${d < 10 ? Math.round(d * 10) / 10 : Math.round(d).toLocaleString()} ${d === 1 ? UNIT_ONE[unitOf()] || unitOf() : unitOf()}`;
-  const travel = (d) => {
-    const pace = cur().pace || DEFAULT_PACE[unitOf()];
-    if (!pace || !d) return '';
-    const days = d / pace;
-    if (days < 1) { const hrs = Math.max(1, Math.round(days * 8)); return `≈ ${hrs} hour${hrs === 1 ? '' : 's'} on foot`; }
-    const half = Math.round(days * 2) / 2;
-    return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''} on foot`;
+  // How long a route takes: on foot (the map's pace, if set), on horseback, or under sail
+  // (which keeps going through the night). Paces are per day, in miles; other units convert.
+  let mode = 'foot'; try { mode = localStorage.getItem('wa.map.travel') || 'foot'; } catch { /* storage unavailable */ }
+  const PER_MILE = { miles: 1, km: 1.609, leagues: 1 / 3 };
+  const paceOf = (m) => {
+    const u = unitOf();
+    if (!PER_MILE[u]) return u === 'days' && m === 'foot' ? { perDay: 1, hours: 8 } : null; // hexes: no travel times
+    const t = TRAVEL[m];
+    const perDay = m === 'foot' && cur().pace ? cur().pace : t.miles * PER_MILE[u];
+    return { perDay, hours: t.hours };
   };
+  const travel = (d) => {
+    const pc = paceOf(PER_MILE[unitOf()] ? mode : 'foot');
+    if (!pc || !d) return '';
+    const how = TRAVEL[PER_MILE[unitOf()] ? mode : 'foot'].label;
+    const days = d / pc.perDay;
+    if (days < 1) { const hrs = Math.max(1, Math.round(days * pc.hours)); return `≈ ${hrs} hour${hrs === 1 ? '' : 's'} ${how}`; }
+    const half = Math.round(days * 2) / 2;
+    return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''} ${how}`;
+  };
+  const modeSeg = () => (PER_MILE[unitOf()] ? `<span class="seg" role="group" aria-label="Travel by">${Object.entries(TRAVEL).map(([k, t]) => `<button type="button" data-mode="${k}" class="${k === mode ? 'on' : ''}" title="${esc(t.title)}">${icon(t.icon)}<span class="hide-sm">${t.name}</span></button>`).join('')}</span>` : '');
   function measureTap(pt) {
     if (!measuring) return false;
     mPts.push([pt.x, pt.y]);
@@ -834,8 +885,9 @@ export async function viewMap(wid, mid, q) {
       bar.innerHTML = `<span class="hint">This map has no scale yet, so distances can’t be measured.</span>
         <button class="btn small primary" data-m="scale">${icon('ruler')} Set the scale</button><button class="btn small" data-m="done">Close</button>`;
     } else {
-      bar.innerHTML = `<span class="hint">${mPts.length < 2 ? 'Click points along the way to measure. Pins snap to their spot.'
+      bar.innerHTML = `<span class="hint">${mPts.length < 2 ? 'Click points along the way to measure. Pins snap to their spot; drag a point to move it.'
         : `<b class="measure-total">${fmtDist(total)}</b>${travel(total) ? ` <span class="muted">${travel(total)}</span>` : ''}`}</span>
+        ${modeSeg()}
         <button class="btn small" data-m="undo" ${mPts.length ? '' : 'disabled'}>${icon('arrow-counter-clockwise')} Undo</button>
         <button class="btn small" data-m="clear" ${mPts.length ? '' : 'disabled'}>Clear</button>
         <button class="btn small" data-m="scale" title="Change the map’s scale">${icon('gear-six')}</button>
@@ -852,6 +904,13 @@ export async function viewMap(wid, mid, q) {
   }
   $('#measureBtn').onclick = () => setMeasuring(!measuring);
   $('#measureBar').onclick = (e) => {
+    const mb = e.target.closest('[data-mode]');
+    if (mb) {
+      mode = mb.dataset.mode;
+      try { localStorage.setItem('wa.map.travel', mode); } catch { /* storage unavailable */ }
+      showMeasure();
+      return;
+    }
     const act = e.target.closest('[data-m]')?.dataset.m;
     if (act === 'undo') { mPts.pop(); showMeasure(); }
     else if (act === 'clear') { mPts = []; showMeasure(); }
@@ -866,7 +925,7 @@ export async function viewMap(wid, mid, q) {
         <p class="muted small" style="margin-top:0">How far apart are the two points you clicked?</p>
         <div class="row"><label>Distance<input name="dist" type="number" min="0" step="any" required autofocus></label>
           <label>Unit<select name="unit">${UNITS.map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label></div>
-        <label>Travel pace <small>per day, for travel times; leave empty for the usual on foot</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
+        <label>Walking pace <small>per day, for travel times on foot; leave empty for the usual</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
         <div class="actions"><button class="btn primary">Save scale</button></div></form>`, {
       onMount: (el, close) => {
         const f = $('#scaleF', el);
@@ -877,6 +936,7 @@ export async function viewMap(wid, mid, q) {
           const d = +f.dist.value;
           if (!(d > 0) || !px) return toast('Enter the distance between the two points');
           await persist({ scale: { perPx: d / px, unit: f.unit.value }, pace: +f.pace.value > 0 ? +f.pace.value : undefined });
+          scaleChanged();
           close();
           toast('Scale saved. Click points to measure.');
           setMeasuring(true);

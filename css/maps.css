@@ -389,7 +389,7 @@
 .measure-line { fill: none; stroke: #f4ecdc; stroke-width: calc(2.5px * var(--inv, 1)); stroke-dasharray: calc(8px * var(--inv, 1)) calc(5px * var(--inv, 1)); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .measure-dot {
   position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; transform: scale(var(--inv, 1)); border-radius: 50%;
-  background: #f4ecdc; border: 2px solid #1c1915; box-shadow: 0 1px 3px rgba(0, 0, 0, .5); pointer-events: none; z-index: 6;
+  background: #f4ecdc; border: 2px solid #1c1915; box-shadow: 0 1px 3px rgba(0, 0, 0, .5); pointer-events: auto; cursor: move; touch-action: none; z-index: 6;
 }
 .measure-label {
   position: absolute; left: 14px; top: -11px; white-space: nowrap; padding: 2px 8px; border-radius: 2px;
@@ -399,3 +399,22 @@
 #measureBtn.on { border-color: var(--brass); color: var(--brass); }
 .map-box:has(~ .measure-bar:not([hidden])) { cursor: crosshair; }
 .scale-row { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: .92rem; color: var(--text-2); margin-bottom: .6rem; }
+
+/* Scale bar (bottom right of the map) */
+.map-scalebar {
+  position: absolute; right: .7rem; bottom: .7rem; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  padding: .35rem .55rem .4rem; border-radius: var(--r); background: rgba(18, 15, 12, .78); color: #f4ecdc; pointer-events: none;
+  font: 600 .78rem/1 var(--sans); letter-spacing: .02em; box-shadow: 0 1px 6px rgba(0, 0, 0, .35);
+}
+.sb-line { display: block; height: 7px; border: 2px solid #f4ecdc; border-top: 0; transition: width .12s; }
+.map-wrap:has(.measure-bar:not([hidden])) .map-scalebar,
+.map-wrap:has(#editBar:not([hidden])) .map-scalebar { bottom: 4.2rem; }
+.scale-toggle { margin-top: .4rem; border-top: 1px solid var(--rule); }
+.scale-toggle .i { width: .95rem; height: .95rem; color: var(--brass); vertical-align: -.12em; }
+
+.measure-dot::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; } /* easier to grab */
+.measure-dot:hover { background: var(--brass); }
+.measure-label { pointer-events: none; }
+.measure-bar .seg button { padding: .25rem .55rem; font-size: .82rem; }
+.measure-bar .seg .i { width: .9rem; height: .9rem; }
+.measure-bar { width: max-content; } /* centred with left: 50%, it would otherwise only get half the width and wrap */

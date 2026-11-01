@@ -8,7 +8,7 @@ import { esc } from './util.js';
 const SVG = 'http://www.w3.org/2000/svg';
 
 // embedded: inside a page that scrolls, so the wheel zooms only with Ctrl/⌘.
-export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, embedded = false }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, onZoom, onMeasureChange, embedded = false }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
@@ -44,6 +44,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     keepInView();
     stage.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
     stage.style.setProperty('--inv', 1 / s);
+    onZoom?.(s); // screen pixels per image pixel
     // Pins and labels keep their size on screen, so what overlaps changes with zoom.
     if (Math.abs(s / placedAt - 1) > 0.04) { clearTimeout(placeTimer); placeTimer = setTimeout(() => { placeLabels(); fitMids(); }, 90); }
   };
@@ -212,6 +213,8 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     (measure?.points || []).forEach(([px, py], i, all) => {
       const d = document.createElement('span');
       d.className = 'measure-dot';
+      d.dataset.mvertex = i;
+      d.title = 'Drag to move this point';
       d.style.left = px * 100 + '%';
       d.style.top = py * 100 + '%';
       // The running total sits by the last point.
@@ -244,6 +247,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
   const pts = new Map();
   let start = null, moved = false, pinch = null, downTarget = null, panOnly = false;
   let vertex = null; // index of a draft vertex being dragged
+  let mvertex = null; // index of a measuring point being dragged
   let vertexChanged = false, lastPress = null; // whether the drag changed the outline; the previous press on a point (for double presses)
   const toImage = (e) => {
     const r = container.getBoundingClientRect();
@@ -255,6 +259,15 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     if (e.button === 1) e.preventDefault(); // no autoscroll
     if (pts.size === 0) { downTarget = e.target; panOnly = e.button === 1; }
     // Pressing a vertex of the region being drawn moves it instead of adding one.
+    // Pressing a measuring point drags it.
+    const mv = pts.size === 0 && !panOnly && measure && e.target.closest?.('[data-mvertex]');
+    if (mv) {
+      mvertex = +mv.dataset.mvertex;
+      moved = true;
+      container.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      return;
+    }
     const v = pts.size === 0 && !panOnly && e.target.closest?.('[data-vertex]');
     // Pressing an edge's middle handle adds a point there and drags it.
     const mid = pts.size === 0 && !panOnly && !v && e.target.closest?.('[data-mid]');
@@ -300,6 +313,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
   const onMove = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (mvertex != null && measure?.points[mvertex]) { measure.points[mvertex] = toImage(e); onMeasureChange?.([...measure.points]); return; }
     if (vertex != null && draft?.[vertex]) { draft[vertex] = toImage(e); vertexChanged = true; lastPress = null; draw(); return; }
     const r = container.getBoundingClientRect();
     if (pts.size === 2 && pinch) {
@@ -315,6 +329,11 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
   const onEnd = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
+    if (mvertex != null) {
+      mvertex = null;
+      if (pts.size === 0) { downTarget = null; start = null; }
+      return;
+    }
     if (vertex != null) {
       vertex = null;
       if (pts.size === 0) { downTarget = null; start = null; }
