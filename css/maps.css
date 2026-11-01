@@ -383,3 +383,19 @@
 .map-menu button { display: flex; align-items: center; gap: .55rem; padding: .45rem .6rem; border: 0; border-radius: 2px; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .map-menu button:hover, .map-menu button:focus-visible { background: var(--ink-4); }
 .map-menu button.danger { color: var(--rubric); }
+
+/* Measuring distances: the ruler line, its points and running total */
+.measure-under { fill: none; stroke: rgba(0, 0, 0, .7); stroke-width: calc(5px * var(--inv, 1)); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.measure-line { fill: none; stroke: #f4ecdc; stroke-width: calc(2.5px * var(--inv, 1)); stroke-dasharray: calc(8px * var(--inv, 1)) calc(5px * var(--inv, 1)); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.measure-dot {
+  position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; transform: scale(var(--inv, 1)); border-radius: 50%;
+  background: #f4ecdc; border: 2px solid #1c1915; box-shadow: 0 1px 3px rgba(0, 0, 0, .5); pointer-events: none; z-index: 6;
+}
+.measure-label {
+  position: absolute; left: 14px; top: -11px; white-space: nowrap; padding: 2px 8px; border-radius: 2px;
+  background: rgba(18, 15, 12, .9); color: #f4ecdc; border: 1px solid rgba(214, 190, 150, .35); font: 600 13px/1.35 var(--sans);
+}
+.measure-bar .measure-total { font: 600 1.05rem var(--display); color: var(--text); }
+#measureBtn.on { border-color: var(--brass); color: var(--brass); }
+.map-box:has(~ .measure-bar:not([hidden])) { cursor: crosshair; }
+.scale-row { display: flex; align-items: center; justify-content: space-between; gap: .6rem; font-size: .92rem; color: var(--text-2); margin-bottom: .6rem; }

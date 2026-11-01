@@ -82,6 +82,11 @@ function pinNumbers(m) {
   return nums;
 }
 
+// Distances: units for a map's scale, and a day's travel on foot in each.
+const UNITS = ['miles', 'km', 'leagues', 'hexes', 'days'];
+const UNIT_ONE = { miles: 'mile', km: 'km', leagues: 'league', hexes: 'hex', days: 'day' };
+const DEFAULT_PACE = { miles: 24, km: 38, leagues: 8, days: 1 };
+
 // Marker shape and style, set per map (see the map settings dialog).
 export const MARKER_SHAPES = { pin: 'Pin', circle: 'Circle', hexagon: 'Hexagon', diamond: 'Diamond', square: 'Square' };
 export const MARKER_STYLES = { colour: 'Colour', ivory: 'Ivory', parchment: 'Parchment', hologram: 'Hologram' };
@@ -123,7 +128,7 @@ export function viewMaps(wid) {
   hydrateImages();
 }
 
-function mapDialog(wid, m) {
+function mapDialog(wid, m, { onSetScale } = {}) {
   const isNew = !m;
   m = m ? { ...m } : { id: uid(), worldId: wid, name: '', image: null, pins: [], regions: [] };
   modal(isNew ? 'New map' : 'Map settings', `
@@ -136,6 +141,9 @@ function mapDialog(wid, m) {
         <label class="btn small">${icon('image')} Choose image<input type="file" name="file" accept="image/*" hidden></label>
         <span class="small muted dz-name"></span>
       </div>
+      ${isNew ? '' : `<div class="field-label">Scale</div>
+      <div class="scale-row"><span>${m.scale ? `Set, in ${esc(m.scale.unit)}${m.pace ? ` · travel ${m.pace} ${esc(m.scale.unit)} a day` : ''}` : 'Not set: distances can’t be measured yet.'}</span>
+        <button type="button" class="btn small" data-set-scale>${icon('ruler')} ${m.scale ? 'Change' : 'Set the scale'}</button></div>`}
       <div class="field-label">Pins show</div>
       <div class="seg" id="pinStyle"><button type="button" data-ps="names">Names</button><button type="button" data-ps="numbers">Numbers, with a key</button></div>
       <div class="row">
@@ -150,6 +158,7 @@ function mapDialog(wid, m) {
     onMount: (el, close) => {
       const f = $('#mf', el);
       wireDropzone($('.image-field', f));
+      $('[data-set-scale]', el)?.addEventListener('click', () => { close(); onSetScale?.(); });
       let pinStyle = m.pinStyle || 'names';
       const showStyle = () => $$('[data-ps]', el).forEach((b) => b.classList.toggle('on', b.dataset.ps === pinStyle));
       $$('[data-ps]', el).forEach((b) => b.onclick = () => { pinStyle = b.dataset.ps; showStyle(); });
@@ -212,6 +221,7 @@ export async function viewMap(wid, mid, q) {
       title: esc(m.name),
       actions: `
         <button class="btn small quiet" id="placesBtn" title="Find a place">${icon('magnifying-glass')}<span class="hide-sm">Places</span></button>
+        <button class="btn small quiet" id="measureBtn" title="Measure a distance" aria-pressed="false">${icon('ruler')}<span class="hide-sm">Measure</span></button>
         <button class="btn small quiet" id="layersBtn" title="Layers">${icon('stack')}<span class="hide-sm">Layers</span></button>
         <button class="btn small" id="editBtn">${icon('pencil-simple')}<span>Edit</span></button>
         <button class="icon-btn" id="settingsBtn" title="Map settings">${icon('gear-six')}</button>`,
@@ -230,6 +240,7 @@ export async function viewMap(wid, mid, q) {
         <ul class="places-list" id="placesList"></ul>
       </div>
       <div class="map-toolbar" id="editBar" hidden></div>
+      <div class="map-toolbar measure-bar" id="measureBar" hidden></div>
       <div class="map-info" id="mapInfo" hidden></div>
     </div>
   </section>`;
@@ -300,14 +311,17 @@ export async function viewMap(wid, mid, q) {
     onPinClick: (p) => {
       const pin = (cur().pins || []).find((x) => x.id === p.id);
       if (!pin) return;
+      if (measureTap({ x: pin.x, y: pin.y })) return; // measuring: from the pin itself
       if (editing) pinDialog(pin); else showInfo(pin, 'pin');
     },
-    onRegionClick: (r) => {
+    onRegionClick: (r, pt) => {
+      if (pt && measureTap(pt)) return;
       const reg = (cur().regions || []).find((x) => x.id === r.id);
       if (!reg) return;
       if (editing) regionDialog(reg); else showInfo(reg, 'region');
     },
     onBackgroundTap: (pt) => {
+      if (measureTap(pt)) return;
       info.hidden = true;
       if (reshaping) return; // points are added from the edge handles
       if (moving) {
@@ -326,7 +340,11 @@ export async function viewMap(wid, mid, q) {
       }
     },
   });
-  const onKey = (e) => { if (e.key === 'Escape' && reshaping && !document.querySelector('#modal-root > *')) endReshape(false); };
+  const onKey = (e) => {
+    if (e.key !== 'Escape' || document.querySelector('#modal-root > *')) return;
+    if (reshaping) endReshape(false);
+    else if (measuring) setMeasuring(false);
+  };
   document.addEventListener('keydown', onKey);
   state.cleanup = () => { ctl.destroy(); document.removeEventListener('keydown', onKey); closeMenu(); };
 
@@ -440,6 +458,7 @@ export async function viewMap(wid, mid, q) {
   }
 
   function setEditing(on) {
+    if (on && measuring) setMeasuring(false);
     editing = on;
     moving = null;
     if (!on && reshaping) endReshape(true); // Done keeps the new outline, like Save shape
@@ -776,7 +795,95 @@ export async function viewMap(wid, mid, q) {
   if (layersOpen) { $('#layersPanel').hidden = false; $('#layersBtn').classList.add('on'); }
   $('#layersBtn').onclick = () => togglePanel('#layersPanel', '#layersBtn', '#placesPanel', '#placesBtn');
   $('#placesBtn').onclick = () => togglePanel('#placesPanel', '#placesBtn', '#layersPanel', '#layersBtn');
-  $('#settingsBtn').onclick = () => mapDialog(wid, cur());
+  $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true) });
+
+  // ---- measuring distances (nothing is saved but the map's scale)
+  // map.scale: { perPx: distance per image pixel, unit }, and map.pace: distance a day.
+  let measuring = false, calibrating = false, mPts = [];
+  const pxLen = (pts) => { const { w, h } = ctl.size(); let n = 0; for (let i = 1; i < pts.length; i++) n += Math.hypot((pts[i][0] - pts[i - 1][0]) * w, (pts[i][1] - pts[i - 1][1]) * h); return n; };
+  const unitOf = () => cur().scale?.unit || 'miles';
+  const fmtDist = (d) => `${d < 10 ? Math.round(d * 10) / 10 : Math.round(d).toLocaleString()} ${d === 1 ? UNIT_ONE[unitOf()] || unitOf() : unitOf()}`;
+  const travel = (d) => {
+    const pace = cur().pace || DEFAULT_PACE[unitOf()];
+    if (!pace || !d) return '';
+    const days = d / pace;
+    if (days < 1) { const hrs = Math.max(1, Math.round(days * 8)); return `≈ ${hrs} hour${hrs === 1 ? '' : 's'} on foot`; }
+    const half = Math.round(days * 2) / 2;
+    return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''} on foot`;
+  };
+  function measureTap(pt) {
+    if (!measuring) return false;
+    mPts.push([pt.x, pt.y]);
+    if (calibrating && mPts.length === 2) { scaleDialog(); return true; }
+    showMeasure();
+    return true;
+  }
+  function showMeasure() {
+    const bar = $('#measureBar');
+    bar.hidden = !measuring;
+    $('#measureBtn').classList.toggle('on', measuring);
+    $('#measureBtn').setAttribute('aria-pressed', String(measuring));
+    if (!measuring) { ctl.setMeasure(null); return; }
+    const scale = cur().scale;
+    const total = scale && mPts.length > 1 ? pxLen(mPts) * scale.perPx : 0;
+    ctl.setMeasure(mPts, total ? fmtDist(total) : '');
+    if (calibrating) {
+      bar.innerHTML = `<span class="hint">${mPts.length ? 'Now click the other end.' : 'Click two points a known distance apart, e.g. the ends of the map’s scale bar.'}</span>
+        <button class="btn small" data-m="cancel">Cancel</button>`;
+    } else if (!scale) {
+      bar.innerHTML = `<span class="hint">This map has no scale yet, so distances can’t be measured.</span>
+        <button class="btn small primary" data-m="scale">${icon('ruler')} Set the scale</button><button class="btn small" data-m="done">Close</button>`;
+    } else {
+      bar.innerHTML = `<span class="hint">${mPts.length < 2 ? 'Click points along the way to measure. Pins snap to their spot.'
+        : `<b class="measure-total">${fmtDist(total)}</b>${travel(total) ? ` <span class="muted">${travel(total)}</span>` : ''}`}</span>
+        <button class="btn small" data-m="undo" ${mPts.length ? '' : 'disabled'}>${icon('arrow-counter-clockwise')} Undo</button>
+        <button class="btn small" data-m="clear" ${mPts.length ? '' : 'disabled'}>Clear</button>
+        <button class="btn small" data-m="scale" title="Change the map’s scale">${icon('gear-six')}</button>
+        <button class="btn small primary" data-m="done">Done</button>`;
+    }
+  }
+  function setMeasuring(on, calibrate = false) {
+    if (on && editing) setEditing(false);
+    measuring = on;
+    calibrating = on && calibrate;
+    mPts = [];
+    info.hidden = true;
+    showMeasure();
+  }
+  $('#measureBtn').onclick = () => setMeasuring(!measuring);
+  $('#measureBar').onclick = (e) => {
+    const act = e.target.closest('[data-m]')?.dataset.m;
+    if (act === 'undo') { mPts.pop(); showMeasure(); }
+    else if (act === 'clear') { mPts = []; showMeasure(); }
+    else if (act === 'scale') setMeasuring(true, true);
+    else if (act === 'cancel') setMeasuring(true);
+    else if (act === 'done') setMeasuring(false);
+  };
+  function scaleDialog() {
+    const px = pxLen(mPts), m = cur();
+    const unit = m.scale?.unit || 'miles';
+    modal('Set the scale', `<form class="form" id="scaleF">
+        <p class="muted small" style="margin-top:0">How far apart are the two points you clicked?</p>
+        <div class="row"><label>Distance<input name="dist" type="number" min="0" step="any" required autofocus></label>
+          <label>Unit<select name="unit">${UNITS.map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label></div>
+        <label>Travel pace <small>per day, for travel times; leave empty for the usual on foot</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
+        <div class="actions"><button class="btn primary">Save scale</button></div></form>`, {
+      onMount: (el, close) => {
+        const f = $('#scaleF', el);
+        f.unit.onchange = () => { f.pace.placeholder = DEFAULT_PACE[f.unit.value] || ''; };
+        f.dist.focus();
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const d = +f.dist.value;
+          if (!(d > 0) || !px) return toast('Enter the distance between the two points');
+          await persist({ scale: { perPx: d / px, unit: f.unit.value }, pace: +f.pace.value > 0 ? +f.pace.value : undefined });
+          close();
+          toast('Scale saved. Click points to measure.');
+          setMeasuring(true);
+        };
+      },
+    }).then(() => { if (calibrating) setMeasuring(true); }); // closed without saving: back to measuring
+  }
   $$('[data-z]').forEach((b) => b.onclick = () => (b.dataset.z === 'fit' ? ctl.fit() : ctl.zoom(b.dataset.z === 'in' ? 1.5 : 1 / 1.5)));
 
   // ---- dialogs

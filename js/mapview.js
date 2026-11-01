@@ -23,6 +23,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
   let s = 1, x = 0, y = 0, w = 1, h = 1;
   let items = { pins: [], regions: [], hidden: new Set() };
   let draft = null;
+  let measure = null; // { points, label }: a ruler line, not saved
 
   // Keep the map in view: bigger than the frame, its edges can't come more
   // than EDGE px inside; smaller, it stays wholly inside the frame.
@@ -152,6 +153,14 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
         labels.push({ el, cx, cy, points: r.points });
       }
     }
+    if (measure?.points.length > 1) {
+      for (const cls of ['measure-under', 'measure-line']) {
+        const pl = document.createElementNS(SVG, 'polyline');
+        pl.setAttribute('points', measure.points.map(([px, py]) => `${px * w},${py * h}`).join(' '));
+        pl.setAttribute('class', cls);
+        svg.appendChild(pl);
+      }
+    }
     if (draft?.length) {
       // A dark line under the dashed one, so the outline reads on any map (crisp at any zoom, unlike a filter).
       for (const cls of ['region-draft-under', 'region-draft']) {
@@ -198,6 +207,15 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       d.title = 'Drag to move; double-click or right-click to remove';
       d.style.left = px * 100 + '%';
       d.style.top = py * 100 + '%';
+      pinLayer.appendChild(d);
+    });
+    (measure?.points || []).forEach(([px, py], i, all) => {
+      const d = document.createElement('span');
+      d.className = 'measure-dot';
+      d.style.left = px * 100 + '%';
+      d.style.top = py * 100 + '%';
+      // The running total sits by the last point.
+      if (i === all.length - 1 && measure.label) d.innerHTML = `<span class="measure-label">${esc(measure.label)}</span>`;
       pinLayer.appendChild(d);
     });
     placeLabels();
@@ -380,6 +398,10 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       if (w > 1) draw();
     },
     setDraft(points) { draft = points ? [...points] : null; if (w > 1) draw(); },
+    // A ruler line: points in image fractions, and the text to show at its end.
+    setMeasure(points, label = '') { measure = points ? { points: [...points], label } : null; if (w > 1) draw(); },
+    // The image's size in pixels, for turning fractions into distances.
+    size: () => ({ w, h }),
     fit,
     zoom: (f) => { const r = container.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, f); },
     // Centre on a point ({x,y}) or a region (points array), zooming in if needed.
