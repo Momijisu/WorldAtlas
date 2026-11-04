@@ -95,6 +95,10 @@ On the online version this works straight away. A copy you run or host yourself 
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
 - [Development](docs/DEVELOPMENT.md): project layout, tests and releasing
 
+## License
+
+WorldAtlas is released under the [MIT License](LICENSE): you're free to use, copy, change and host it. The bundled fonts, icons and libraries keep their own licenses (below).
+
 ## Credits
 
 Fonts: Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive and Kalam, under the SIL Open Font License. Icons: [Phosphor](https://phosphoricons.com) (MIT). Libraries: [marked](https://marked.js.org), [DOMPurify](https://github.com/cure53/DOMPurify) and [CodeMirror](https://codemirror.net).
