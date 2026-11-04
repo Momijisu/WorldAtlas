@@ -216,8 +216,32 @@ export async function exampleWorld(store, { demo = false } = {}) {
     tags: ['history'],
   });
 
+  // A table to roll on, shown in Vael's article with ![[…]].
+  const col = (name, type) => ({ id: uid(), name, type });
+  const enc = [col('Encounter', 'text'), col('How many', 'dice'), col('Most likely near', 'article'), col('Chance', 'chance')];
+  const encRow = (...v) => ({ id: uid(), c: Object.fromEntries(enc.map((c, i) => [c.id, v[i]]).filter(([, x]) => x !== '')) });
+  const encounters = A('table', 'Road Encounters in Vael', {
+    summary: 'What a party might meet on the roads of Vael. Roll when they make camp.',
+    body: 'Rarer meetings have a lower **Chance**, so they come up less often when you roll.',
+    table: {
+      columns: enc,
+      rows: [
+        encRow('Lantern Guild couriers, in a hurry', '1d4', 'Lantern Guild', '3'),
+        encRow('Flood-wardens checking the levees', '2d4', 'River Ost', '3'),
+        encRow('Stormglass prospectors, armed and twitchy', '1d6', 'Spine of Ash', '2'),
+        encRow('[[Mistfox|A mistfox]], watching from the reeds', '1', 'Gloamwood', '2'),
+        encRow('Smugglers with a cart that’s too heavy', '2d6', 'Varenhold', '2'),
+        encRow('A fragment of Skyward stone, humming', '1', 'The Skyward Engines', '1'),
+      ],
+      opts: { search: true, roll: true, numbers: false },
+    },
+    tags: ['vael'],
+  });
+  vael.body += '\n\n## On the road\n![[Road Encounters in Vael]]';
+
   // Structure and relationships
   for (const a of [varenhold, ostmouth, marrowgate, ost, spine, gloamwood]) a.parentId = vael.id;
+  encounters.parentId = vael.id;
   palace.parentId = varenhold.id;
   aldric.relations = [rel('spouse', ilsabet), rel('parent', ysolde), rel('parent', corin), rel('rules', varenhold, 'until 1028')];
   ilsabet.relations = [rel('parent', ysolde), rel('parent', corin)];
@@ -229,7 +253,7 @@ export async function exampleWorld(store, { demo = false } = {}) {
   const all = [vael, varenhold, palace, ostmouth, marrowgate, highcairn, ost, spine, gloamwood,
     aldric, ilsabet, ysolde, corin, wick, lamplighter, warden, mistfox,
     guild, night, fall, reign, war, tradition, myth, plot,
-    engines, stormglass, lanternlight, ashlung, crown, ship, skyward];
+    engines, stormglass, lanternlight, ashlung, crown, ship, skyward, encounters];
   for (const a of all) await store.save('articles', a);
 
   // A map with pins, regions and layers.

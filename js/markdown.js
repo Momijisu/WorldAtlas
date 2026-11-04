@@ -4,6 +4,7 @@ import * as store from './store.js';
 import { esc } from './util.js';
 import { icon } from './icons.js';
 import { scriptExtensions } from './scripts.js';
+import { tableHTML } from './tables.js';
 
 let renderingWid = null; // the world being rendered, for its fonts
 marked.use({ gfm: true, breaks: true, extensions: scriptExtensions(() => renderingWid) });
@@ -91,6 +92,10 @@ function excerptHTML(wid, title, heading, caption, depth) {
   const a = store.byName(wid, title.trim());
   const where = esc(title.trim()) + (heading ? ` › ${esc(heading.trim())}` : '');
   if (!a) return `<div class="excerpt missing">No article called “${esc(title.trim())}” to quote from.</div>`;
+  // A table shows whole and working; inside another excerpt, just a link to it.
+  if (a.type === 'table' && !heading) {
+    return depth ? `<p><a href="#/w/${wid}/a/${a.id}">${icon('table')} ${esc(a.title)}</a></p>` : tableHTML(a, wid, { caption, embed: true });
+  }
   const text = heading ? section(a.body, heading) : (a.summary || a.body.split(/\n\s*\n/)[0]);
   if (text == null) return `<div class="excerpt missing">“${esc(a.title)}” has no section called “${esc(heading.trim())}”.</div>`;
   const href = `#/w/${wid}/a/${a.id}`;

@@ -22,6 +22,7 @@ Write about your world's people, places and history, link it all together and pi
 - Excerpts: show part of one article inside another, kept up to date
 - Relationships between articles, drawn as a relationship web, family trees and organisation charts
 - A tidy-up page that finds duplicate articles and merges them
+- Tables you can search, sort and roll on (random encounters, price lists, rosters), shown in any article
 
 **Map**
 - Maps with pins, regions, layers and maps nested inside maps
@@ -96,6 +97,7 @@ Ideas being considered, not promises:
 
 ## More
 
+- [Tables](docs/TABLES.md): making tables, column types, rolling and showing them in articles
 - [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
 - [Development](docs/DEVELOPMENT.md): project layout, tests and releasing

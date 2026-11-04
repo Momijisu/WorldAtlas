@@ -174,7 +174,7 @@ export async function resolveConflict(id, content) {
 // its own OneDrive file and is pruned to the newest HISTORY_LIMIT per article.
 
 const CONTENT_KEYS = ['title', 'aliases', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'banner', 'bannerPos', 'mapId',
-  'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations'];
+  'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations', 'table'];
 // (No aliases and an empty list read the same, so older articles don't look changed.)
 export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, k === 'aliases' ? (a.aliases?.length ? a.aliases : null) : a[k] ?? null]));
 
@@ -268,8 +268,17 @@ export function linkedTitles(text) {
   return [...String(text || '').matchAll(linkRe)].map((m) => m[1].trim().toLowerCase());
 }
 
+// A table's cells as text, for search and backlinks; Article cells read as [[links]].
+function tableText(t) {
+  return (t?.rows || []).map((r) => (t.columns || []).map((c) => {
+    const v = r.c?.[c.id];
+    if (v == null || v === '' || typeof v === 'boolean') return '';
+    return c.type === 'article' ? `[[${v}]]` : String(v);
+  }).join(' ')).join('\n');
+}
+
 export function articleText(a) {
-  return [a.summary, a.body, a.gmNotes, ...Object.values(a.fields || {})].join('\n');
+  return [a.summary, a.body, a.gmNotes, ...Object.values(a.fields || {}), tableText(a.table)].join('\n');
 }
 
 export function backlinks(a) {
@@ -281,9 +290,19 @@ export function backlinks(a) {
 export async function renameReferences(wid, oldTitle, newTitle) {
   const re = new RegExp('\\[\\[\\s*' + oldTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(#[^\\]|\\n]*)?(\\|[^\\]\\n]*)?\\]\\]', 'gi');
   const fix = (s) => (s ? s.replace(re, (_, sec, lbl) => `[[${newTitle}${sec || ''}${lbl || ''}]]`) : s);
+  const same = (v) => typeof v === 'string' && v.trim().toLowerCase() === oldTitle.trim().toLowerCase();
+  // Table cells: an Article cell holds the title itself; text cells may hold [[links]].
+  const fixTable = (t) => t && {
+    ...t,
+    rows: (t.rows || []).map((r) => ({ ...r, c: Object.fromEntries(Object.entries(r.c || {}).map(([k, v]) => {
+      const col = (t.columns || []).find((c) => c.id === k);
+      return [k, col?.type === 'article' ? (same(v) ? newTitle : v) : typeof v === 'string' ? fix(v) : v];
+    })) })),
+  };
   for (const o of articlesOf(wid)) {
     const fields = Object.fromEntries(Object.entries(o.fields || {}).map(([k, v]) => [k, fix(v)]));
     const next = { ...o, summary: fix(o.summary), body: fix(o.body), gmNotes: fix(o.gmNotes), fields };
+    if (o.table) next.table = fixTable(o.table);
     if (JSON.stringify(next) !== JSON.stringify(o)) await save('articles', next);
   }
 }

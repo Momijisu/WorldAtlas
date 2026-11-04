@@ -13,6 +13,9 @@ import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { pickerHTML, wirePickers } from '../picker.js';
 import { similarTo } from '../duplicates.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, pageHead, worldCrumb, sep } from '../ui.js';
+import { mountTableEditor } from '../tables.js';
+
+const TABLES_DOCS = 'https://github.com/Momijisu/WorldAtlas/blob/main/docs/TABLES.md';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const prompt = promptKey ? resolvePrompt(wid, promptKey) : null;
@@ -63,6 +66,10 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         </div>
         <p class="tpl-hint" id="tplHint"></p>
         <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
+        <div class="table-section" id="tableSection" ${a.type === 'table' ? '' : 'hidden'}>
+          <div class="field-label">Table <small>show it in any article with <code>![[${esc(a.title || 'its title')}]]</code> · <a href="${TABLES_DOCS}" target="_blank" rel="noopener">how tables work</a></small></div>
+          <div id="tableEd"></div>
+        </div>
         ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
         <div class="md-toolbar">
@@ -243,6 +250,14 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     fieldsEl.insertAdjacentHTML('beforeend', customRow());
     $$('.kv .k', fieldsEl).at(-1).focus();
   };
+  // The table editor, for the Table template; made when first needed.
+  let tableEd = null;
+  const showTable = () => {
+    const on = f.type.value === 'table';
+    $('#tableSection').hidden = !on;
+    if (on && !tableEd) tableEd = mountTableEditor($('#tableEd'), a.table, { wid, onChange: () => { dirty = true; } });
+  };
+  showTable();
   const tplHint = () => { $('#tplHint').textContent = TYPES[f.type.value]?.hint || ''; };
   tplHint();
   f.type.onchange = () => {
@@ -251,6 +266,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     drawFields(readFields().filter(([k, v]) => v.trim() || next.has(k)), f.type.value);
     tplHint();
     drawGuide();
+    showTable();
   };
 
   // Writing guide: questions for this template; choosing one adds its heading to the article.
@@ -468,6 +484,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       end: en?.y ?? null, endM: en?.m ?? null, endD: en?.d ?? null,
       dateLabel: f.dateLabel.value.trim(),
       mapId: f.mapId ? f.mapId.value || null : a.mapId || null,
+      table: tableEd && f.type.value === 'table' ? tableEd.value() : a.table ?? null,
     });
     // Changed on another device while this was open: keep both versions.
     const cur = !isNew && store.article(a.id);

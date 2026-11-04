@@ -14,6 +14,13 @@ const same = (x, y) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
 const relKey = (r) => r.type + '|' + (r.target || 'name:' + (r.name || '').toLowerCase());
 const relText = (r) => `${REL_TYPES[r.type]?.label || r.type} ${r.target ? titleOf(r.target) : `${r.name} (no article yet)`}${r.note ? ` (${r.note})` : ''}`;
 
+// A table in a line or two: its size and column names, then its first rows.
+const tableSummary = (t) => {
+  if (!t?.columns?.length) return 'No table';
+  const rows = (t.rows || []).slice(0, 4).map((r) => t.columns.map((c) => r.c?.[c.id] ?? '').filter((x) => x !== '').join(' · '));
+  return `${t.columns.length} column${t.columns.length === 1 ? '' : 's'}, ${t.rows.length} row${t.rows.length === 1 ? '' : 's'}: ${t.columns.map((c) => c.name).join(', ')}\n${rows.join('\n')}${t.rows.length > 4 ? '\n…' : ''}`;
+};
+
 // The fields that differ between the two versions, as resolver blocks.
 function blocksFor(cur, other, cal) {
   const out = [];
@@ -34,6 +41,7 @@ function blocksFor(cur, other, cal) {
   if (!same((cur.relations || []).map(relKey).sort(), (other.relations || []).map(relKey).sort()) || !same(cur.relations, other.relations)) {
     add({ id: 'relations', label: 'Relationships', kind: 'set', fmt: (v) => (v.relations || []).map(relText).join('\n') || 'None' });
   }
+  if (!same(cur.table ?? null, other.table ?? null)) add({ id: 'table', label: 'Table', fmt: (v) => tableSummary(v.table) });
   for (const k of ['image', 'banner']) {
     if (!same(cur[k], other[k])) add({ id: k, label: k === 'image' ? 'Portrait / image' : 'Header image', kind: 'image' });
   }
