@@ -69,6 +69,49 @@ const graph = () => svg(120, 120, `<g fill="none" stroke="#000"><path d="M0 .75H
 
 const knots = () => svg(64, 64, `<g fill="none" stroke="#000" stroke-width="1.65"><path d="M0 16c16 0 16 32 32 32s16-32 32-32M0 48c16 0 16-32 32-32s16 32 32 32"/><circle cx="32" cy="32" r="4"/><circle cx="0" cy="32" r="4"/><circle cx="64" cy="32" r="4"/></g>`);
 
+// Spell circles: two rune rings with a star inside, one large and one small per
+// tile, drawn again across the edges they cross so the tile repeats seamlessly.
+function spellCircle(cx, cy, R, n, k, seed) {
+  const r = rng(seed);
+  const pt = (rad, a) => `${(cx + rad * Math.cos(a)).toFixed(1)} ${(cy + rad * Math.sin(a)).toFixed(1)}`;
+  let b = `<circle cx="${cx}" cy="${cy}" r="${R}"/><circle cx="${cx}" cy="${cy}" r="${(R * 0.86).toFixed(1)}"/>`;
+  b += `<circle cx="${cx}" cy="${cy}" r="${(R * 0.62).toFixed(1)}" stroke-dasharray="1.5 5"/><circle cx="${cx}" cy="${cy}" r="${(R * 0.4).toFixed(1)}"/>`;
+  // Star polygon {n/k} inside the rune band, with a small ring at each point.
+  const step = (Math.PI * 2) / n, a0 = -Math.PI / 2;
+  b += `<path d="M${Array.from({ length: n }, (_, i) => pt(R * 0.86, a0 + ((i * k) % n) * step)).join('L')}Z"/>`;
+  for (let i = 0; i < n; i++) b += `<circle cx="${pt(R * 0.86, a0 + i * step).split(' ')[0]}" cy="${pt(R * 0.86, a0 + i * step).split(' ')[1]}" r="${(R * 0.045).toFixed(1)}"/>`;
+  // Runes: little stroke glyphs standing in the band between the two outer rings.
+  const runes = Math.round(R / 5.5), h = R * 0.1, mid = R * 0.93;
+  for (let i = 0; i < runes; i++) {
+    const a = (i / runes) * Math.PI * 2, deg = (a * 180) / Math.PI + 90;
+    const [x, y] = pt(mid, a).split(' ');
+    const w = h * 0.55, segs = [];
+    segs.push(`M0 ${-h / 2}V${h / 2}`);
+    const kind = Math.floor(r() * 4);
+    if (kind === 0) segs.push(`M0 ${-h / 2}L${w} ${-h / 6}`);
+    if (kind === 1) segs.push(`M${-w} ${-h / 4}L${w} ${h / 4}`);
+    if (kind === 2) segs.push(`M0 0L${w} ${-h / 2}M0 0L${-w} ${-h / 2}`);
+    if (kind === 3) segs.push(`M${-w} ${h / 2}L0 0L${w} ${h / 2}`);
+    if (r() < 0.35) segs.push(`M${-w * 0.6} ${-h / 2}H${w * 0.6}`);
+    b += `<path transform="translate(${x} ${y}) rotate(${deg.toFixed(1)})" d="${segs.join('')}"/>`;
+  }
+  // Centre mark.
+  b += `<circle cx="${cx}" cy="${cy}" r="${(R * 0.08).toFixed(1)}"/><path d="M${pt(R * 0.4, a0)}L${pt(R * 0.4, a0 + Math.PI)}M${pt(R * 0.4, 0)}L${pt(R * 0.4, Math.PI)}"/>`;
+  return b;
+}
+function spells() {
+  const T = 640;
+  const circles = [[400, 230, 170, 7, 3, 3], [120, 520, 105, 5, 2, 8]];
+  let b = '';
+  for (const [x, y, R, n, k, seed] of circles) {
+    for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+      if (x + dx + R < 0 || x + dx - R > T || y + dy + R < 0 || y + dy - R > T) continue;
+      b += spellCircle(x + dx, y + dy, R, n, k, seed);
+    }
+  }
+  return svg(T, T, `<g fill="none" stroke="#000" stroke-width="1.3">${b}</g>`);
+}
+
 // name → { label, make() or src (a PNG made by tools/paper.py), size, strength (opacity of the pattern) }
 export const PATTERNS = {
   plain: { label: 'Plain' },
@@ -82,6 +125,7 @@ export const PATTERNS = {
   knots: { label: 'Knotwork', make: knots, size: '64px', strength: 0.11 },
   hexes: { label: 'Hex grid', make: hexes, size: '31.18px', strength: 0.1 },
   waves: { label: 'Waves', make: waves, size: '80px', strength: 0.11 },
+  spells: { label: 'Spell circles', make: spells, size: '640px', strength: 0.1 },
   image: { label: 'Your image' },
 };
 
