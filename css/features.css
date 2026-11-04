@@ -184,6 +184,21 @@
 .article-head.over-hero { position: relative; z-index: 1; margin-top: -7.5rem; }
 .article-head.over-hero h1 { text-shadow: 0 2px 18px color-mix(in srgb, var(--ink-0) 80%, transparent); }
 @media (max-width: 920px) { .article-hero { margin-top: -1.3rem; } .article-head.over-hero { margin-top: -5rem; } }
+/* Header edge, chosen per world: Mist uses a painted mask (assets/edges/mist.png,
+   opaque = picture shows) along the bottom, sized to the screen and repeated
+   across; Hard cut ends the picture squarely. Both put the title below the picture. */
+.article[data-edge="mist"] { --edge-h: clamp(50px, 6.5vw, 90px); }
+.article[data-edge="mist"] .article-hero {
+  -webkit-mask-image: linear-gradient(#000, #000), url(../assets/edges/mist.png); mask-image: linear-gradient(#000, #000), url(../assets/edges/mist.png);
+  -webkit-mask-size: 100% calc(100% - var(--edge-h) + 1px), auto var(--edge-h); mask-size: 100% calc(100% - var(--edge-h) + 1px), auto var(--edge-h);
+  -webkit-mask-position: top left, bottom center; mask-position: top left, bottom center;
+  -webkit-mask-repeat: no-repeat, repeat-x; mask-repeat: no-repeat, repeat-x; }
+.article[data-edge="cut"] .article-hero { -webkit-mask-image: none; mask-image: none; }
+.article[data-edge="mist"] .article-hero::after, .article[data-edge="cut"] .article-hero::after {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink-0) 30%, transparent) 0%, transparent 25%); }
+.article[data-edge="mist"] .article-head.over-hero { margin-top: .4rem; }
+.article[data-edge="cut"] .article-head.over-hero { margin-top: 1.4rem; }
+.article:is([data-edge="mist"], [data-edge="cut"]) .article-head.over-hero h1 { text-shadow: none; }
 .article-hero:not(.has-img) { display: none; }
 .article-hero:not(.has-img) + .over-hero { margin-top: 0; }
 

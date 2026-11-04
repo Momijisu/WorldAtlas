@@ -87,6 +87,9 @@ export async function worldDialog(w) {
       </div>
       <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
+      <div class="field-label" style="margin-top:1.2rem">Header edge <small>where an article’s header image meets the page</small></div>
+      <div class="seg" id="edgeSeg">${[['fade', 'Fade'], ['mist', 'Mist'], ['cut', 'Hard cut']].map(([k, l]) =>
+        `<button type="button" data-edge="${k}" class="${(w.heroEdge || 'fade') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
       <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
@@ -137,6 +140,13 @@ export async function worldDialog(w) {
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
+      let edge = w.heroEdge || 'fade';
+      $('#edgeSeg', m).onclick = (e) => {
+        const b = e.target.closest('[data-edge]');
+        if (!b) return;
+        edge = b.dataset.edge;
+        for (const x of $('#edgeSeg', m).children) x.classList.toggle('on', x === b);
+      };
       f.file.onchange = async () => {
         const file = f.file.files[0];
         if (!file) return;
@@ -169,6 +179,7 @@ export async function worldDialog(w) {
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
         if (!next.background) delete next.background;
+        if (edge === 'fade') delete next.heroEdge; else next.heroEdge = edge;
         await store.save('worlds', next);
         close();
         if (isNew) location.hash = `#/w/${w.id}`; else state.route();

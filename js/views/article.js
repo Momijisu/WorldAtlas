@@ -41,7 +41,7 @@ export function viewArticle(wid, id, { section } = {}) {
         <span><span class="rel-kind">${REL_TYPES[r.type].label}</span><br><span class="rel-name">${esc(r.other ? r.other.title : r.name)}</span>
         ${r.note ? `<br><span class="rel-note">${esc(r.note)}</span>` : ''}</span></a>`).join('')}</div>`).join('');
 
-  view.innerHTML = `<article class="page article">
+  view.innerHTML = `<article class="page article" data-edge="${['mist', 'cut'].includes(w.heroEdge) ? w.heroEdge : 'fade'}">
     ${a.banner ? `<div class="article-hero" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
     <div class="page-head article-head${a.banner ? ' over-hero' : ''}">
       <div>
