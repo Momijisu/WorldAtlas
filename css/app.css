@@ -289,6 +289,37 @@ label.inline select { width: auto; }
 #sidebar .count { margin-left: auto; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
 .nav-title { margin: 1.2rem .7rem .35rem; font: 500 .68rem/1 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 .nav-sep { height: 1px; background: var(--rule); margin: .9rem .5rem; }
+/* Sidebar header: back link and fold button on one row; the world's name with its settings button. */
+.side-top { display: flex; align-items: center; justify-content: space-between; gap: .3rem; margin-bottom: .6rem; }
+#sidebar .side-top a.back { margin-bottom: 0; flex: 1; }
+.side-top:not(:has(.back)) { justify-content: flex-end; margin-bottom: .2rem; }
+.side-fold, .side-world { color: var(--muted); flex-shrink: 0; }
+#sidebar .world-title { display: flex; align-items: flex-start; justify-content: space-between; gap: .4rem; }
+#sidebar .world-title .side-world { margin-top: .1rem; }
+#sidebar .world-mono { display: none; }
+/* Folded to icons (wide screens): labels, counts and the world line give way
+   to tooltips, section titles become thin rules, the world shows its initial. */
+@media (min-width: 921px) {
+  body.nav-mini { --side: 62px; }
+  body.nav-mini #sidebar { padding: 1rem .5rem 2rem; overflow-x: hidden; }
+  body.nav-mini #sidebar a { justify-content: center; gap: 0; padding: .5rem 0; }
+  body.nav-mini #sidebar a > span:not(.world-mono), body.nav-mini #sidebar .world-sub, body.nav-mini #sidebar .nav-empty { display: none; }
+  body.nav-mini .side-top { flex-direction: column-reverse; gap: .5rem; }
+  body.nav-mini #sidebar .side-top a.back { flex: none; width: 100%; }
+  body.nav-mini .nav-title { height: 1px; margin: .7rem .5rem; overflow: hidden; color: transparent; background: var(--rule); }
+  body.nav-mini #sidebar .world-title { flex-direction: column; align-items: center; padding: 0 0 .7rem; margin-bottom: .4rem; border-bottom: 1px solid var(--rule); }
+  body.nav-mini #sidebar .world-mono { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--rule-strong); border-radius: 50%; font-size: 1.3rem; color: var(--brass); }
+  body.nav-mini #sidebar a.active { border-radius: var(--r); }
+}
+@media (max-width: 920px) { .side-fold { display: none; } }
+
+/* Scrollbars in the theme's colours. */
+html { scrollbar-color: var(--rule-strong) transparent; }
+#sidebar, .modal, textarea { scrollbar-width: thin; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule-strong); border: 3px solid transparent; border-radius: 8px; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
 #scrim { display: none; }
 
 #view { flex: 1; min-width: 0; }

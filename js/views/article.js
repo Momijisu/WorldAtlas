@@ -9,6 +9,7 @@ import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flou
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS } from '../focus.js';
+import { edgeOf } from '../edges.js';
 import { mountMap } from '../mapview.js';
 import { drawTree, articleTreeKind } from './tree.js';
 import { itemTitle, linkedArticle, applyMarkers } from './maps.js';
@@ -41,8 +42,8 @@ export function viewArticle(wid, id, { section } = {}) {
         <span><span class="rel-kind">${REL_TYPES[r.type].label}</span><br><span class="rel-name">${esc(r.other ? r.other.title : r.name)}</span>
         ${r.note ? `<br><span class="rel-note">${esc(r.note)}</span>` : ''}</span></a>`).join('')}</div>`).join('');
 
-  view.innerHTML = `<article class="page article" data-edge="${['mist', 'cut'].includes(w.heroEdge) ? w.heroEdge : 'fade'}">
-    ${a.banner ? `<div class="article-hero" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
+  view.innerHTML = `<article class="page article" data-edge="${edgeOf(wid)}">
+    ${a.banner ? `<div class="article-hero edge-img" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
     <div class="page-head article-head${a.banner ? ' over-hero' : ''}">
       <div>
         <div class="eyebrow"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` ${sep} <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')}</div>

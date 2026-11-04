@@ -184,21 +184,41 @@
 .article-head.over-hero { position: relative; z-index: 1; margin-top: -7.5rem; }
 .article-head.over-hero h1 { text-shadow: 0 2px 18px color-mix(in srgb, var(--ink-0) 80%, transparent); }
 @media (max-width: 920px) { .article-hero { margin-top: -1.3rem; } .article-head.over-hero { margin-top: -5rem; } }
-/* Header edge, chosen per world: Mist uses a painted mask (assets/edges/mist.png,
-   opaque = picture shows) along the bottom, sized to the screen and repeated
-   across; Hard cut ends the picture squarely. Both put the title below the picture. */
-.article[data-edge="mist"] { --edge-h: clamp(50px, 6.5vw, 90px); }
-.article[data-edge="mist"] .article-hero {
-  -webkit-mask-image: linear-gradient(#000, #000), url(../assets/edges/mist.png); mask-image: linear-gradient(#000, #000), url(../assets/edges/mist.png);
+/* Header edges (js/edges.js): data-edge on the page picks how .edge-img meets
+   the page. Torn and Mist use a mask strip along the bottom (opaque = picture
+   shows), sized to the screen and repeated across; Hard cut ends it squarely.
+   Fade is the default gradient above. With any of the three, titles sit below
+   the picture instead of over it. */
+[data-edge="torn"] .edge-img { --edge-mask: url(../assets/edges/torn.png); --edge-h: clamp(50px, 6.5vw, 90px); }
+[data-edge="mist"] .edge-img { --edge-mask: url(../assets/edges/mist.svg); --edge-h: clamp(60px, 7.5vw, 105px); }
+:is([data-edge="torn"], [data-edge="mist"]) .edge-img {
+  -webkit-mask-image: linear-gradient(#000, #000), var(--edge-mask); mask-image: linear-gradient(#000, #000), var(--edge-mask);
   -webkit-mask-size: 100% calc(100% - var(--edge-h) + 1px), auto var(--edge-h); mask-size: 100% calc(100% - var(--edge-h) + 1px), auto var(--edge-h);
   -webkit-mask-position: top left, bottom center; mask-position: top left, bottom center;
   -webkit-mask-repeat: no-repeat, repeat-x; mask-repeat: no-repeat, repeat-x; }
-.article[data-edge="cut"] .article-hero { -webkit-mask-image: none; mask-image: none; }
-.article[data-edge="mist"] .article-hero::after, .article[data-edge="cut"] .article-hero::after {
+[data-edge="cut"] .edge-img { -webkit-mask-image: none; mask-image: none; }
+:is([data-edge="torn"], [data-edge="mist"], [data-edge="cut"]) .edge-img::after {
   background: linear-gradient(180deg, color-mix(in srgb, var(--ink-0) 30%, transparent) 0%, transparent 25%); }
-.article[data-edge="mist"] .article-head.over-hero { margin-top: .4rem; }
-.article[data-edge="cut"] .article-head.over-hero { margin-top: 1.4rem; }
-.article:is([data-edge="mist"], [data-edge="cut"]) .article-head.over-hero h1 { text-shadow: none; }
+[data-edge="torn"] .article-head.over-hero { margin-top: .4rem; }
+/* Mist ends in a solid bank of page colour: the title sits up in it. */
+[data-edge="mist"] .article-head.over-hero { margin-top: -1.4rem; }
+[data-edge="cut"] .article-head.over-hero { margin-top: 1.4rem; }
+:is([data-edge="torn"], [data-edge="mist"], [data-edge="cut"]) .article-head.over-hero h1 { text-shadow: none; }
+/* The overview: the cover becomes a band across the top with the name below it. */
+:is([data-edge="torn"], [data-edge="mist"], [data-edge="cut"]) .hero.with-img { flex-direction: column; align-items: stretch; min-height: 0; }
+:is([data-edge="torn"], [data-edge="mist"], [data-edge="cut"]) .hero.with-img .hero-img { position: relative; inset: auto; height: clamp(200px, 30vw, 380px); }
+:is([data-edge="torn"], [data-edge="mist"]) .hero.with-img .hero-inner { padding-top: .2rem; }
+/* Small header preview in Settings and World settings. */
+.edge-preview { position: relative; max-width: 420px; margin-top: .7rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--ink-0); overflow: hidden; }
+.edge-preview .edge-img { position: relative; height: 130px; background-color: var(--ink-2); background-position: center; background-size: cover; background-repeat: no-repeat; }
+.edge-preview[data-edge="fade"] .edge-img { -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 45%, transparent 100%); }
+.edge-preview .edge-img::after { content: ""; position: absolute; inset: 0; }
+.edge-preview[data-edge="fade"] .edge-title { margin-top: -2.4rem; position: relative; }
+.edge-preview .edge-img { --edge-h: 40px !important; }
+.edge-preview[data-edge="mist"] .edge-img { --edge-h: 52px !important; }
+.edge-preview[data-edge="mist"] .edge-title { margin-top: -.6rem; position: relative; }
+.edge-preview .edge-title { padding: .3rem .9rem .8rem; font: 600 1.5rem/1.1 var(--display); color: var(--text); }
+.hero-sample { background-image: url(../assets/demo/varenhold.svg); }
 .article-hero:not(.has-img) { display: none; }
 .article-hero:not(.has-img) + .over-hero { margin-top: 0; }
 
@@ -375,3 +395,12 @@ details.guide summary .muted { font-weight: 400; }
 #covQ { width: 100%; margin: .2rem 0 .6rem; }
 .cov-list { max-height: min(50vh, 26rem); overflow: auto; }
 .cov-list .rows { margin: 0; }
+
+/* World overview: the prompt and the random-article button share the side column. */
+.intro-side:empty { display: none; }
+.random-art { margin-top: 1rem; width: 100%; max-width: 460px; justify-content: center; }
+.intro-side .today-prompt:empty + .random-art { margin-top: 1.6rem; }
+/* World settings: how the cover crops on the worlds page. */
+.cover-previews { display: flex; gap: 1rem; margin-top: .8rem; }
+.cover-previews .field-label { margin-top: 0; }
+.cover-card-prev { width: 200px; aspect-ratio: 4 / 3; border: 1px solid var(--rule); border-radius: var(--r); background-size: cover; }

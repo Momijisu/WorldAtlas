@@ -9,6 +9,7 @@ import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
 import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground, noiseLevel, setNoise, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
+import { deviceEdge, setDeviceEdge, edgeSegHTML, edgePreviewHTML } from '../edges.js';
 
 export function applyTheme() {
   applyNoise();
@@ -58,6 +59,9 @@ export function viewSettings() {
       ${pickerHTML(deviceDefault())}
       <label class="bg-scale" style="margin-top:.9rem" title="Fine grain over the whole app that softens flat colours">Noise
         <input type="range" id="noiseRange" min="0" max="100" step="1" value="${noiseLevel()}"><output>${noiseLevel()}%</output></label>
+      <div class="field-label" style="margin-top:1.2rem">Header edge <small>on this device; each world can choose its own in World settings</small></div>
+      <div class="seg" id="edgeSeg">${edgeSegHTML(deviceEdge())}</div>
+      ${edgePreviewHTML(deviceEdge())}
     </div>
     <div class="panel">
       <h2>Writing help</h2>
@@ -126,6 +130,13 @@ export function viewSettings() {
     applyTheme(); mark();
   };
   mark();
+  $('#edgeSeg').onclick = (e) => {
+    const b = e.target.closest('[data-edge-opt]');
+    if (!b) return;
+    setDeviceEdge(b.dataset.edgeOpt);
+    for (const x of $('#edgeSeg').children) x.classList.toggle('on', x === b);
+    $('.edge-preview').dataset.edge = b.dataset.edgeOpt;
+  };
   const wseg = $('#weightSeg');
   const markW = () => { for (const b of wseg.children) b.classList.toggle('on', b.dataset.w === (localStorage.getItem('wa.weight') || 'regular')); };
   wseg.onclick = (e) => {

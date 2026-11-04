@@ -5,7 +5,7 @@ import { TYPES } from './store.js';
 import { templateCounts } from './templates.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
-import { viewWorlds, viewWorld, newArticleDialog } from './views/home.js';
+import { viewWorlds, viewWorld, newArticleDialog, worldDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground } from './backgrounds.js';
 import { wirePreviews } from './preview.js';
@@ -286,25 +286,49 @@ function conflictNav(wid) {
   return nav(href, 'warning', 'Conflicts to resolve', list.length, 'class="nav-conflict"');
 }
 
+// The sidebar can fold down to its icons (wide screens only); the choice is per device.
+const MINI_KEY = 'wa.navMini';
+const navMini = () => { try { return localStorage.getItem(MINI_KEY) === '1'; } catch { return false; } };
+function setNavMini(on) {
+  try { localStorage.setItem(MINI_KEY, on ? '1' : '0'); } catch { /* storage blocked */ }
+  document.body.classList.toggle('nav-mini', on);
+  renderSidebar(state.wid);
+  markActiveNav();
+}
+document.body.classList.toggle('nav-mini', navMini());
+const foldBtn = () => {
+  const t = navMini() ? 'Show the full sidebar' : 'Fold the sidebar to icons';
+  return `<button class="icon-btn sm side-fold" id="sideFold" title="${t}" aria-label="${t}">${icon('sidebar-simple')}</button>`;
+};
+// Folded, each link's name shows as a tooltip instead.
+function wireSidebar() {
+  $('#sideFold')?.addEventListener('click', () => setNavMini(!navMini()));
+  $('#sideWorld')?.addEventListener('click', () => worldDialog(store.world(state.wid)));
+  if (navMini()) $$('#sidebar a').forEach((a) => { a.title ||= a.querySelector('span')?.textContent || ''; });
+}
+
 const nav = (href, ic, label, count = '', extra = '') =>
   `<a href="${href}" ${extra}>${icon(ic)}<span>${label}</span>${count !== '' ? `<span class="count">${count}</span>` : ''}</a>`;
 
 function renderSidebar(wid) {
   if (!wid) {
     sidebar.innerHTML = `<nav>
+      <div class="side-top">${foldBtn()}</div>
       <div class="nav-title" style="margin-top:0">Library</div>
       ${nav('#/', 'books', 'All worlds')}
       ${store.worlds().map((w) => nav(`#/w/${w.id}`, 'globe-hemisphere-west', esc(w.name))).join('')}
       <div class="nav-sep"></div>
       ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}
     </nav>`;
+    wireSidebar();
     return;
   }
   const w = store.world(wid);
   const arts = store.articlesOf(wid);
   sidebar.innerHTML = `<nav>
-    <a href="#/" class="back">${icon('arrow-left')} All worlds</a>
-    <div class="world-title"><a href="#/w/${wid}">${esc(w.name)}</a></div>
+    <div class="side-top"><a href="#/" class="back">${icon('arrow-left')}<span>All worlds</span></a>${foldBtn()}</div>
+    <div class="world-title"><a href="#/w/${wid}" title="${esc(w.name)}"><span class="world-name">${esc(w.name)}</span><span class="world-mono" aria-hidden="true">${esc((w.name[0] || '?').toUpperCase())}</span></a>
+      <button class="icon-btn sm side-world" id="sideWorld" title="World settings" aria-label="World settings">${icon('gear-six')}</button></div>
     <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} article${arts.length === 1 ? '' : 's'} · ${store.mapsOf(wid).length} map${store.mapsOf(wid).length === 1 ? '' : 's'}`}</div>
     ${nav(`#/w/${wid}`, 'compass', 'Overview')}
     ${conflictNav(wid)}
@@ -322,6 +346,7 @@ function renderSidebar(wid) {
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
     ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}
   </nav>`;
+  wireSidebar();
 }
 
 boot();

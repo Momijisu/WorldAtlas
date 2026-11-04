@@ -14,6 +14,7 @@ import { posCSS, wireFocus } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
 import { promptCard, wirePromptCard } from './prompts.js';
+import { edgeOf, worldEdge, setWorldEdge, edgeSegHTML, edgePreviewHTML } from '../edges.js';
 
 // The world page header's shape (width / height) on this device, recorded
 // whenever a world page shows, so world cards and the cover preview crop the
@@ -25,7 +26,7 @@ export function heroRatio() {
   return saved > 0.5 ? saved : Math.min(1400, $('#view')?.clientWidth || innerWidth) / 240;
 }
 function recordHeroRatio() {
-  const hero = $('.world-home .hero');
+  const hero = $('.world-home .hero-img') || $('.world-home .hero');
   if (hero?.offsetWidth && hero.offsetHeight) try { localStorage.setItem(HERO_KEY, (hero.offsetWidth / hero.offsetHeight).toFixed(3)); } catch { /* private mode */ }
 }
 addEventListener('resize', () => recordHeroRatio());
@@ -85,11 +86,14 @@ export async function worldDialog(w) {
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
         <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
       </div>
+      <div class="cover-previews" ${w.image ? '' : 'hidden'}>
+        <div><div class="field-label">On the worlds page</div><div class="card-cover cover-card-prev"></div></div>
+      </div>
       <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
-      <div class="field-label" style="margin-top:1.2rem">Header edge <small>where an article’s header image meets the page</small></div>
-      <div class="seg" id="edgeSeg">${[['fade', 'Fade'], ['mist', 'Mist'], ['cut', 'Hard cut']].map(([k, l]) =>
-        `<button type="button" data-edge="${k}" class="${(w.heroEdge || 'fade') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <div class="field-label" style="margin-top:1.2rem">Header edge <small>where header images meet the page</small></div>
+      <div class="seg" id="edgeSeg">${edgeSegHTML(worldEdge(w), true)}</div>
+      ${edgePreviewHTML(worldEdge(w) || edgeOf(null), esc(w.name || 'World name'))}
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
       <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
@@ -132,21 +136,36 @@ export async function worldDialog(w) {
       // when that page is open behind the dialog, otherwise as it would be
       // (the wide page's width, min-height 240px in css/app.css).
       const coverRatio = () => {
-        const hero = document.querySelector('.world-home .hero');
+        const hero = document.querySelector('.world-home .hero-img') || document.querySelector('.world-home .hero');
         if (hero?.offsetWidth && !isNew && state.wid === w.id) return hero.offsetWidth / hero.offsetHeight;
         return heroRatio();
       };
-      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; }, ratio: coverRatio });
+      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; showCover(); }, ratio: coverRatio });
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
-      let edge = w.heroEdge || 'fade';
-      $('#edgeSeg', m).onclick = (e) => {
-        const b = e.target.closest('[data-edge]');
-        if (!b) return;
-        edge = b.dataset.edge;
-        for (const x of $('#edgeSeg', m).children) x.classList.toggle('on', x === b);
+      let edge = worldEdge(w);
+      const prev = $('.edge-preview', m);
+      const prevImg = $('.edge-img', prev);
+      const cardPrev = $('.cover-card-prev', m);
+      // Both previews use the world's own cover when it has one.
+      const showCover = async () => {
+        $('.cover-previews', m).hidden = !w.image;
+        const url = w.image ? await store.imageURL(w.image) : null;
+        prevImg.classList.toggle('hero-sample', !url);
+        prevImg.style.backgroundImage = url ? `url("${url}")` : '';
+        cardPrev.style.backgroundImage = url ? `url("${url}")` : '';
+        prevImg.style.backgroundPosition = cardPrev.style.backgroundPosition = posCSS(w.imagePos);
       };
+      showCover();
+      $('#edgeSeg', m).onclick = (e) => {
+        const b = e.target.closest('[data-edge-opt]');
+        if (!b) return;
+        edge = b.dataset.edgeOpt;
+        for (const x of $('#edgeSeg', m).children) x.classList.toggle('on', x === b);
+        prev.dataset.edge = edge || edgeOf(null);
+      };
+      f.name.addEventListener('input', () => { $('.edge-title', prev).textContent = f.name.value || 'World name'; });
       f.file.onchange = async () => {
         const file = f.file.files[0];
         if (!file) return;
@@ -154,8 +173,9 @@ export async function worldDialog(w) {
         w.imagePos = null;
         thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false;
         focus.refresh();
+        showCover();
       };
-      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; };
+      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; showCover(); };
       $('[data-del]', m)?.addEventListener('click', async () => {
         if (store.isDemo(w.id)) {
           if (!(await confirmDialog('Remove the example world from this device?', 'Remove'))) return;
@@ -179,7 +199,7 @@ export async function worldDialog(w) {
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
         if (!next.background) delete next.background;
-        if (edge === 'fade') delete next.heroEdge; else next.heroEdge = edge;
+        setWorldEdge(next, edge);
         await store.save('worlds', next);
         close();
         if (isNew) location.hash = `#/w/${w.id}`; else state.route();
@@ -197,9 +217,9 @@ export function viewWorld(wid) {
   const recent = [...arts].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
-  view.innerHTML = `<section class="page wide world-home">
+  view.innerHTML = `<section class="page wide world-home" data-edge="${edgeOf(wid)}">
     <div class="hero${w.image ? ' with-img' : ''}">
-      ${w.image ? `<div class="hero-img" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"></div>` : ''}
+      ${w.image ? `<div class="hero-img edge-img" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"></div>` : ''}
       <div class="hero-inner">
         <div><h1>${esc(w.name)}</h1></div>
         <div class="actions">
@@ -215,9 +235,12 @@ export function viewWorld(wid) {
         <button class="btn small" id="keepDemo">Keep this as my own</button>
         <button class="btn small quiet" id="removeDemo">Remove example</button>
       </div></div></div>` : ''}
-    <div class="world-intro${w.description && promptsEnabled() ? ' two-col' : ''}">
+    <div class="world-intro${w.description ? ' two-col' : ''}">
       ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
-      <div id="todayPrompt" class="today-prompt"></div>
+      <div class="intro-side">
+        <div id="todayPrompt" class="today-prompt"></div>
+        ${arts.length ? `<button class="btn random-art" id="randomArt">${icon('shuffle')} Read a random article</button>` : ''}
+      </div>
     </div>
     ${flourish()}
     <div class="index-grid">
@@ -236,6 +259,13 @@ export function viewWorld(wid) {
   };
   if (promptsEnabled()) showPrompt(todaysPrompt(wid));
   $('#editWorld').onclick = () => worldDialog(store.world(wid));
+  // A different article each time; never the one just shown.
+  $('#randomArt')?.addEventListener('click', () => {
+    const pool = arts.length > 1 ? arts.filter((a) => a.id !== state.lastRandom) : arts;
+    const a = pool[Math.floor(Math.random() * pool.length)];
+    state.lastRandom = a.id;
+    location.hash = `#/w/${wid}/a/${a.id}`;
+  });
   $('#newOwnWorld')?.addEventListener('click', () => worldDialog());
   $('#keepDemo')?.addEventListener('click', async () => {
     if (!(await confirmDialog(`Keep ${w.name} as a normal world? It will sync to OneDrive like your other worlds.`, 'Keep it', { title: 'Keep the example', danger: false }))) return;
