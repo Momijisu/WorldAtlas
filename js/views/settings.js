@@ -229,11 +229,15 @@ async function importBackupJSON(text) {
     for (const img of json.images || []) {
       if (!have.has(img.id)) await store.putImage({ id: img.id, type: img.type, blob: await dataURLToBlob(img.data), uploaded: false });
     }
-    await store.mergeRecords(json);
+    // Articles changed both here and in the file go to the merge manager.
+    const flagged = () => [...store.data.articles.values()].filter((a) => a.conflict && !a.deleted).length;
+    const before = flagged();
+    await store.mergeRecords(json, { history: json.history || [] });
+    const clashes = flagged() - before;
     await store.mergeHistory(json.history || []);
     await store.saveMeta({ localRev: store.meta.localRev + 1 });
     sync.sync();
-    toast('Backup imported');
+    toast(clashes ? `Backup imported. ${clashes} article${clashes === 1 ? ' was' : 's were'} changed in both places: open “Conflicts to resolve” in the sidebar to choose what to keep.` : 'Backup imported', clashes ? 7000 : 2600);
     state.route();
   } catch (e) {
     toast('Import failed: ' + e.message, 5000);

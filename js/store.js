@@ -107,7 +107,13 @@ const sameContent = (a, b) => JSON.stringify(contentOf(a)) === JSON.stringify(co
 // version in `conflict` until the user resolves it (this syncs, so every
 // device sees the conflict). Returns true if local has anything `other` lacks.
 // scope: which local records the other copy is meant to hold (e.g. one world's).
-export async function mergeRecords(other, { detectConflicts = false, scope = null } = {}) {
+// history: the other copy's article versions (a backup file has no shared sync
+// point, so its history tells us which side is simply older): an article that
+// differs is kept or taken when one side's text is in the other's history, and
+// otherwise both changed, so it goes to the merge manager like a sync conflict.
+export async function mergeRecords(other, { detectConflicts = false, scope = null, history = null } = {}) {
+  const theirVersions = history && new Map();
+  if (history) for (const h of history) { if (!theirVersions.has(h.articleId)) theirVersions.set(h.articleId, []); theirVersions.get(h.articleId).push(h.snapshot); }
   let localAhead = false;
   let newConflicts = 0;
   for (const s of db.RECORD_STORES) {
@@ -120,6 +126,16 @@ export async function mergeRecords(other, { detectConflicts = false, scope = nul
       const lu = l.updatedAt || 0, ru = r.updatedAt || 0;
       if (lu === ru) continue;
       const b = syncBase[r.id];
+      if (history && s === 'articles' && !l.deleted && !r.deleted && !sameContent(l, r)) {
+        if (r.conflict || l.conflict) { if (ru > lu) incoming.push(r); continue; }
+        const theirsIsOld = historyOf(r.id).some((h) => sameContent(h.snapshot, r));
+        const oursIsOld = (theirVersions.get(r.id) || []).some((v) => sameContent(v, l));
+        if (theirsIsOld && !oursIsOld) continue; // the file is behind: keep ours
+        if (oursIsOld && !theirsIsOld) { incoming.push(r); continue; } // we're behind: take theirs
+        marked.push({ ...l, conflict: { theirs: contentOf(r), theirsAt: ru, at: Date.now() }, updatedAt: Math.max(lu, ru) + 1 });
+        newConflicts++;
+        continue;
+      }
       if (detectConflicts && s === 'articles' && !l.deleted && !r.deleted && b != null && lu > b && ru > b && !sameContent(l, r)) {
         if (r.conflict && sameContent(r.conflict.theirs, l)) { incoming.push(r); continue; } // they already hold our version
         if (l.conflict && sameContent(l.conflict.theirs, r)) { // we already hold theirs; make sure ours wins the upload

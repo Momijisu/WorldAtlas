@@ -52,6 +52,7 @@ What they cover:
 - every main page opening (`smoke`);
 - OneDrive sync end to end against a fake drive (`sync`): migration, a second device, merging, rename, delete, old-version files, throttling, retries, and one stuck world not blocking the others;
 - the offline cache and updates (`offline`);
+- backup files between devices, with clashes sent to the merge manager (`backup`);
 - articles: links, excerpts and prompts (`articles`), callouts and aliases (`callouts-aliases`);
 - the editor: its toolbar (`editor`), headings written without a space (`headings`), the article pickers (`picker`);
 - finding and merging duplicates (`duplicates`);

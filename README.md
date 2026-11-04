@@ -46,8 +46,8 @@ Write about your world's people, places and history, link it all together and pi
 
 - **Private by design.** Everything you write is saved on your device, in your browser. WorldAtlas has no server and no database of its own, so nobody (not the developer, not GitHub, not anyone else) can read your work. GitHub only serves the app's files, like any website; it never sees what you write.
 - **All your devices, still private.** Connect your own OneDrive and your worlds stay in step on your phone, tablet and PCs: start on one, pick up on another. They're kept in a private folder in *your* OneDrive (`Apps/WorldAtlas`), the only place the app can reach. Your world never leaves your own devices and your own storage. [More about sync](#syncing-between-devices).
-- **Or move it by hand.** Prefer not to use OneDrive? Back up to a single file (articles, maps, pictures and history) and restore it on another device. Restoring merges with what's there, keeping the newest version of each article.
-- **Nothing lost to a clash.** If the same article was changed on two devices before they synced, both versions are kept and the merge manager shows them side by side, so you choose what to keep, part by part.
+- **Or move it by hand.** Prefer not to use OneDrive? Back up to a single file (articles, maps, pictures and history) and restore it on another device. Restoring merges it in: whatever is newer on either side is kept, and an article changed in both places goes to the merge manager.
+- **Nothing lost to a clash.** If the same article was changed on two devices before they synced (or before you restored a backup), both versions are kept and the merge manager shows them side by side, so you choose what to keep, part by part.
 - **Free, with nothing held back.** No sign-up, no paid plan, no limits, and your worlds are never made public as the price of using it.
 - **Always up to date.** New features and fixes arrive by themselves; the app picks them up the next time you open it.
 - **Works offline.** Install it from your browser and it opens in its own window, with or without internet. Anything you write offline syncs when you're back online.
