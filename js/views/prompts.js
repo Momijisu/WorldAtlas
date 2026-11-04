@@ -17,15 +17,19 @@ export function promptCard(wid, p, { eyebrow = 'A prompt for you', draw = true }
     return `<div class="prompt-card empty"><div class="eyebrow">${icon('feather')} ${esc(eyebrow)}</div>
       <p class="prompt-text">You’ve answered or set aside every prompt. <a href="#/w/${wid}/prompts">Add your own</a>.</p></div>`;
   }
+  const kind = (TYPES[p.type] || TYPES.article).label.toLowerCase();
   return `<div class="prompt-card" data-key="${esc(p.key)}">
     <div class="eyebrow">${icon('feather')} ${esc(eyebrow)} <span class="sep">/</span> ${esc(catLabel(p.cat))}</div>
     <p class="prompt-text">${esc(p.text)}</p>
-    <div class="actions left">
-      <a class="btn primary" href="${answerHref(wid, p)}">${icon('pencil-simple')} New ${esc((TYPES[p.type] || TYPES.article).label.toLowerCase())} article</a>
-      ${p.about ? `<a class="btn" href="${addToHref(wid, p)}">${icon('plus')} Add to ${esc(p.about.title)}</a>` : ''}
-      ${draw ? `<button class="btn quiet" data-draw>${icon('arrows-clockwise')} Another</button>` : ''}
-      <button class="btn quiet" data-covered title="Mark it answered by an article you've already written">${icon('check')} Already covered</button>
-      <button class="btn quiet" data-dismiss title="Hide this prompt">${icon('eye-slash')} Not for me</button>
+    <div class="prompt-main">
+      <a class="btn primary" href="${answerHref(wid, p)}" title="Start a new ${esc(kind)} article from this prompt">${icon('pencil-simple')}<span class="btn-label">New ${esc(kind)}</span></a>
+      ${p.about ? `<a class="btn" href="${addToHref(wid, p)}" title="Answer it in ${esc(p.about.title)}">${icon('plus')}<span class="btn-label">Add to ${esc(p.about.title)}</span></a>`
+        : draw ? `<button class="btn" data-draw title="Show a different prompt">${icon('arrows-clockwise')}<span class="btn-label">Another</span></button>` : ''}
+    </div>
+    <div class="prompt-more">
+      ${draw && p.about ? `<button class="btn quiet small" data-draw title="Show a different prompt">${icon('arrows-clockwise')} Another</button>` : ''}
+      <button class="btn quiet small" data-covered title="Mark it answered by an article you've already written">${icon('check')} Already covered</button>
+      <button class="btn quiet small" data-dismiss title="Hide this prompt">${icon('eye-slash')} Not for me</button>
     </div>
   </div>`;
 }

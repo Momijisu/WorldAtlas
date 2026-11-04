@@ -237,6 +237,14 @@
 .prompt-card .eyebrow .i { color: var(--rubric); }
 .prompt-text { font: italic 500 clamp(1.4rem, 3.4vw, 1.9rem)/1.3 var(--display); color: var(--text); margin: .6rem 0 1.1rem; max-width: 46ch; }
 .prompt-card.empty .prompt-text { font-size: 1.2rem; color: var(--text-2); margin-bottom: 0; }
+/* Two main actions side by side, the lesser ones in a quiet row beneath. */
+.prompt-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: .5rem; max-width: 460px; }
+.prompt-main .btn { min-width: 0; }
+.prompt-main .btn-label { overflow: hidden; text-overflow: ellipsis; }
+.prompt-more { display: flex; flex-wrap: wrap; gap: .1rem .3rem; margin: .5rem 0 0 -.5rem; }
+.prompt-more .btn { color: var(--muted); }
+.prompt-more .btn .i { color: var(--muted); }
+.prompt-more .btn:hover { color: var(--text); transform: none; }
 .today-prompt { margin-top: 1.6rem; }
 .today-prompt:empty { display: none; }
 /* Wide screens: today's prompt sits beside the world description. */
@@ -263,7 +271,7 @@
 .prompt-callout.small p { font-size: 1.12rem; }
 @media (max-width: 600px) {
   .prompt-card { padding: 1.1rem 1.1rem 1rem; }
-  .prompt-card .actions .btn { flex: 1 1 auto; }
+
   .prompt-list li { flex-wrap: wrap; }
   .pl-actions { margin-left: calc(34px + .9rem); }
 }
