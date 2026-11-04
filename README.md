@@ -1,7 +1,7 @@
 # WorldAtlas
 
-**A worldbuilding wiki for your campaigns and stories, on your phone and your PC: free, and completely private.**
-Write about your world's people, places and history, link it all together and pin it on your maps. There's no account, no paid tier and nothing is ever made public. Your world stays on your own devices, where nobody else can see it.
+**A worldbuilding wiki for your campaigns and stories, across your phone, tablet and PC: free, and completely private.**
+Write about your world's people, places and history, link it all together and pin it on your maps. There's no account, no paid tier and nothing is ever made public. Your world lives on your own devices and your own cloud storage, where nobody else can see it.
 
 **[Open WorldAtlas →](https://momijisu.github.io/WorldAtlas/)** It opens with an example world, Aerthal, to explore.
 
@@ -44,15 +44,16 @@ Write about your world's people, places and history, link it all together and pi
 
 **Just open it: [momijisu.github.io/WorldAtlas](https://momijisu.github.io/WorldAtlas/).** That's the whole setup.
 
-- **Private by design.** Everything you write is saved in your browser on your device. WorldAtlas has no server and no database, and sends your work nowhere. Not the developer, not GitHub, not anyone can read it. (GitHub only serves the app's files, like any website; it never sees what you write.)
+- **Private by design.** Everything you write is saved on your device, in your browser. WorldAtlas has no server and no database of its own, so nobody (not the developer, not GitHub, not anyone else) can read your work. GitHub only serves the app's files, like any website; it never sees what you write.
+- **All your devices, still private.** Connect your own OneDrive and your worlds stay in step on your phone, tablet and PCs: start on one, pick up on another. They're kept in a private folder in *your* OneDrive (`Apps/WorldAtlas`), the only place the app can reach. Your world never leaves your own devices and your own storage. [More about sync](#syncing-between-devices).
+- **Or move it by hand.** Prefer not to use OneDrive? Back up to a single file (articles, maps, pictures and history) and restore it on another device. Restoring merges with what's there, keeping the newest version of each article.
+- **Nothing lost to a clash.** If the same article was changed on two devices before they synced, both versions are kept and the merge manager shows them side by side, so you choose what to keep, part by part.
 - **Free, with nothing held back.** No sign-up, no paid plan, no limits, and your worlds are never made public as the price of using it.
 - **Always up to date.** New features and fixes arrive by themselves; the app picks them up the next time you open it.
-- **Works offline.** Install it from your browser and it opens in its own window, with or without internet:
+- **Works offline.** Install it from your browser and it opens in its own window, with or without internet. Anything you write offline syncs when you're back online.
   - **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge)
   - **Android:** browser menu → *Install app* (Chrome) or *Add to phone* (Edge)
   - **iPhone / iPad:** Share → *Add to Home Screen*
-
-Want the same worlds on your phone and your PC? Turn on [sync](#syncing-between-devices-optional) through your own OneDrive; it's still yours alone.
 
 ### Prefer to run your own copy?
 
@@ -72,20 +73,26 @@ python3 -m http.server 8000
 
 A copy of your own only updates when you pull in new versions.
 
-## Syncing between devices (optional)
+## Syncing between devices
 
-Without sync, each device keeps its own worlds. To have the same worlds on your phone and your PC, go to **Settings → OneDrive sync** and choose **Connect OneDrive**:
+Go to **Settings → OneDrive sync** and choose **Connect OneDrive** on each device, with the same Microsoft account.
 
-- WorldAtlas only gets access to its own folder, `OneDrive/Apps/WorldAtlas`, and nothing else in your OneDrive.
-- Edits merge between devices. If the same article changes on two devices before they sync, you choose what to keep.
-
-On the online version this works straight away. A copy you run or host yourself needs a free one-time registration with Microsoft first: see [docs/SYNC.md](docs/SYNC.md).
+- **Only its own folder.** WorldAtlas can only reach `OneDrive/Apps/WorldAtlas`, nothing else in your OneDrive. Each world gets its own folder there; to share a world with a co-writer, share that folder from OneDrive.
+- **When it syncs:** shortly after each edit, when the app opens or comes back online, and every couple of minutes. Edits to different articles merge on their own; the same article changed in two places goes to the merge manager.
+- **Self-hosting:** this works straight away on the online version. A copy you run or host yourself needs a free one-time registration with Microsoft first: see [docs/SYNC.md](docs/SYNC.md).
 
 ## Your data
 
-- **Yours alone.** Your worlds live in your browser, and in your own OneDrive if you turn sync on. There's no account, no tracking, and no copy anywhere else.
+- **Yours alone.** Your worlds live in your browser on each device, and in your own OneDrive if you turn sync on. There's no account, no tracking, and no copy anywhere else.
 - **Take it with you any time:** export a world, or back everything up to a single file, from Settings.
 - **Keep a backup.** Browsers can clear a website's data (for example if you clear your browsing data), so without sync, make a backup now and then.
+
+## Roadmap
+
+Ideas being considered, not promises:
+
+- **More places to sync:** Google Drive, and other file shares (such as Dropbox or a shared network folder), so you can keep devices in step with whatever storage you already use
+- **Player view:** a read-only copy of a world for your players, with GM notes and secrets left out
 
 ## More
 
