@@ -97,6 +97,7 @@ Ideas being considered, not promises:
 
 ## More
 
+- [What's new](CHANGELOG.md): the latest changes, release by release
 - [Tables](docs/TABLES.md): making tables, column types, rolling and showing them in articles
 - [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
