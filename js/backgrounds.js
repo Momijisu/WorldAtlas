@@ -101,7 +101,7 @@ function spellCircle(cx, cy, R, n, k, seed) {
 }
 function spells() {
   const T = 640;
-  const circles = [[400, 230, 170, 7, 3, 3], [120, 520, 105, 5, 2, 8]];
+  const circles = [[190, 180, 170, 7, 3, 3], [490, 500, 105, 5, 2, 8]];
   let b = '';
   for (const [x, y, R, n, k, seed] of circles) {
     for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
