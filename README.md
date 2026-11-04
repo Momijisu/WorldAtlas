@@ -1,7 +1,7 @@
 # WorldAtlas
 
-**A worldbuilding wiki for your campaigns and stories, on your phone and your PC.**
-Write articles about your world's people, places and history, link them together, and pin them on your maps. It works offline, needs no account, and keeps your world on your own devices.
+**A worldbuilding wiki for your campaigns and stories, on your phone and your PC: free, and completely private.**
+Write about your world's people, places and history, link it all together and pin it on your maps. There's no account, no paid tier and nothing is ever made public. Your world stays on your own devices, where nobody else can see it.
 
 **[Open WorldAtlas →](https://momijisu.github.io/WorldAtlas/)** It opens with an example world, Aerthal, to explore.
 
@@ -42,21 +42,23 @@ Write articles about your world's people, places and history, link them together
 
 ## Getting started
 
-There are three ways to use WorldAtlas. All of them are free.
+**Just open it: [momijisu.github.io/WorldAtlas](https://momijisu.github.io/WorldAtlas/).** That's the whole setup.
 
-### 1. Use it online
+- **Private by design.** Everything you write is saved in your browser on your device. WorldAtlas has no server and no database, and sends your work nowhere. Not the developer, not GitHub, not anyone can read it. (GitHub only serves the app's files, like any website; it never sees what you write.)
+- **Free, with nothing held back.** No sign-up, no paid plan, no limits, and your worlds are never made public as the price of using it.
+- **Always up to date.** New features and fixes arrive by themselves; the app picks them up the next time you open it.
+- **Works offline.** Install it from your browser and it opens in its own window, with or without internet:
+  - **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge)
+  - **Android:** browser menu → *Install app* (Chrome) or *Add to phone* (Edge)
+  - **iPhone / iPad:** Share → *Add to Home Screen*
 
-Open **https://momijisu.github.io/WorldAtlas/** in any modern browser. Nothing to sign up for. Your worlds are saved in that browser on that device.
+Want the same worlds on your phone and your PC? Turn on [sync](#syncing-between-devices-optional) through your own OneDrive; it's still yours alone.
 
-To use it like an app, install it from the browser. It then opens in its own window and works with no internet connection:
+### Prefer to run your own copy?
 
-- **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge)
-- **Android:** browser menu → *Install app* (Chrome) or *Add to phone* (Edge)
-- **iPhone / iPad:** Share → *Add to Home Screen*
+You don't need to, but you can. WorldAtlas is plain HTML, CSS and JavaScript: no server code and nothing to build.
 
-### 2. Run it on your own computer
-
-WorldAtlas is plain HTML, CSS and JavaScript: no server code, no database, nothing to build. Download it and serve the folder with any small web server:
+**On your computer:** download it and serve the folder with any small web server, then open http://localhost:8000:
 
 ```sh
 git clone https://github.com/Momijisu/WorldAtlas.git
@@ -64,15 +66,11 @@ cd WorldAtlas
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000. You can also use `npx serve`, or the Live Server extension in VS Code.
+(`npx serve` or VS Code's Live Server work too. Double-clicking `index.html` doesn't, because browsers block web apps loaded straight from files on disk.)
 
-Opening `index.html` by double-clicking it doesn't work, because browsers block web apps that load from files on disk, so a small server is needed. Once it's open you can install it from the browser (see above) and use it fully offline.
+**On your own website:** put the folder on any static host with HTTPS: GitHub Pages, Netlify, Cloudflare Pages or your own server. On GitHub, fork this repository and set **Settings → Pages → Source** to **GitHub Actions**; every push to `main` then publishes it.
 
-### 3. Host your own copy
-
-Put the folder on any static web host: GitHub Pages, Netlify, Cloudflare Pages or your own web server. To install it on a phone, the host needs HTTPS, which all of these provide.
-
-**On GitHub:** fork this repository, then in your fork go to **Settings → Pages** and set **Source** to **GitHub Actions**. Every push to `main` then publishes to `https://<your-name>.github.io/WorldAtlas/`.
+A copy of your own only updates when you pull in new versions.
 
 ## Syncing between devices (optional)
 
@@ -85,9 +83,9 @@ On the online version this works straight away. A copy you run or host yourself 
 
 ## Your data
 
-- **No account and no tracking.** WorldAtlas has no server of its own. Your worlds live in your browser, and in your OneDrive if you turn sync on.
-- **You can always take it with you:** export a world, or back everything up to a single file, from Settings.
-- **Browsers can clear website data.** If you don't use sync, make a backup now and then.
+- **Yours alone.** Your worlds live in your browser, and in your own OneDrive if you turn sync on. There's no account, no tracking, and no copy anywhere else.
+- **Take it with you any time:** export a world, or back everything up to a single file, from Settings.
+- **Keep a backup.** Browsers can clear a website's data (for example if you clear your browsing data), so without sync, make a backup now and then.
 
 ## More
 
