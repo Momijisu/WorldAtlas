@@ -184,6 +184,12 @@
 .article-head.over-hero { position: relative; z-index: 1; margin-top: -7.5rem; }
 .article-head.over-hero h1 { text-shadow: 0 2px 18px color-mix(in srgb, var(--ink-0) 80%, transparent); }
 @media (max-width: 920px) { .article-hero { margin-top: -1.3rem; } .article-head.over-hero { margin-top: -5rem; } }
+/* Full width: article header images and world covers span the content area
+   (--view-w, measured in js/app.js); the title and text keep the page's width. */
+.article-hero, .world-home .hero { width: var(--view-w, auto); margin-left: calc(50% - var(--view-w, 100%) / 2); margin-right: 0; }
+.world-home .hero-inner { max-width: 1400px; padding-inline: max(1.1rem, env(safe-area-inset-left)); }
+.world-home .hero.with-img .hero-inner { width: min(1400px, 100%); }
+
 /* Header edges (js/edges.js): data-edge on the page picks how .edge-img meets
    the page. Torn and Mist use a mask strip along the bottom (opaque = picture
    shows), sized to the screen and repeated across; Hard cut ends it squarely.
@@ -233,7 +239,6 @@
 .prompt-card.empty .prompt-text { font-size: 1.2rem; color: var(--text-2); margin-bottom: 0; }
 .today-prompt { margin-top: 1.6rem; }
 .today-prompt:empty { display: none; }
-.world-home .hero-inner { max-width: none; }
 /* Wide screens: today's prompt sits beside the world description. */
 @media (min-width: 1100px) {
   .world-intro.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 460px); gap: 2.6rem; align-items: start; }

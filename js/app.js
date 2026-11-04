@@ -28,6 +28,10 @@ import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.j
 
 const sidebar = $('#sidebar');
 let currentHash = location.hash;
+
+// Header images span the whole content area (beside the sidebar), wider than
+// the page column; CSS reads that width from --view-w.
+new ResizeObserver(([e]) => document.documentElement.style.setProperty('--view-w', `${Math.round(e.contentRect.width)}px`)).observe($('#view'));
 let lastRendered = null;
 let ignoreHash = false;
 
