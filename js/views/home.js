@@ -87,7 +87,9 @@ export async function worldDialog(w) {
         <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
       </div>
       <div class="cover-previews" ${w.image ? '' : 'hidden'}>
-        <div><div class="field-label">On the worlds page</div><div class="card-cover cover-card-prev"></div></div>
+        <div style="flex:1"><div class="field-label">On the worlds page</div>
+          <div class="card world-card cover-card-prev"><div class="card-cover has-img"></div>
+            <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div></div>
       </div>
       <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
@@ -147,7 +149,7 @@ export async function worldDialog(w) {
       let edge = worldEdge(w);
       const prev = $('.edge-preview', m);
       const prevImg = $('.edge-img', prev);
-      const cardPrev = $('.cover-card-prev', m);
+      const cardPrev = $('.cover-card-prev .card-cover', m);
       // Both previews use the world's own cover when it has one.
       const showCover = async () => {
         $('.cover-previews', m).hidden = !w.image;
@@ -165,7 +167,7 @@ export async function worldDialog(w) {
         for (const x of $('#edgeSeg', m).children) x.classList.toggle('on', x === b);
         prev.dataset.edge = edge || edgeOf(null);
       };
-      f.name.addEventListener('input', () => { $('.edge-title', prev).textContent = f.name.value || 'World name'; });
+      f.name.addEventListener('input', () => { $('.edge-title', prev).textContent = $('.card-prev-name', m).textContent = f.name.value || 'World name'; });
       f.file.onchange = async () => {
         const file = f.file.files[0];
         if (!file) return;

@@ -99,11 +99,6 @@
   }
 }
 
-:root[data-weight="light"] {
-  --display: "Cormorant Light", "Cormorant", "Cormorant Garamond", Garamond, "Times New Roman", serif;
-  --serif: "Alegreya Light", "Alegreya", Georgia, serif;
-  --sans: "Alegreya Sans Light", "Alegreya Sans", "Gill Sans", "Segoe UI", sans-serif;
-}
 
 /* ---------- base ---------- */
 * { box-sizing: border-box; }
@@ -493,7 +488,9 @@ html { scrollbar-color: var(--rule-strong) transparent; }
   .infobox { position: static; order: -1; }
 }
 
-.prose { font: 400 1.14rem/1.72 var(--serif); color: var(--text); overflow-wrap: break-word; }
+/* Size and weight come from Settings → Appearance → Article text. */
+.prose { font: var(--prose-weight, 400) calc(1.14rem * var(--prose-size, 1))/1.72 var(--serif); color: var(--text); overflow-wrap: break-word; }
+.prose strong, .prose b { font-weight: max(700, var(--prose-weight, 400)); }
 .prose > p:first-child::first-letter, .prose.dropcap > p:first-of-type::first-letter {
   float: left; font: 600 3.7em/.82 var(--display); color: var(--rubric); padding: .06em .1em 0 0;
 }

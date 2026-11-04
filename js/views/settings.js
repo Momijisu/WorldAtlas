@@ -11,9 +11,30 @@ import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
 import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground, noiseLevel, setNoise, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
 import { deviceEdge, setDeviceEdge, edgeSegHTML, edgePreviewHTML } from '../edges.js';
 
+// Article text (Settings → Appearance): size and weight of what's written in
+// articles only; the rest of the app keeps its own type. Per device.
+const PROSE_WEIGHTS = [[400, 'Regular'], [500, 'Medium'], [700, 'Bold']];
+export function proseSettings() {
+  let p = {};
+  try { p = JSON.parse(localStorage.getItem('wa.prose') || '{}') || {}; } catch { /* unreadable */ }
+  const size = Math.min(135, Math.max(85, +p.size || 100));
+  const weight = PROSE_WEIGHTS.some(([w]) => w === +p.weight) ? +p.weight : 400;
+  return { size, weight };
+}
+function applyProse() {
+  const { size, weight } = proseSettings();
+  const root = document.documentElement.style;
+  root.setProperty('--prose-size', String(size / 100));
+  root.setProperty('--prose-weight', String(weight));
+}
+function setProse(p) {
+  try { localStorage.setItem('wa.prose', JSON.stringify({ ...proseSettings(), ...p })); } catch { /* storage blocked */ }
+  applyProse();
+}
+
 export function applyTheme() {
   applyNoise();
-  document.documentElement.dataset.weight = localStorage.getItem('wa.weight') || 'regular';
+  applyProse();
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
   const light = getComputedStyle(document.documentElement).colorScheme === 'light';
   document.querySelector('meta[name="theme-color"]').content = light ? '#e6dcc8' : '#161411';
@@ -49,11 +70,10 @@ export function viewSettings() {
         <button data-t="light">${icon('sun')} Vellum</button>
         <button data-t="auto">Match device</button>
       </div>
-      <div class="field-label" style="margin-top:1.2rem">Text weight</div>
-      <div class="seg" id="weightSeg">
-        <button data-w="regular">Regular</button>
-        <button data-w="light" style="font-family:'Alegreya Sans Light', var(--sans)">Light</button>
-      </div>
+      <div class="field-label" style="margin-top:1.2rem">Article text <small>what you write in articles; the rest of the app stays as it is</small></div>
+      <label class="bg-scale">Size<input type="range" id="proseSize" min="85" max="135" step="5" value="${proseSettings().size}"><output>${proseSettings().size}%</output></label>
+      <label class="bg-scale">Weight<input type="range" id="proseWeight" min="0" max="${PROSE_WEIGHTS.length - 1}" step="1" value="${PROSE_WEIGHTS.findIndex(([w]) => w === proseSettings().weight)}"><output>${PROSE_WEIGHTS.find(([w]) => w === proseSettings().weight)[1]}</output></label>
+      <div class="prose prose-sample"><p>The rain-slick capital of Vael was built on the bones of a Skyward citadel. Its <a href="#" onclick="return false">harbour</a> never sleeps, and the <strong>Lantern Guild</strong> keeps the old roads lit, <em>for a price</em>.</p></div>
       <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show pictures behind list rows <small class="muted">header image, or portrait, on the right</small></label>
       <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
       ${pickerHTML(deviceDefault())}
@@ -137,15 +157,12 @@ export function viewSettings() {
     for (const x of $('#edgeSeg').children) x.classList.toggle('on', x === b);
     $('.edge-preview').dataset.edge = b.dataset.edgeOpt;
   };
-  const wseg = $('#weightSeg');
-  const markW = () => { for (const b of wseg.children) b.classList.toggle('on', b.dataset.w === (localStorage.getItem('wa.weight') || 'regular')); };
-  wseg.onclick = (e) => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    localStorage.setItem('wa.weight', b.dataset.w);
-    applyTheme(); markW();
-  };
-  markW();
+  $('#proseSize').addEventListener('input', (e) => { setProse({ size: +e.target.value }); e.target.nextElementSibling.textContent = e.target.value + '%'; });
+  $('#proseWeight').addEventListener('input', (e) => {
+    const [w, label] = PROSE_WEIGHTS[+e.target.value];
+    setProse({ weight: w });
+    e.target.nextElementSibling.textContent = label;
+  });
   $('#rowPicsToggle').onchange = (e) => { try { localStorage.setItem('wa.rowPics', e.target.checked ? 'on' : 'off'); } catch { /* private mode */ } };
   $('#noiseRange').addEventListener('input', (e) => { setNoise(e.target.value); e.target.nextElementSibling.textContent = e.target.value + '%'; });
   $('#noiseRange').addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });

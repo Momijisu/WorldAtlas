@@ -403,4 +403,6 @@ details.guide summary .muted { font-weight: 400; }
 /* World settings: how the cover crops on the worlds page. */
 .cover-previews { display: flex; gap: 1rem; margin-top: .8rem; }
 .cover-previews .field-label { margin-top: 0; }
-.cover-card-prev { width: 200px; aspect-ratio: 4 / 3; border: 1px solid var(--rule); border-radius: var(--r); background-size: cover; }
+.cover-card-prev { width: min(320px, 100%); pointer-events: none; }
+.prose-sample { max-width: 640px; margin-top: .6rem; padding: .9rem 1.1rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--ink-1); }
+.prose-sample p { margin: 0; }
