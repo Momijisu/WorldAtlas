@@ -1,123 +1,100 @@
 # WorldAtlas
 
-A worldbuilding wiki for phone and PC, in the spirit of World Anvil. It works offline and syncs through your own OneDrive.
+**A worldbuilding wiki for your campaigns and stories, on your phone and your PC.**
+Write articles about your world's people, places and history, link them together, and pin them on your maps. It works offline, needs no account, and keeps your world on your own devices.
 
-**Live app:** https://momijisu.github.io/WorldAtlas/
+**[Open WorldAtlas →](https://momijisu.github.io/WorldAtlas/)** It opens with an example world, Aerthal, to explore.
+
+![An article in WorldAtlas: the city of Varenhold, with its contents, infobox and header image](docs/screenshots/article.jpg)
 
 ## Features
 
-- Articles from 25 templates (characters, settlements, spells, natural laws, conditions, conflicts, plots and more), each with an infobox grouped into sections, a portrait and a header image
-- Live editing: Markdown shown formatted as you type (or plain Markdown, or a preview)
-- `[[Wiki links]]` (to an article's title or any of its other names) with autocomplete, hover previews, backlinks, and links that update when an article is renamed; `[[Title#Section]]` links to a heading
-- Possible duplicates: articles with near-identical names ("The Black Helm" / "Black Helm", a typo) listed side by side to merge (text, details, links, relationships and map places move over; the old name stays as another name) or mark as not duplicates, and a heads-up when naming a new article like an existing one
-- Callouts (`> [!note]`, `tip`, `info`, `important`, `warning`, `danger`, `quote`; foldable with `-` / `+`), written as in Obsidian and GitHub
-- Excerpts: `![[Title]]` shows another article's summary and `![[Title#Section]]` one of its sections, kept in step with the source and linking back to it
-- A contents box on articles with several headings
-- Typed relationships, a relationship web, and trees on article pages: family trees for people and organisation charts (part of, leaders, sub-organisations, members) for organisations
-- Custom calendars with eras and moons, a calendar view and a timeline
-- Measuring distances on maps: set a map's scale once from two points, then click a route (pins snap, points can be dragged) for its length and a travel time on foot, on horseback or by ship; a scale bar in the corner
-- Maps with pins, regions, layers and nested maps; optionally numbered pins with a key you can arrange into groups, and marker shapes (pin, circle, hexagon, diamond, square) in colour, ivory, parchment or hologram styles
-- Revision history with line diffs, restore, and recovery of deleted articles
-- A writing guide for each template, and 353 writing prompts, some naming your own articles
-- GM notes that stay collapsed while reading
-- Handwritten passages (`:::cursive` blocks) and your own fonts per world for runes and invented alphabets
-- Merge resolver for articles edited on two devices before they synced
-- Import from a simple JSON format ([docs/IMPORT_FORMAT.md](docs/IMPORT_FORMAT.md)), e.g. one an AI assistant made from your notes
-- Full backup to a single file
-- Dark and light themes, a gradient, background patterns or your own wallpaper image for each world, and adjustable fine noise that softens flat colours
-- An example world, Aerthal, opens on first visit. It stays on that device and never syncs unless you choose to keep it.
+**Write**
+- Articles from 25 templates (characters, settlements, organisations, spells, conflicts, plots and more), each with an infobox, a portrait and a header image
+- An editor that shows Markdown formatted as you type
+- Callouts for notes, tips and warnings, and GM notes that stay folded away while you read
+- A writing guide for each template and 353 writing prompts, some about your own articles
+- Handwritten passages, and your own fonts for runes and invented alphabets
 
-Plain HTML, CSS and JavaScript. No server, no build step.
+**Connect**
+- `[[Links]]` between articles, with suggestions as you type, previews on hover and backlinks, which update when you rename an article
+- Other names for an article ("The Iron Queen"), so links to any of them land in the right place
+- Excerpts: show part of one article inside another, kept up to date
+- Relationships between articles, drawn as a relationship web, family trees and organisation charts
+- A tidy-up page that finds duplicate articles and merges them
 
-Planned: a read-only "player view" export without GM notes.
+**Map**
+- Maps with pins, regions, layers and maps nested inside maps
+- Numbered pins with a map key you can arrange into groups, in several marker styles
+- Distances and travel times on foot, on horseback or by ship, and a scale bar
 
-## 1. Hosting
+**Keep track of time**
+- Your own calendars with eras and moons, a calendar view and a timeline
 
-The app must be served over HTTPS to install on a phone. GitHub Pages works:
+**Keep your work safe**
+- Version history for every article, and recovery of deleted ones
+- Optional sync between your devices through your own OneDrive
+- Import from a simple format (handy for turning existing notes into a world with an AI assistant) and full backups to a single file
 
-1. Push to `main`.
-2. In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
-3. `.github/workflows/pages.yml` deploys every push to `main`, to `https://<user>.github.io/<repo>/`.
+| | | |
+|---|---|---|
+| ![A map of the kingdom of Vael with pins and layers](docs/screenshots/map.jpg) | ![A family tree](docs/screenshots/family-tree.jpg) | ![The relationship web](docs/screenshots/relationships.jpg) |
 
-Pages on a private repo needs a paid GitHub plan. World data isn't stored in the repo, so a public repo is fine. Netlify or Cloudflare Pages also work.
+## Getting started
 
-## 2. OneDrive sync
+There are three ways to use WorldAtlas. All of them are free.
 
-One-time setup with Microsoft:
+### 1. Use it online
 
-1. Sign in at https://entra.microsoft.com with the account whose OneDrive you'll use. If personal accounts are refused, create a free Azure account first (card verification, no charge).
-2. **App registrations → New registration**:
-   - Supported account types: *any organizational directory and personal Microsoft accounts*
-   - Redirect URI: platform **Single-page application**, URL = the app's address with the trailing `/` (Settings shows it with a Copy button)
-3. Copy the **Application (client) ID** into `js/config.js` and push. (With no ID there, Settings asks each device for one.)
-4. In the app, **Settings → Connect OneDrive**.
+Open **https://momijisu.github.io/WorldAtlas/** in any modern browser. Nothing to sign up for. Your worlds are saved in that browser on that device.
 
-The app asks for `Files.ReadWrite.AppFolder`, which only reaches `OneDrive/Apps/WorldAtlas`, and `User.Read` for your name. No other permissions are needed.
+To use it like an app, install it from the browser. It then opens in its own window and works with no internet connection:
 
-For local testing, add `http://localhost:8000/` as a redirect URI and run `python3 -m http.server 8000`.
+- **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge)
+- **Android:** browser menu → *Install app* (Chrome) or *Add to phone* (Edge)
+- **iPhone / iPad:** Share → *Add to Home Screen*
 
-## 3. Installing
+### 2. Run it on your own computer
 
-- **Android:** Chrome menu → *Install app*. In Edge: menu → *Add to phone*.
-- **iPhone/iPad:** Share → *Add to Home Screen*. Connect OneDrive from inside the installed app; iOS keeps its storage separate from the browser's.
-- **PC:** the install icon in the address bar, in Edge or Chrome.
+WorldAtlas is plain HTML, CSS and JavaScript: no server code, no database, nothing to build. Download it and serve the folder with any small web server:
 
-## Syncing
-
-Each device keeps a full copy in IndexedDB. In OneDrive (`Apps/WorldAtlas/`) each world has its own folder, named after it:
-
-```
-Worlds/<world name>/world.json     the world, its articles and maps
-Worlds/<world name>/history.json   its article versions
-Worlds/<world name>/images/        its pictures and fonts
-deleted.json                       worlds you've deleted, so other devices remove them too
-Legacy/                            files from the older single-file layout, moved aside
+```sh
+git clone https://github.com/Momijisu/WorldAtlas.git
+cd WorldAtlas
+python3 -m http.server 8000
 ```
 
-Renaming a world renames its folder. To share a world, share its folder from OneDrive.
+Then open http://localhost:8000. You can also use `npx serve`, or the Live Server extension in VS Code.
 
-Sync runs shortly after each edit, when the app is reopened or comes back online, and every two minutes. Edits to different articles merge. If the same article changes on two devices before they sync, both versions are kept and the article is flagged for the merge resolver.
+Opening `index.html` by double-clicking it doesn't work, because browsers block web apps that load from files on disk, so a small server is needed. Once it's open you can install it from the browser (see above) and use it fully offline.
 
-Microsoft limits browser sign-ins to 24 hours. The app renews in the background before then, in a hidden frame, so nothing interrupts you. Browsers that block third-party sign-in cookies (such as Safari) can't renew this way; there the sync badge shows **Reconnect**, and one tap signs you straight back in.
+### 3. Host your own copy
 
-## Project layout
+Put the folder on any static web host: GitHub Pages, Netlify, Cloudflare Pages or your own web server. To install it on a phone, the host needs HTTPS, which all of these provide.
 
-```
-index.html            app shell
-css/app.css           design system and both themes
-css/features.css      timeline, calendar, history, prompts, import
-css/maps.css          maps
-css/graph.css         family trees, organisation charts and the relationship web
-js/app.js             boot, routing, top bar, sidebar
-js/views/*.js         one module per screen
-js/store.js           data, templates, version history, conflict merge
-js/sync.js            OneDrive sync
-js/auth.js            Microsoft sign-in (auth code + PKCE)
-js/calendar.js        calendar maths and date formatting
-js/relations.js       relationship types and family links
-js/prompts.js         writing prompts
-js/guidance.js        writing guide questions
-js/backgrounds.js     background patterns and wallpaper
-js/templates.js       article templates and their infobox sections
-js/importer.js        import/export format
-js/mapview.js         map pan/zoom, pins and regions
-js/markdown.js        Markdown and [[link]] rendering
-js/preview.js         hover previews for article links
-js/scripts.js         handwriting and world fonts (:::Name blocks, {{Name|text}})
-js/icons.js           Phosphor icons (MIT)
-js/config.js          Microsoft client ID
-js/version.js         app version
-sw.js                 service worker
-fonts/                Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive, Kalam (OFL)
-vendor/               marked, DOMPurify, live-editor.js (CodeMirror 6, MIT; rebuild with tools/live-editor/build.sh)
-```
+**On GitHub:** fork this repository, then in your fork go to **Settings → Pages** and set **Source** to **GitHub Actions**. Every push to `main` then publishes to `https://<your-name>.github.io/WorldAtlas/`.
 
-## Releasing
+## Syncing between devices (optional)
 
-Run `tests/run.sh`, then bump `WA_VERSION` and `WA_BUILD` in `js/version.js`. Installed apps pick up the new version and replace their offline cache. Settings → About shows the running and latest versions. When adding or removing files, update `SHELL` in `sw.js`.
+Without sync, each device keeps its own worlds. To have the same worlds on your phone and your PC, go to **Settings → OneDrive sync** and choose **Connect OneDrive**:
 
-## Testing
+- WorldAtlas only gets access to its own folder, `OneDrive/Apps/WorldAtlas`, and nothing else in your OneDrive.
+- Edits merge between devices. If the same article changes on two devices before they sync, you choose what to keep.
 
-`tests/run.sh` runs the browser tests (Node with Playwright and Chromium; it serves the app on port 8766 if nothing is there already). `tests/run.sh maps` runs only the tests whose names contain "maps". Run them before every release; a failing test exits non-zero and names what broke.
+On the online version this works straight away. A copy you run or host yourself needs a free one-time registration with Microsoft first: see [docs/SYNC.md](docs/SYNC.md).
 
-They cover: every main page opening (`smoke`), OneDrive sync end to end against a fake drive (`sync`: migration, a second device, merging, rename, delete, old-version files, throttling, retried downloads and server errors, one stuck world not blocking the others), the offline cache and updates (`offline`), links, excerpts and prompts (`articles`), the editor toolbar (`editor`), headings written without a space (`headings`), callouts and aliases (`callouts-aliases`), the article pickers (`picker`), finding and merging duplicates (`duplicates`), the map key and arranging it (`maps-key`), region shape editing and region names (`maps-regions`), family trees and organisation charts (`trees`), panning and place names (`maps-input`), marker shapes and styles (`markers`), measuring distances (`maps-measure`) and the right-click menu (`contextmenu`). The test map is drawn by the tests themselves (`tests/lib.js`).
+## Your data
+
+- **No account and no tracking.** WorldAtlas has no server of its own. Your worlds live in your browser, and in your OneDrive if you turn sync on.
+- **You can always take it with you:** export a world, or back everything up to a single file, from Settings.
+- **Browsers can clear website data.** If you don't use sync, make a backup now and then.
+
+## More
+
+- [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
+- [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
+- [Development](docs/DEVELOPMENT.md): project layout, tests and releasing
+
+## Credits
+
+Fonts: Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive and Kalam, under the SIL Open Font License. Icons: [Phosphor](https://phosphoricons.com) (MIT). Libraries: [marked](https://marked.js.org), [DOMPurify](https://github.com/cure53/DOMPurify) and [CodeMirror](https://codemirror.net).

@@ -168,7 +168,7 @@ export function renderOneDriveCard() {
   const cid = auth.clientId();
   let main;
   if (!cid) {
-    main = `<p>Syncing uses a private folder in your OneDrive (<code>Apps/WorldAtlas</code>). It needs a one-time Microsoft app registration (see the README). Paste its Application (client) ID below.</p>`;
+    main = `<p>Syncing uses a private folder in your OneDrive (<code>Apps/WorldAtlas</code>). It needs a one-time Microsoft app registration (<a href="https://github.com/Momijisu/WorldAtlas/blob/main/docs/SYNC.md" target="_blank" rel="noopener">how to set it up</a>). Paste its Application (client) ID below.</p>`;
   } else if (st.state === 'off') {
     main = `<p>Sign in with Microsoft to sync your worlds through <code>OneDrive/Apps/WorldAtlas</code>.</p>
       <p><button class="btn primary" id="connectBtn">${icon('cloud-check')} Connect OneDrive</button></p>`;
