@@ -1,6 +1,6 @@
 # What's new
 
-## 1.60.0
+## 1.60.0 · 5 November 2026
 
 - **Taller world cards** on the worlds page.
 - **Frame the card separately:** in World settings, drag the picture in the *On the worlds page* card to choose what shows there, without moving the header. *Same as the header* puts it back.
