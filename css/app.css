@@ -406,7 +406,7 @@ html { scrollbar-color: var(--rule-strong) transparent; }
 
 /* World cards: the cover fills the card; name and counts sit over its lower
    edge, and the description slides up on hover. */
-.world-card { position: relative; aspect-ratio: 4 / 3; justify-content: flex-end; isolation: isolate; }
+.world-card { position: relative; aspect-ratio: 4 / 5; justify-content: flex-end; isolation: isolate; }
 .world-card .card-cover { position: absolute; inset: 0; z-index: -2; aspect-ratio: auto; border: 0; font-size: 4rem; transition: transform .45s ease; }
 .world-card .card-cover:not(.has-img) > span { transform: translateY(-18%); opacity: .55; }
 .world-card::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;

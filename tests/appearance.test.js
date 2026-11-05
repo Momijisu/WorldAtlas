@@ -33,6 +33,20 @@ run('appearance: app-wide vs per world', async ({ newPage }) => {
   const after = await store(p, (s, x) => s.world(x), wid);
   check('noise and edge are saved with the world (Fade is the default, so not stored)', after.noise === 40 && after.heroEdge === undefined, after);
 
+  // The card on the worlds page has its own framing of the cover, separate from the header's.
+  await p.click('#sideWorld');
+  await p.waitForSelector('.card-cover-img[src]');
+  const img = await (await p.$('.card-cover-img')).boundingBox();
+  await p.mouse.move(img.x + img.width / 2, img.y + img.height / 2); await p.mouse.down();
+  await p.mouse.move(img.x + img.width / 2 + 100, img.y + img.height / 2, { steps: 6 }); await p.mouse.up();
+  await p.click('#wf button.primary'); await p.waitForTimeout(500);
+  const framed = await store(p, (s, x) => s.world(x), wid);
+  check('dragging the card preview frames the card only', Array.isArray(framed.cardPos) && framed.cardPos[0] < 50 && framed.imagePos == null, [framed.cardPos, framed.imagePos]);
+  await go(p, '#/');
+  const bgPos = await p.$eval('.world-card .card-cover', (x) => x.style.backgroundPosition);
+  check('the worlds page uses the card’s own framing', bgPos.startsWith(`${framed.cardPos[0]}%`), bgPos);
+  await go(p, `#/w/${wid}`);
+
   // Sidebar: the world settings gear lines up with the fold button.
   const [gear, fold] = await p.evaluate(() => ['#sideWorld', '#sideFold'].map((s) => document.querySelector(s).getBoundingClientRect().right));
   check('the gear and the fold button share a right edge', Math.abs(gear - fold) < 1, [gear, fold]);

@@ -418,7 +418,14 @@ details.guide summary .muted { font-weight: 400; }
 /* World settings: how the cover crops on the worlds page. */
 .cover-previews { display: flex; gap: 1rem; margin-top: .8rem; }
 .cover-previews .field-label { margin-top: 0; }
-.cover-card-prev { width: min(320px, 100%); pointer-events: none; }
+.cover-card-prev { width: min(280px, 100%); }
+.cover-card-prev .card-cover-img { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; aspect-ratio: auto !important; cursor: grab; touch-action: none; user-select: none; }
+.cover-card-prev .card-cover-img.dragging { cursor: grabbing; }
+.cover-card-prev .card-cover-img:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.cover-card-prev .card-cover, .cover-card-prev .card-body { pointer-events: none; }
+.cover-card-prev .card-cover { display: none; }
+.cover-card-prev:not(:has(.card-cover-img[src])) .card-cover { display: grid; }
+.link-btn { border: 0; background: none; padding: 0; margin-left: .6rem; color: var(--link); font: inherit; text-transform: none; letter-spacing: 0; cursor: pointer; text-decoration: underline; }
 .prose-sample { max-width: 640px; margin-top: .6rem; padding: .9rem 1.1rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--ink-1); }
 .prose-sample p { margin: 0; }
 

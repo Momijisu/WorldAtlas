@@ -42,7 +42,7 @@ export function viewWorlds() {
       ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
-          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
+          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.cardPos || w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
             <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}</div>
             <h3>${esc(w.name)}</h3>
@@ -87,8 +87,9 @@ export async function worldDialog(w) {
         <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
       </div>
       <div class="cover-previews" ${w.image ? '' : 'hidden'}>
-        <div style="flex:1"><div class="field-label">On the worlds page</div>
-          <div class="card world-card cover-card-prev"><div class="card-cover has-img"></div>
+        <div style="flex:1"><div class="field-label">On the worlds page <small>drag to choose what shows on the card</small>
+          <button type="button" class="link-btn" data-card-match ${w.cardPos ? '' : 'hidden'}>Same as the header</button></div>
+          <div class="card world-card cover-card-prev"><img class="card-cover-img" alt=""><div class="card-cover has-img"></div>
             <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div></div>
       </div>
       <div class="field-label" style="margin-top:1rem">Background <small>Default is the app’s own gradient</small></div>
@@ -156,14 +157,24 @@ export async function worldDialog(w) {
       const prev = $('.edge-preview', m);
       const prevImg = $('.edge-img', prev);
       const cardPrev = $('.cover-card-prev .card-cover', m);
+      const cardImg = $('.card-cover-img', m);
+      // The card's own focus; until it's dragged it follows the header's.
+      const cardFocus = wireFocus(cardImg, {
+        get: () => w.cardPos || w.imagePos,
+        set: (v) => { w.cardPos = v; $('[data-card-match]', m).hidden = false; },
+        ratio: 4 / 5,
+      });
+      $('[data-card-match]', m).onclick = (e) => { w.cardPos = null; e.currentTarget.hidden = true; cardFocus.refresh(); };
       // Both previews use the world's own cover when it has one.
       const showCover = async () => {
         $('.cover-previews', m).hidden = !w.image;
         const url = w.image ? await store.imageURL(w.image) : null;
         prevImg.classList.toggle('hero-sample', !url);
         prevImg.style.backgroundImage = url ? `url("${url}")` : '';
-        cardPrev.style.backgroundImage = url ? `url("${url}")` : '';
-        prevImg.style.backgroundPosition = cardPrev.style.backgroundPosition = posCSS(w.imagePos);
+        cardPrev.style.backgroundImage = '';
+        if (url) cardImg.src = url; else cardImg.removeAttribute('src');
+        prevImg.style.backgroundPosition = posCSS(w.imagePos);
+        cardFocus?.refresh();
       };
       showCover();
       $('#edgeSeg', m).onclick = (e) => {
@@ -179,11 +190,12 @@ export async function worldDialog(w) {
         if (!file) return;
         w.image = await store.addImage(await prepareImage(file, 2400));
         w.imagePos = null;
+        w.cardPos = null;
         thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false;
         focus.refresh();
         showCover();
       };
-      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; showCover(); };
+      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; w.cardPos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; showCover(); };
       $('[data-del]', m)?.addEventListener('click', async () => {
         if (store.isDemo(w.id)) {
           if (!(await confirmDialog('Remove the example world from this device?', 'Remove'))) return;
@@ -202,7 +214,7 @@ export async function worldDialog(w) {
         const name = f.name.value.trim();
         if (!name) return toast('Give the world a name');
         // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
-        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, background: w.background };
+        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, cardPos: w.cardPos || null, background: w.background };
         next.fonts = fonts.filter((ft) => ft.name);
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
