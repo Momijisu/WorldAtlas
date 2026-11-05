@@ -1,6 +1,6 @@
 # What's new
 
-## 1.57.0
+## 1.57.0 · 5 November 2026
 
 ### Tables, now inside articles
 - **Add a table anywhere in an article** with the new **Table** button on the editor's toolbar. A grid opens to fill in; the table is written into the article's text. Put the cursor in a table and press **Table** again to change it.
@@ -15,6 +15,9 @@
 
 ### Fixes
 - **Article text → Weight → Medium** now looks heavier than Regular (it was showing Regular).
+- The **Edit** button on articles matches the other main buttons.
+- The editor's header no longer covers your background with a dark block. It only gets a backing once it sticks to the top while you scroll.
+- **Pictures behind list rows** use only header images. An article with just a portrait no longer shows it behind its row (it's already the row's thumbnail).
 
 ## 1.56.0 · 4 November 2026
 

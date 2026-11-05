@@ -74,7 +74,7 @@ export function viewSettings() {
       <label class="bg-scale">Size<input type="range" id="proseSize" min="85" max="135" step="5" value="${proseSettings().size}"><output>${proseSettings().size}%</output></label>
       <label class="bg-scale">Weight<input type="range" id="proseWeight" min="0" max="${PROSE_WEIGHTS.length - 1}" step="1" value="${PROSE_WEIGHTS.findIndex(([w]) => w === proseSettings().weight)}"><output>${PROSE_WEIGHTS.find(([w]) => w === proseSettings().weight)[1]}</output></label>
       <div class="prose prose-sample"><p>The rain-slick capital of Vael was built on the bones of a Skyward citadel. Its <a href="#" onclick="return false">harbour</a> never sleeps, and the <strong>Lantern Guild</strong> keeps the old roads lit, <em>for a price</em>.</p></div>
-      <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show pictures behind list rows <small class="muted">header image, or portrait, on the right</small></label>
+      <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show header images behind list rows <small class="muted">faded, on the right</small></label>
       <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
       ${pickerHTML(deviceDefault())}
       <label class="bg-scale" style="margin-top:.9rem" title="Fine grain over the whole app that softens flat colours">Noise

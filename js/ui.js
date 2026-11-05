@@ -31,12 +31,12 @@ export async function hydrateImages(root = view) {
   }
 }
 
-// Settings → Appearance: show each article's picture faded behind its list row.
+// Settings → Appearance: show each article's header image faded behind its
+// list row. Only header images: the portrait already shows as the row's thumbnail.
 export const rowPicturesOn = () => { try { return localStorage.getItem('wa.rowPics') === 'on'; } catch { return false; } };
 const rowPicture = (a) => {
-  const id = a.banner || a.image;
-  if (!id || !rowPicturesOn()) return '';
-  return `<span class="row-bg" data-bg="${esc(id)}" style="background-position:${a.banner ? posCSS(a.bannerPos, BANNER_POS) : posCSS(a.imagePos)}" aria-hidden="true"></span>`;
+  if (!a.banner || !rowPicturesOn()) return '';
+  return `<span class="row-bg" data-bg="${esc(a.banner)}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}" aria-hidden="true"></span>`;
 };
 
 // listType: the template a list is of, so its rows needn't repeat it.

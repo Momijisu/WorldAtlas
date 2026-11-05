@@ -30,6 +30,14 @@ import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.j
 const sidebar = $('#sidebar');
 let currentHash = location.hash;
 
+// A sticky page head (the editor's) gets its backing only once it has stuck.
+addEventListener('scroll', () => {
+  const head = document.querySelector('.page-head.sticky');
+  if (!head) return;
+  const top = parseFloat(getComputedStyle(head).top) || 0;
+  head.classList.toggle('stuck', head.getBoundingClientRect().top <= top + 1 && scrollY > 0);
+}, { passive: true });
+
 // Header images span the whole content area (beside the sidebar), wider than
 // the page column; CSS reads that width from --view-w.
 new ResizeObserver(([e]) => document.documentElement.style.setProperty('--view-w', `${Math.round(e.contentRect.width)}px`)).observe($('#view'));
