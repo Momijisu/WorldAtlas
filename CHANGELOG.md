@@ -10,6 +10,9 @@
 - **The Table template is gone.** Tables made with it in 1.56 have moved into their article's text, with links, ticks and chances kept.
 - Vael's road encounters in the example world are now a d8 table in the Vael article. See [docs/TABLES.md](docs/TABLES.md).
 
+### Header images
+- The **Torn** edge repeats seamlessly on wide screens.
+
 ## 1.56.0 · 4 November 2026
 
 ### Tables
