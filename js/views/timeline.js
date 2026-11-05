@@ -92,7 +92,7 @@ export function viewTimeline(wid) {
       const y = articleStart(it.a).y;
       const era = eraFor(cal, y);
       if (era !== lastEra && cal.eras.length) {
-        html += `<li class="era-mark"><span>${esc(era ? era.name : 'Before recorded eras')}</span></li>`;
+        html += `<li class="era-mark"><span class="era-line"><b>${esc(era ? era.name : 'Before recorded eras')}</b></span></li>`;
         lastEra = era;
       }
       html += `<li class="chron-item">

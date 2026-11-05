@@ -1,5 +1,20 @@
 # What's new
 
+## 1.59.0 · 5 November 2026
+
+### Updates wait for you
+- **No more updates in the middle of your writing.** If a new version arrives while you're editing, a small **!** appears on **Settings & sync** in the sidebar (and on the menu button on phones) instead. Finish and save, then choose **Update now** in Settings → About this app when you're ready. When you're not editing, updates still happen by themselves.
+
+### Setting a map's scale
+- **See the travel times as you type:** the scale dialog shows how long the distance takes on foot, on horseback and by ship, so you can tell straight away if it feels right.
+- **Or start from a travel time:** choose *I know how long it takes*, enter something like "3 days on horseback", and it works out the distance for you.
+
+### Timeline
+- **Era names** now run the full width of the events, between two rules with small diamonds, like the page dividers.
+
+### Sidebar
+- When the sidebar is folded, the world's initial takes you to its overview, so the separate Overview icon is hidden there.
+
 ## 1.58.0 · 5 November 2026
 
 ### Settings, tidied

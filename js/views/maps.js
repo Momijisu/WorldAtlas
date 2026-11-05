@@ -93,6 +93,23 @@ const TRAVEL = {
   horse: { name: 'Horseback', label: 'on horseback', icon: 'horseshoe', miles: 40, hours: 8, title: 'Riding: about 40 miles a day' },
   sail: { name: 'Sailing', label: 'by ship', icon: 'boat', miles: 80, hours: 24, title: 'Sailing: about 80 miles a day, day and night' },
 };
+// One unit in miles' terms: a day's travel in miles × this is that day in the unit.
+const PER_MILE = { miles: 1, km: 1.609, leagues: 1 / 3 };
+// A day's travel in `unit` by `how`, and its hours; `pace` is the map's own walking pace.
+// Hexes have no travel times; in "days", only walking (a day is a day's walk).
+function paceIn(unit, how, pace) {
+  if (!PER_MILE[unit]) return unit === 'days' && how === 'foot' ? { perDay: 1, hours: 8 } : null;
+  return { perDay: how === 'foot' && pace ? pace : TRAVEL[how].miles * PER_MILE[unit], hours: TRAVEL[how].hours };
+}
+const fmtNum = (d) => (d < 10 ? Math.round(d * 10) / 10 : Math.round(d).toLocaleString());
+// "≈ 3 hours" / "≈ 2½ days" for a distance at a pace.
+function timeFor(d, pc) {
+  if (!pc || !(d > 0)) return '';
+  const days = d / pc.perDay;
+  if (days < 1) { const hrs = Math.max(1, Math.round(days * pc.hours)); return `≈ ${hrs} hour${hrs === 1 ? '' : 's'}`; }
+  const half = Math.round(days * 2) / 2;
+  return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''}`;
+}
 
 // Marker shape and style, set per map (see the map settings dialog).
 export const MARKER_SHAPES = { pin: 'Pin', circle: 'Circle', hexagon: 'Hexagon', diamond: 'Diamond', square: 'Square' };
@@ -840,26 +857,14 @@ export async function viewMap(wid, mid, q) {
   const scaleChanged = () => { drawScaleBar(); renderLayers(); };
   const pxLen = (pts) => { const { w, h } = ctl.size(); let n = 0; for (let i = 1; i < pts.length; i++) n += Math.hypot((pts[i][0] - pts[i - 1][0]) * w, (pts[i][1] - pts[i - 1][1]) * h); return n; };
   const unitOf = () => cur().scale?.unit || 'miles';
-  const fmtDist = (d) => `${d < 10 ? Math.round(d * 10) / 10 : Math.round(d).toLocaleString()} ${d === 1 ? UNIT_ONE[unitOf()] || unitOf() : unitOf()}`;
+  const fmtDist = (d) => `${fmtNum(d)} ${d === 1 ? UNIT_ONE[unitOf()] || unitOf() : unitOf()}`;
   // How long a route takes: on foot (the map's pace, if set), on horseback, or under sail
   // (which keeps going through the night). Paces are per day, in miles; other units convert.
   let mode = 'foot'; try { mode = localStorage.getItem('wa.map.travel') || 'foot'; } catch { /* storage unavailable */ }
-  const PER_MILE = { miles: 1, km: 1.609, leagues: 1 / 3 };
-  const paceOf = (m) => {
-    const u = unitOf();
-    if (!PER_MILE[u]) return u === 'days' && m === 'foot' ? { perDay: 1, hours: 8 } : null; // hexes: no travel times
-    const t = TRAVEL[m];
-    const perDay = m === 'foot' && cur().pace ? cur().pace : t.miles * PER_MILE[u];
-    return { perDay, hours: t.hours };
-  };
   const travel = (d) => {
-    const pc = paceOf(PER_MILE[unitOf()] ? mode : 'foot');
-    if (!pc || !d) return '';
-    const how = TRAVEL[PER_MILE[unitOf()] ? mode : 'foot'].label;
-    const days = d / pc.perDay;
-    if (days < 1) { const hrs = Math.max(1, Math.round(days * pc.hours)); return `≈ ${hrs} hour${hrs === 1 ? '' : 's'} ${how}`; }
-    const half = Math.round(days * 2) / 2;
-    return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''} ${how}`;
+    const how = PER_MILE[unitOf()] ? mode : 'foot';
+    const t = timeFor(d, paceIn(unitOf(), how, cur().pace));
+    return t ? `${t} ${TRAVEL[how].label}` : '';
   };
   const modeSeg = () => (PER_MILE[unitOf()] ? `<span class="seg" role="group" aria-label="Travel by">${Object.entries(TRAVEL).map(([k, t]) => `<button type="button" data-mode="${k}" class="${k === mode ? 'on' : ''}" title="${esc(t.title)}">${icon(t.icon)}<span class="hide-sm">${t.name}</span></button>`).join('')}</span>` : '');
   function measureTap(pt) {
@@ -922,20 +927,65 @@ export async function viewMap(wid, mid, q) {
     const px = pxLen(mPts), m = cur();
     const unit = m.scale?.unit || 'miles';
     modal('Set the scale', `<form class="form" id="scaleF">
-        <p class="muted small" style="margin-top:0">How far apart are the two points you clicked?</p>
-        <div class="row"><label>Distance<input name="dist" type="number" min="0" step="any" required autofocus></label>
-          <label>Unit<select name="unit">${UNITS.map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label></div>
+        <div class="seg scale-how" role="group" aria-label="What do you know?">
+          <button type="button" data-how="dist" class="on">${icon('ruler')} I know the distance</button>
+          <button type="button" data-how="time">${icon('hourglass-medium')} I know how long it takes</button></div>
+        <div data-for="dist">
+          <p class="muted small">How far apart are the two points you clicked?</p>
+          <div class="row"><label>Distance<input name="dist" type="number" min="0" step="any" autofocus></label>
+            <label>Unit<select name="unit">${UNITS.map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label></div>
+        </div>
+        <div data-for="time" hidden>
+          <p class="muted small">How long does it take to get from one point to the other?</p>
+          <div class="row scale-time"><label>Takes<input name="amount" type="number" min="0" step="any"></label>
+            <label><span class="sr-only">Hours or days</span><select name="per"><option value="days">days</option><option value="hours">hours</option></select></label>
+            <label><span class="sr-only">Travelling</span><select name="by">${Object.entries(TRAVEL).map(([k, t]) => `<option value="${k}">${t.label}</option>`).join('')}</select></label></div>
+          <label>Measure the map in<select name="unit2">${UNITS.filter((u) => PER_MILE[u]).map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+        </div>
         <label>Walking pace <small>per day, for travel times on foot; leave empty for the usual</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
+        <div class="scale-preview" aria-live="polite"></div>
         <div class="actions"><button class="btn primary">Save scale</button></div></form>`, {
       onMount: (el, close) => {
         const f = $('#scaleF', el);
-        f.unit.onchange = () => { f.pace.placeholder = DEFAULT_PACE[f.unit.value] || ''; };
+        let how = 'dist';
+        const unitNow = () => (how === 'dist' ? f.unit.value : f.unit2.value);
+        // The distance between the two points: typed, or worked out from the travel time.
+        const distance = () => {
+          if (how === 'dist') return +f.dist.value;
+          const pc = paceIn(f.unit2.value, f.by.value, +f.pace.value || null);
+          const a = +f.amount.value;
+          return pc && a > 0 ? (f.per.value === 'hours' ? a / pc.hours : a) * pc.perDay : 0;
+        };
+        // Live: the distance (when worked out) and how long it takes each way of travelling.
+        const preview = () => {
+          const u = unitNow(), d = distance(), pace = +f.pace.value || null;
+          f.pace.placeholder = DEFAULT_PACE[u] || '';
+          const box = $('.scale-preview', el);
+          if (!(d > 0)) { box.innerHTML = `<span class="muted small">${how === 'dist' ? 'Type the distance to see how long it takes to travel.' : 'Type how long it takes to work out the distance.'}</span>`; return; }
+          const times = Object.entries(TRAVEL).map(([k, t]) => [k, t, timeFor(d, paceIn(u, k, pace))]).filter(([, , x]) => x);
+          box.innerHTML = `${how === 'time' ? `<div class="scale-dist">${icon('ruler')} That’s about <b>${fmtNum(d)} ${d === 1 ? UNIT_ONE[u] : u}</b> between the points.</div>` : ''}
+            ${times.length ? `<ul class="scale-times">${times.map(([k, t, x]) => `<li data-by="${k}">${icon(t.icon)}<b>${x}</b> <span class="muted">${t.label}</span></li>`).join('')}</ul>`
+              : `<span class="muted small">Travel times need miles, km or leagues.</span>`}`;
+        };
+        $('.scale-how', el).onclick = (e) => {
+          const b = e.target.closest('[data-how]');
+          if (!b) return;
+          how = b.dataset.how;
+          $$('.scale-how [data-how]', el).forEach((x) => x.classList.toggle('on', x === b));
+          $$('[data-for]', el).forEach((x) => { x.hidden = x.dataset.for !== how; });
+          (how === 'dist' ? f.dist : f.amount).focus();
+          preview();
+        };
+        f.addEventListener('input', preview);
+        f.addEventListener('change', preview);
+        preview();
         f.dist.focus();
         f.onsubmit = async (e) => {
           e.preventDefault();
-          const d = +f.dist.value;
-          if (!(d > 0) || !px) return toast('Enter the distance between the two points');
-          await persist({ scale: { perPx: d / px, unit: f.unit.value }, pace: +f.pace.value > 0 ? +f.pace.value : undefined });
+          const d = distance();
+          if (!(d > 0) || !px) return toast(how === 'dist' ? 'Enter the distance between the two points' : 'Enter how long it takes');
+          const unitSaved = unitNow();
+          await persist({ scale: { perPx: d / px, unit: unitSaved }, pace: +f.pace.value > 0 ? +f.pace.value : undefined });
           scaleChanged();
           close();
           toast('Scale saved. Click points to measure.');

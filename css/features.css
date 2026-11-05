@@ -23,11 +23,12 @@
 .chron-title { display: block; font: 600 1.25rem/1.2 var(--display); }
 .chron-sum { display: block; color: var(--text-2); font-size: .93rem; margin-top: .15rem; }
 .era-mark { display: grid; grid-template-columns: var(--date-w) 2.8rem 1fr; margin: 1.6rem 0 1rem; }
-.era-mark span {
-  grid-column: 3; justify-self: start; position: relative;
-  font: 500 .74rem var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--rubric);
-  padding: .3rem .8rem; border: 1px solid color-mix(in srgb, var(--rubric) 45%, transparent); background: var(--ink-0);
-}
+/* An era's name across the full width of the events, between two rules, like the page dividers. */
+.era-line { grid-column: 3; display: flex; align-items: center; gap: .9rem; color: var(--rubric); }
+.era-line::before, .era-line::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--rubric) 55%, transparent)); }
+.era-line::after { background: linear-gradient(90deg, color-mix(in srgb, var(--rubric) 55%, transparent), transparent); }
+.era-line b { display: inline-flex; align-items: center; gap: .7rem; font: 600 .82rem var(--sans); letter-spacing: .22em; text-transform: uppercase; white-space: nowrap; }
+.era-line b::before, .era-line b::after { content: ""; width: 6px; height: 6px; transform: rotate(45deg); border: 1px solid var(--brass); }
 @media (max-width: 640px) {
   .chronicle { --date-w: 0px; }
   .chronicle::before { left: 15px; }
@@ -37,7 +38,8 @@
   .chron-node { grid-row: 1 / span 2; grid-column: 1; justify-self: start; margin-top: 0; }
   .chron-card { grid-column: 2; }
   .era-mark { grid-template-columns: 2.4rem 1fr; }
-  .era-mark span { grid-column: 2; }
+  .era-line { grid-column: 2; }
+  .era-line b { white-space: normal; text-align: center; }
 }
 
 /* ---------- timeline: spans ---------- */

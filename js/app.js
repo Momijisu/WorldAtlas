@@ -92,7 +92,7 @@ async function boot() {
       // A downloaded update waits: it takes over now unless something's being edited.
       const offer = (w) => {
         if (!w || !navigator.serviceWorker.controller) return;
-        if (hasUnsaved() || !$('#updBtn').hidden) updateReady(w);
+        if (hasUnsaved() || updateShown) updateReady(w);
         else w.postMessage('activate');
       };
       if (reg.waiting) offer(reg.waiting);
@@ -110,12 +110,14 @@ async function boot() {
 }
 
 // ---------------------------------------------------------------- updates
-// An update that arrives mid-edit waits: a small "!" in the top bar says it's
-// ready, and stays until the user chooses to update.
-let waitingWorker = null;
+// An update that arrives mid-edit waits: a small "!" on the Settings link (and
+// the menu button on phones) says it's ready, and Settings → About this app
+// offers "Update now". It stays until the user chooses to update.
+let waitingWorker = null, updateShown = false;
 function updateReady(w) {
   if (w) waitingWorker = w;
-  $('#updBtn').hidden = false;
+  updateShown = true;
+  document.body.classList.add('update-ready');
 }
 export async function applyUpdate() {
   if (hasUnsaved()) { toast('Save or cancel what you’re editing first, then update', 4000); return; }
@@ -124,7 +126,7 @@ export async function applyUpdate() {
   else location.reload();
 }
 state.applyUpdate = applyUpdate;
-state.updateWaiting = () => !!waitingWorker || !$('#updBtn').hidden;
+state.updateWaiting = () => updateShown;
 
 // On a first visit with nothing saved, open a local-only example world so there
 // is something to explore. Not for signed-in devices (their worlds are on the
@@ -181,7 +183,6 @@ function wireChrome() {
   };
   $('#newBtn').onclick = () => newArticleDialog(state.wid);
   $('#installTop').onclick = promptInstall;
-  $('#updBtn').onclick = applyUpdate;
   showInstallButton();
   $('#syncBtn').onclick = () => {
     const st = sync.getStatus().state;
@@ -367,7 +368,7 @@ function renderSidebar(wid) {
       ${nav('#/', 'books', 'All worlds')}
       ${store.worlds().map((w) => nav(`#/w/${w.id}`, 'globe-hemisphere-west', esc(w.name))).join('')}
       <div class="nav-sep"></div>
-      ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}
+      ${nav('#/settings', 'gear-six', 'Settings &amp; sync', '', 'class="nav-settings" data-upd="Update ready"')}
     </nav>`;
     wireSidebar();
     return;
@@ -379,7 +380,7 @@ function renderSidebar(wid) {
     <div class="world-title"><a href="#/w/${wid}" title="${esc(w.name)}"><span class="world-name">${esc(w.name)}</span><span class="world-mono" aria-hidden="true">${esc((w.name[0] || '?').toUpperCase())}</span></a>
       <button class="icon-btn sm side-world" id="sideWorld" title="World settings" aria-label="World settings">${icon('gear-six')}</button></div>
     <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} article${arts.length === 1 ? '' : 's'} · ${store.mapsOf(wid).length} map${store.mapsOf(wid).length === 1 ? '' : 's'}`}</div>
-    ${nav(`#/w/${wid}`, 'compass', 'Overview')}
+    ${nav(`#/w/${wid}`, 'compass', 'Overview', '', 'class="nav-overview"')}
     ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
     ${promptsEnabled() ? nav(`#/w/${wid}/prompts`, 'feather', 'Writing prompts') : ''}
@@ -393,7 +394,7 @@ function renderSidebar(wid) {
     ${templateCounts(arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || '<p class="nav-empty">Articles you write are listed here by template.</p>'}
     <div class="nav-sep"></div>
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
-    ${nav('#/settings', 'gear-six', 'Settings &amp; sync')}
+    ${nav('#/settings', 'gear-six', 'Settings &amp; sync', '', 'class="nav-settings" data-upd="Update ready"')}
   </nav>`;
   wireSidebar();
 }

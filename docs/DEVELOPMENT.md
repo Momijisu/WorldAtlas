@@ -53,12 +53,12 @@ tests/                browser tests
 What they cover:
 - every main page opening (`smoke`);
 - OneDrive sync end to end against a fake drive (`sync`): migration, a second device, merging, rename, delete, old-version files, throttling, retries, and one stuck world not blocking the others;
-- the offline cache and updates (`offline`);
+- the offline cache and updates, including updates waiting while you edit (`offline`);
 - backup files between devices, with clashes sent to the merge manager (`backup`);
 - articles: links, excerpts and prompts (`articles`), callouts and aliases (`callouts-aliases`);
 - the editor: its toolbar (`editor`), headings written without a space (`headings`), the article pickers (`picker`);
 - finding and merging duplicates (`duplicates`);
-- maps: the map key (`maps-key`), region shapes and names (`maps-regions`), panning and place names (`maps-input`), marker styles (`markers`), measuring distances and the scale bar (`maps-measure`);
+- maps: the map key (`maps-key`), region shapes and names (`maps-regions`), panning and place names (`maps-input`), marker styles (`markers`), measuring distances, setting the scale from a distance or a travel time, and the scale bar (`maps-measure`);
 - family trees and organisation charts (`trees`);
 - tables in an article's text: the Table button, pasting, search, sort, rolling by die and chance, dice, checkboxes, quoting, 1.56 tables (`tables`);
 - app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);

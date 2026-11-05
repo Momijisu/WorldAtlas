@@ -24,6 +24,17 @@ run('maps: measuring distances', async ({ newPage }) => {
   await p.waitForSelector('#scaleF');
   if (SHOTS) { await p.waitForTimeout(300); await p.screenshot({ path: `${SHOTS}/measure-scale.png`, clip: { x: 420, y: 160, width: 620, height: 420 } }); }
   await p.fill('#scaleF input[name=dist]', '12');
+  // While typing, the dialog shows how long that is to travel: 12 miles is half a day's walk.
+  const times = await p.$$eval('.scale-times li', (l) => l.map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
+  check('the scale dialog previews travel times as you type', JSON.stringify(times) === JSON.stringify(['≈ 4 hours on foot', '≈ 2 hours on horseback', '≈ 4 hours by ship']), times);
+  // Or work the distance out from a travel time: 3 hours on horseback is 15 miles.
+  await p.click('.scale-how [data-how="time"]');
+  await p.fill('#scaleF input[name=amount]', '3');
+  await p.selectOption('#scaleF select[name=per]', 'hours');
+  await p.selectOption('#scaleF select[name=by]', 'horse');
+  const worked = (await p.textContent('.scale-dist')).replace(/\s+/g, ' ');
+  check('a travel time works out the distance', worked.includes('about 15 miles'), worked);
+  await p.click('.scale-how [data-how="dist"]');
   await p.click('#scaleF .btn.primary'); await p.waitForTimeout(400);
   const scale = await store(p, (s) => s.map('village').scale);
   check('the scale is saved with the map', scale && scale.unit === 'miles' && Math.abs(scale.perPx - 0.01) < 0.0002, scale);

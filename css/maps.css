@@ -418,3 +418,13 @@
 .measure-bar .seg button { padding: .25rem .55rem; font-size: .82rem; }
 .measure-bar .seg .i { width: .9rem; height: .9rem; }
 .measure-bar { width: max-content; } /* centred with left: 50%, it would otherwise only get half the width and wrap */
+
+/* Set the scale: distance or travel time, and a live preview of travel times. */
+.scale-how { margin-bottom: .9rem; flex-wrap: wrap; }
+.scale-time { grid-template-columns: 1fr auto auto; align-items: end; }
+.scale-time label:not(:first-child) select { min-width: 0; }
+.scale-preview { margin: .2rem 0 .4rem; padding: .7rem .9rem; border: 1px solid var(--rule); border-left: 2px solid var(--brass); border-radius: var(--r); background: color-mix(in srgb, var(--brass) 6%, transparent); min-height: 2.8rem; }
+.scale-dist { margin-bottom: .45rem; }
+.scale-dist .i, .scale-times .i { color: var(--brass); }
+.scale-times { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; }
+.scale-times li { display: inline-flex; align-items: center; gap: .4rem; }

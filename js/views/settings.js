@@ -287,7 +287,7 @@ async function wireAbout() {
     }
   };
   $('#checkUpd').onclick = check;
-  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b>'; $('#doUpd').hidden = false; }
+  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b> · save anything you’re writing, then update'; $('#doUpd').hidden = false; }
   $('#doUpd').onclick = async () => {
     $('#doUpd').disabled = true;
     $('#doUpd').textContent = 'Updating…';
