@@ -1,6 +1,6 @@
 # What's new
 
-## 1.58.0
+## 1.58.0 · 5 November 2026
 
 ### Settings, tidied
 - **One place for each setting.** In **Settings**: light or dark, Article text and header images behind list rows (how *you* like to read). In each world's **World settings**: its background, noise and header edge (how *that world* looks).
@@ -9,6 +9,7 @@
 - **Nothing changes on screen:** a background, noise or header edge you'd set as this device's default is copied into each world that hadn't chosen its own.
 - **Settings opens with About this app** (version and updates), then Install the app, then OneDrive sync.
 - The world settings button in the sidebar lines up with the fold button.
+- The **Torn** header edge is touched up.
 
 ## 1.57.0 · 5 November 2026
 
