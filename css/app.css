@@ -313,8 +313,7 @@ label.inline select { width: auto; }
 #sidebar .side-top a.back { margin-bottom: 0; flex: 1; }
 .side-top:not(:has(.back)) { justify-content: flex-end; margin-bottom: .2rem; }
 .side-fold, .side-world { color: var(--muted); flex-shrink: 0; }
-#sidebar .world-title { display: flex; align-items: flex-start; justify-content: space-between; gap: .4rem; }
-#sidebar .world-title .side-world { margin-top: .1rem; }
+#sidebar .world-title { display: flex; align-items: center; justify-content: space-between; gap: .4rem; padding-right: 0; }
 #sidebar .world-mono { display: none; }
 /* Folded to icons (wide screens): labels, counts and the world line give way
    to tooltips, section titles become thin rules, the world shows its initial. */

@@ -61,6 +61,7 @@ What they cover:
 - maps: the map key (`maps-key`), region shapes and names (`maps-regions`), panning and place names (`maps-input`), marker styles (`markers`), measuring distances and the scale bar (`maps-measure`);
 - family trees and organisation charts (`trees`);
 - tables in an article's text: the Table button, pasting, search, sort, rolling by die and chance, dice, checkboxes, quoting, 1.56 tables (`tables`);
+- app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).

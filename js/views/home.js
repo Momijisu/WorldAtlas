@@ -9,7 +9,7 @@ import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
-import { pickerHTML, wirePicker, applyBackground } from '../backgrounds.js';
+import { pickerHTML, wirePicker, applyBackground, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
 import { posCSS, wireFocus } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
@@ -91,10 +91,12 @@ export async function worldDialog(w) {
           <div class="card world-card cover-card-prev"><div class="card-cover has-img"></div>
             <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div></div>
       </div>
-      <div class="field-label" style="margin-top:1rem">Background</div>
+      <div class="field-label" style="margin-top:1rem">Background <small>Default is the app’s own gradient</small></div>
       ${pickerHTML(w.background, { allowDefault: true })}
+      <label class="bg-scale" style="margin-top:.6rem" title="Fine grain over the page that softens flat colours">Noise
+        <input type="range" id="noiseRange" min="0" max="100" step="1" value="${w.noise ?? NOISE_DEFAULT}"><output>${w.noise ?? NOISE_DEFAULT}%</output></label>
       <div class="field-label" style="margin-top:1.2rem">Header edge <small>where header images meet the page</small></div>
-      <div class="seg" id="edgeSeg">${edgeSegHTML(worldEdge(w), true)}</div>
+      <div class="seg" id="edgeSeg">${edgeSegHTML(worldEdge(w))}</div>
       ${edgePreviewHTML(worldEdge(w) || edgeOf(null), esc(w.name || 'World name'))}
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
@@ -147,6 +149,10 @@ export async function worldDialog(w) {
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
       let edge = worldEdge(w);
+      // Noise previews live; the world keeps it only when saved.
+      let noise = w.noise ?? NOISE_DEFAULT;
+      $('#noiseRange', m).addEventListener('input', (e) => { noise = +e.target.value; e.target.nextElementSibling.textContent = noise + '%'; applyNoise(noise); });
+      $('#noiseRange', m).addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });
       const prev = $('.edge-preview', m);
       const prevImg = $('.edge-img', prev);
       const cardPrev = $('.cover-card-prev .card-cover', m);
@@ -202,6 +208,7 @@ export async function worldDialog(w) {
         Object.assign(next, { name, description: f.description.value });
         if (!next.background) delete next.background;
         setWorldEdge(next, edge);
+        if (noise === NOISE_DEFAULT) delete next.noise; else next.noise = noise;
         await store.save('worlds', next);
         close();
         if (isNew) location.hash = `#/w/${w.id}`; else state.route();

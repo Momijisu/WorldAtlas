@@ -161,17 +161,21 @@ export function patternStyle(name, scale = 100, opacity, dir) {
 export const defaultOpacity = (name) => (name === 'image' ? 16 : Math.round((PATTERNS[name]?.strength ?? 0.1) * 100));
 const clampOpacity = (v) => Math.min(100, Math.max(0, Math.round(+v)));
 
-export const deviceDefault = () => { try { return JSON.parse(localStorage.getItem('wa.bg') || 'null') || { pattern: 'plain' }; } catch { return { pattern: 'plain' }; } };
-export const setDeviceDefault = (bg) => { try { localStorage.setItem('wa.bg', JSON.stringify(bg)); } catch { /* storage unavailable */ } };
+// The app's own look: pages outside a world, and worlds that haven't chosen
+// a background of their own. Not a setting.
+export const APP_BACKGROUND = { pattern: 'gradient' };
+export const deviceDefault = () => APP_BACKGROUND;
 
-// Apply the background for the current world (or the device default).
+// Apply the current world's background and noise (or the app's own).
 export async function applyBackground(wid) {
-  return showBackground((wid && store.world(wid)?.background) || deviceDefault());
+  const w = wid && store.world(wid);
+  applyNoise(w?.noise ?? NOISE_DEFAULT);
+  return showBackground(w?.background || APP_BACKGROUND);
 }
 
 // Render a background directly (also used for live previews while choosing).
 export async function showBackground(bg) {
-  bg ||= deviceDefault();
+  bg ||= APP_BACKGROUND;
   const name = PATTERNS[bg.pattern] ? bg.pattern : 'plain';
   const body = document.body;
   const url = name === 'image' && bg.image ? await store.imageURL(bg.image) : null;
@@ -190,7 +194,7 @@ export function pickerHTML(current, { allowDefault = false } = {}) {
   const sel = current?.pattern ?? (allowDefault ? 'default' : 'plain');
   const opts = Object.entries(PATTERNS).filter(([k]) => k !== 'image');
   return `<div class="bg-picker">
-    ${allowDefault ? `<button type="button" class="bg-swatch ${sel === 'default' ? 'on' : ''}" data-bg="default"><span class="bg-prev" data-p="plain"></span><span>Device default</span></button>` : ''}
+    ${allowDefault ? `<button type="button" class="bg-swatch ${sel === 'default' ? 'on' : ''}" data-bg="default" title="The app’s own gradient"><span class="bg-prev" data-p="gradient" style='${patternStyle('gradient')}'></span><span>Default</span></button>` : ''}
     ${opts.map(([k, p]) => `<button type="button" class="bg-swatch ${sel === k ? 'on' : ''}" data-bg="${k}"><span class="bg-prev" data-p="${k}" style='${patternStyle(k)}'></span><span>${p.label}</span></button>`).join('')}
     <label class="bg-swatch ${sel === 'image' ? 'on' : ''}" data-bg="image"><span class="bg-prev img" data-p="image"></span><span>Your image</span><input type="file" accept="image/*" hidden></label>
   </div>
@@ -270,15 +274,36 @@ export function wirePicker(root, current, onPick, prepareImage) {
   sync();
 }
 
-// Noise laid over the whole app (css/app.css body::before), per device, 0-100.
+// Fine grain laid over the page (css/app.css body::before), 0-100; per world (world.noise).
 export const NOISE_DEFAULT = 25;
-export function noiseLevel() {
-  try { const v = localStorage.getItem('wa.noise'); return v == null ? NOISE_DEFAULT : clampOpacity(v); } catch { return NOISE_DEFAULT; }
+export function applyNoise(level = NOISE_DEFAULT) {
+  document.documentElement.style.setProperty('--noise', String(clampOpacity(level) / 1000)); // 25 → 2.5% opacity
 }
-export function applyNoise(level = noiseLevel()) {
-  document.documentElement.style.setProperty('--noise', String(level / 1000)); // 25 → 2.5% opacity
-}
-export function setNoise(level) {
-  try { localStorage.setItem('wa.noise', String(clampOpacity(level))); } catch { /* private mode */ }
-  applyNoise();
+
+// Before 1.58 each device had its own default background, noise and header
+// edge. Once, they move into the worlds that hadn't chosen their own (so
+// nothing changes how it looks), and the device settings are dropped.
+export async function moveDeviceDefaults(oldEdge) {
+  let bg = null, noise = null;
+  // No worlds here yet (a new device, or still waiting for sync): try again next start.
+  if (!store.worlds().length) return;
+  try {
+    if (localStorage.getItem('wa.defaultsMoved')) return;
+    bg = JSON.parse(localStorage.getItem('wa.bg') || 'null');
+    const n = localStorage.getItem('wa.noise');
+    noise = n == null ? null : clampOpacity(n);
+  } catch { return; }
+  if (bg && JSON.stringify(bg) === JSON.stringify(APP_BACKGROUND)) bg = null;
+  if (noise === NOISE_DEFAULT) noise = null;
+  for (const w of store.worlds()) {
+    const next = { ...w };
+    if (bg && !w.background) next.background = bg;
+    if (noise != null && w.noise == null) next.noise = noise;
+    if (oldEdge && !w.heroEdge) next.heroEdge = oldEdge === 'mist' ? 'cloud' : oldEdge;
+    if (JSON.stringify(next) !== JSON.stringify(w)) await store.save('worlds', next);
+  }
+  try {
+    for (const k of ['wa.bg', 'wa.noise', 'wa.edge']) localStorage.removeItem(k);
+    localStorage.setItem('wa.defaultsMoved', '1');
+  } catch { /* storage blocked */ }
 }

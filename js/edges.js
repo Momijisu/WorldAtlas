@@ -1,6 +1,6 @@
 // Header edges: how an article's header image (and a world's cover on its
-// overview) meets the page. Each device has a default; a world can choose its
-// own, which syncs with the world. The choice is set as data-edge on the page
+// overview) meets the page. Chosen per world (it syncs with the world); Fade
+// unless a world chooses another. The choice is set as data-edge on the page
 // element and drawn in css/features.css.
 import * as store from './store.js';
 
@@ -12,22 +12,23 @@ const KEY = 'wa.edge';
 const fromWorld = (v) => ({ mist: 'torn', cloud: 'mist' })[v] || v;
 const toWorld = (v) => (v === 'mist' ? 'cloud' : v);
 
-export function deviceEdge() {
-  try { const v = localStorage.getItem(KEY); return EDGES[v] ? v : 'fade'; } catch { return 'fade'; }
-}
-export function setDeviceEdge(v) {
-  try { if (v === 'fade') localStorage.removeItem(KEY); else localStorage.setItem(KEY, v); } catch { /* storage blocked */ }
+// Worlds that haven't chosen an edge use Fade.
+export const DEFAULT_EDGE = 'fade';
+
+// Before 1.58 each device had a default edge (localStorage wa.edge); it moves
+// into the worlds that hadn't chosen their own (js/backgrounds.js moveDeviceDefaults).
+export function oldDeviceEdge() {
+  try { const v = localStorage.getItem('wa.edge'); return EDGES[v] && v !== DEFAULT_EDGE ? v : null; } catch { return null; }
 }
 
 // The world's own choice ('' when it follows the device default).
 export const worldEdge = (w) => (EDGES[fromWorld(w?.heroEdge)] ? fromWorld(w.heroEdge) : '');
-export const setWorldEdge = (w, v) => { if (v) w.heroEdge = toWorld(v); else delete w.heroEdge; };
-export const edgeOf = (wid) => worldEdge(wid && store.world(wid)) || deviceEdge();
+export const setWorldEdge = (w, v) => { if (v && v !== DEFAULT_EDGE) w.heroEdge = toWorld(v); else delete w.heroEdge; };
+export const edgeOf = (wid) => worldEdge(wid && store.world(wid)) || DEFAULT_EDGE;
 
-// Buttons for a .seg picker; `withDefault` adds "Device default" (value '').
-export const edgeSegHTML = (current, withDefault) =>
-  (withDefault ? [['', 'Device default'], ...Object.entries(EDGES)] : Object.entries(EDGES))
-    .map(([k, l]) => `<button type="button" data-edge-opt="${k}" class="${current === k ? 'on' : ''}">${l}</button>`).join('');
+// Buttons for a .seg picker.
+export const edgeSegHTML = (current) => Object.entries(EDGES)
+  .map(([k, l]) => `<button type="button" data-edge-opt="${k}" class="${(current || DEFAULT_EDGE) === k ? 'on' : ''}">${l}</button>`).join('');
 
 // A small header preview: the picture (or a stand-in), its edge and a title.
 export const edgePreviewHTML = (edge, title = 'Article title') =>

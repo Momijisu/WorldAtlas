@@ -7,7 +7,8 @@ import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog, worldDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
-import { applyBackground } from './backgrounds.js';
+import { applyBackground, moveDeviceDefaults } from './backgrounds.js';
+import { oldDeviceEdge } from './edges.js';
 import { convertLegacyTables } from './tables.js';
 import { wirePreviews } from './preview.js';
 import './contextmenu.js';
@@ -52,6 +53,7 @@ async function boot() {
   try { returned = await auth.handleRedirect(); } catch (e) { authError = e; }
   await store.load();
   await convertLegacyTables();
+  await moveDeviceDefaults(oldDeviceEdge());
   await seedDemo();
   wireChrome();
   wirePreviews();

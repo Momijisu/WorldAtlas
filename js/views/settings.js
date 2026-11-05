@@ -2,14 +2,12 @@
 import * as store from '../store.js';
 import * as auth from '../auth.js';
 import * as sync from '../sync.js';
-import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download, prepareImage } from '../util.js';
+import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon, rowPicturesOn } from '../ui.js';
 import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
-import { pickerHTML, wirePicker, deviceDefault, setDeviceDefault, applyBackground, noiseLevel, setNoise, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
-import { deviceEdge, setDeviceEdge, edgeSegHTML, edgePreviewHTML } from '../edges.js';
 
 // Article text (Settings → Appearance): size and weight of what's written in
 // articles only; the rest of the app keeps its own type. Per device.
@@ -33,7 +31,6 @@ function setProse(p) {
 }
 
 export function applyTheme() {
-  applyNoise();
   applyProse();
   document.documentElement.dataset.theme = localStorage.getItem('wa.theme') || 'dark';
   const light = getComputedStyle(document.documentElement).colorScheme === 'light';
@@ -49,7 +46,20 @@ export function viewSettings() {
   const android = /android/i.test(ua);
   view.innerHTML = `<section class="page narrow settings">
     ${pageHead({ eyebrow: 'WorldAtlas', title: 'Settings &amp; sync' })}
-    <div class="panel" id="oneDriveCard"></div>
+    <div class="panel" id="aboutCard">
+      <h2>About this app</h2>
+      <dl class="about-list">
+        <dt>Version</dt><dd><b>${esc(self.WA_VERSION || '?')}</b> <span class="muted">· built ${esc(self.WA_BUILD || '?')}</span></dd>
+        <dt>Offline cache</dt><dd id="cacheVer" class="muted">checking…</dd>
+        <dt>Latest online</dt><dd id="latestVer" class="muted">—</dd>
+      </dl>
+      <div class="actions left">
+        <button class="btn" id="checkUpd">${icon('arrows-clockwise')} Check for updates</button>
+        <button class="btn primary" id="doUpd" hidden>${icon('download-simple')} Update now</button>
+        <button class="btn quiet" id="resetCache" title="Clears downloaded app files only. Your worlds are not affected.">Reset offline cache</button>
+      </div>
+      <p class="muted small">Resetting the cache re-downloads the app. Your worlds and settings aren’t touched.</p>
+    </div>
     <div class="panel">
       <h2>Install the app</h2>
       ${standalone ? `<p>${icon('check')} You’re using the installed app.</p>` : `
@@ -63,6 +73,7 @@ export function viewSettings() {
               : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
       <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
+    <div class="panel" id="oneDriveCard"></div>
     <div class="panel">
       <h2>Appearance</h2>
       <div class="seg" id="themeSeg">
@@ -75,13 +86,7 @@ export function viewSettings() {
       <label class="bg-scale">Weight<input type="range" id="proseWeight" min="0" max="${PROSE_WEIGHTS.length - 1}" step="1" value="${PROSE_WEIGHTS.findIndex(([w]) => w === proseSettings().weight)}"><output>${PROSE_WEIGHTS.find(([w]) => w === proseSettings().weight)[1]}</output></label>
       <div class="prose prose-sample"><p>The rain-slick capital of Vael was built on the bones of a Skyward citadel. Its <a href="#" onclick="return false">harbour</a> never sleeps, and the <strong>Lantern Guild</strong> keeps the old roads lit, <em>for a price</em>.</p></div>
       <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show header images behind list rows <small class="muted">faded, on the right</small></label>
-      <div class="field-label" style="margin-top:1.2rem">Background <small>on this device; each world can choose its own in World settings</small></div>
-      ${pickerHTML(deviceDefault())}
-      <label class="bg-scale" style="margin-top:.9rem" title="Fine grain over the whole app that softens flat colours">Noise
-        <input type="range" id="noiseRange" min="0" max="100" step="1" value="${noiseLevel()}"><output>${noiseLevel()}%</output></label>
-      <div class="field-label" style="margin-top:1.2rem">Header edge <small>on this device; each world can choose its own in World settings</small></div>
-      <div class="seg" id="edgeSeg">${edgeSegHTML(deviceEdge())}</div>
-      ${edgePreviewHTML(deviceEdge())}
+      <p class="muted small" style="margin-top:1rem">${icon('globe-hemisphere-west')} Each world’s background, noise and header edge are in its <b>World settings</b>.</p>
     </div>
     <div class="panel">
       <h2>Writing help</h2>
@@ -124,20 +129,6 @@ export function viewSettings() {
         <label class="btn">${icon('upload-simple')} Import backup<input type="file" id="importFile" accept=".json,application/json" hidden></label>
       </div>
     </div>
-    <div class="panel" id="aboutCard">
-      <h2>About this app</h2>
-      <dl class="about-list">
-        <dt>Version</dt><dd><b>${esc(self.WA_VERSION || '?')}</b> <span class="muted">· built ${esc(self.WA_BUILD || '?')}</span></dd>
-        <dt>Offline cache</dt><dd id="cacheVer" class="muted">checking…</dd>
-        <dt>Latest online</dt><dd id="latestVer" class="muted">—</dd>
-      </dl>
-      <div class="actions left">
-        <button class="btn" id="checkUpd">${icon('arrows-clockwise')} Check for updates</button>
-        <button class="btn primary" id="doUpd" hidden>${icon('download-simple')} Update now</button>
-        <button class="btn quiet" id="resetCache" title="Clears downloaded app files only. Your worlds are not affected.">Reset offline cache</button>
-      </div>
-      <p class="muted small">Resetting the cache re-downloads the app. Your worlds and settings aren’t touched.</p>
-    </div>
     <p class="muted small center">Icons: Phosphor. Type: Cormorant Garamond, Alegreya.</p>
   </section>`;
   renderOneDriveCard();
@@ -150,13 +141,6 @@ export function viewSettings() {
     applyTheme(); mark();
   };
   mark();
-  $('#edgeSeg').onclick = (e) => {
-    const b = e.target.closest('[data-edge-opt]');
-    if (!b) return;
-    setDeviceEdge(b.dataset.edgeOpt);
-    for (const x of $('#edgeSeg').children) x.classList.toggle('on', x === b);
-    $('.edge-preview').dataset.edge = b.dataset.edgeOpt;
-  };
   $('#proseSize').addEventListener('input', (e) => { setProse({ size: +e.target.value }); e.target.nextElementSibling.textContent = e.target.value + '%'; });
   $('#proseWeight').addEventListener('input', (e) => {
     const [w, label] = PROSE_WEIGHTS[+e.target.value];
@@ -164,9 +148,6 @@ export function viewSettings() {
     e.target.nextElementSibling.textContent = label;
   });
   $('#rowPicsToggle').onchange = (e) => { try { localStorage.setItem('wa.rowPics', e.target.checked ? 'on' : 'off'); } catch { /* private mode */ } };
-  $('#noiseRange').addEventListener('input', (e) => { setNoise(e.target.value); e.target.nextElementSibling.textContent = e.target.value + '%'; });
-  $('#noiseRange').addEventListener('dblclick', (e) => { e.target.value = NOISE_DEFAULT; e.target.dispatchEvent(new Event('input')); });
-  wirePicker($('#themeSeg').closest('.panel'), deviceDefault(), (bg) => { setDeviceDefault(bg || { pattern: 'plain' }); applyBackground(null); }, prepareImage);
   $('#installBtn')?.addEventListener('click', () => state.promptInstall().then(() => state.route()));
   $('#promptsToggle').onchange = (e) => {
     setPromptsEnabled(e.target.checked);
