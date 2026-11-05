@@ -1,8 +1,9 @@
 // Offline support: each version's files are cached together when it installs and
 // served from that cache, so the app opens instantly (even offline) and never mixes
 // files from two versions. A new version arrives as a new service worker: it
-// downloads all of SHELL into its own cache (all or nothing), then takes over and
-// the page reloads (js/app.js). The cache is named after the app version in
+// downloads all of SHELL into its own cache (all or nothing), then waits until the
+// page says to take over ('activate'). js/app.js says so at once unless something
+// is being edited; then it shows that an update is ready and waits for the user. The cache is named after the app version in
 // js/version.js; bump that on release, and keep SHELL in step when files are
 // added or removed.
 importScripts('js/version.js');
@@ -33,8 +34,22 @@ self.addEventListener('install', (e) => {
   // installs with stale copies of files from the previous one.
   e.waitUntil(caches.open(CACHE)
     .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
-    .then(() => self.skipWaiting()));
+    .then(fromOldVersion)
+    .then((old) => { if (old) return self.skipWaiting(); }));
 });
+
+// Pages before 1.59 never ask a waiting version to take over, so an update
+// from one of those takes over by itself, as they expect.
+const older = (a, b) => {
+  const x = a.split(/[.-]/).map(Number), y = b.split(/[.-]/).map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+  return false;
+};
+const fromOldVersion = async () => (await caches.keys())
+  .filter((k) => k.startsWith('worldatlas-') && k !== CACHE)
+  .some((k) => older(k.slice('worldatlas-'.length), '1.59.0'));
+
+self.addEventListener('message', (e) => { if (e.data === 'activate') self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()

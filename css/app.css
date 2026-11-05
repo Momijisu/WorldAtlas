@@ -270,6 +270,15 @@ label.inline select { width: auto; }
 #searchForm { flex: 1; max-width: 400px; margin-left: auto; position: relative; }
 #searchForm .i { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
 #searchForm input { min-height: 36px; padding: .3em .8em .3em 2.2rem; background: var(--ink-2); border-color: var(--rule); }
+/* "!" when an update is ready (js/app.js updateReady). */
+.upd-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .65rem .25rem .3rem; border: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);
+  border-radius: 999px; background: color-mix(in srgb, var(--brass) 12%, transparent); color: var(--brass); font: 500 .78rem var(--sans); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.upd-badge[hidden] { display: none; }
+.upd-badge:hover { background: color-mix(in srgb, var(--brass) 22%, transparent); }
+.upd-dot { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--brass); color: var(--ink-0); font: 700 .8rem/1 var(--sans); animation: updPulse 2.4s ease-in-out 3; }
+@keyframes updPulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--brass) 25%, transparent); } }
+@media (max-width: 920px) { .upd-text { display: none; } .upd-badge { padding: .25rem; } }
+@media (prefers-reduced-motion: reduce) { .upd-dot { animation: none; } }
 .sync-badge {
   display: inline-flex; align-items: center; gap: .4rem; height: 36px; padding: 0 .7rem;
   border: 1px solid var(--rule); border-radius: var(--r); background: transparent;

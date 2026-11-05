@@ -287,9 +287,11 @@ async function wireAbout() {
     }
   };
   $('#checkUpd').onclick = check;
+  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b>'; $('#doUpd').hidden = false; }
   $('#doUpd').onclick = async () => {
     $('#doUpd').disabled = true;
     $('#doUpd').textContent = 'Updating…';
+    if (state.updateWaiting?.()) { state.applyUpdate(); return; }
     const reg = await navigator.serviceWorker?.getRegistration();
     await reg?.update().catch(() => {});
     // The new version takes over and the page reloads itself; reload anyway if that takes too long.

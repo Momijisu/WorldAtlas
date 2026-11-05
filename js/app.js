@@ -77,15 +77,29 @@ async function boot() {
   if (authError) toast('Sign-in failed: ' + authError.message, 7000);
   else if (returned && !returned.silent) toast('Connected to OneDrive');
   if ('serviceWorker' in navigator) {
-    // When an updated version takes over, reload once so old and new files never mix
-    // (unless the user is mid-edit; they'll get the update on the next launch).
+    // When an updated version takes over, reload once so old and new files never mix.
+    // Mid-edit (another window may have updated), say so instead and let the user reload.
     const hadController = !!navigator.serviceWorker.controller;
     let reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (hadController && !reloaded && !hasUnsaved()) { reloaded = true; location.reload(); }
+      if (!hadController || reloaded) return;
+      if (hasUnsaved()) { updateReady(null); return; }
+      reloaded = true;
+      location.reload();
     });
     // updateViaCache 'none': always fetch sw.js and js/version.js fresh when checking for updates.
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      // A downloaded update waits: it takes over now unless something's being edited.
+      const offer = (w) => {
+        if (!w || !navigator.serviceWorker.controller) return;
+        if (hasUnsaved() || !$('#updBtn').hidden) updateReady(w);
+        else w.postMessage('activate');
+      };
+      if (reg.waiting) offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+      });
       // Apps are often left open for days: check for a new version regularly and on return.
       const check = () => { if (navigator.onLine) reg.update().catch(() => {}); };
       setInterval(check, 30 * 60e3);
@@ -94,6 +108,23 @@ async function boot() {
   }
   navigator.storage?.persist?.();
 }
+
+// ---------------------------------------------------------------- updates
+// An update that arrives mid-edit waits: a small "!" in the top bar says it's
+// ready, and stays until the user chooses to update.
+let waitingWorker = null;
+function updateReady(w) {
+  if (w) waitingWorker = w;
+  $('#updBtn').hidden = false;
+}
+export async function applyUpdate() {
+  if (hasUnsaved()) { toast('Save or cancel what you’re editing first, then update', 4000); return; }
+  // Still waiting: tell it to take over (controllerchange then reloads). Already in charge: just reload.
+  if (waitingWorker?.state === 'installed') waitingWorker.postMessage('activate');
+  else location.reload();
+}
+state.applyUpdate = applyUpdate;
+state.updateWaiting = () => !!waitingWorker || !$('#updBtn').hidden;
 
 // On a first visit with nothing saved, open a local-only example world so there
 // is something to explore. Not for signed-in devices (their worlds are on the
@@ -150,6 +181,7 @@ function wireChrome() {
   };
   $('#newBtn').onclick = () => newArticleDialog(state.wid);
   $('#installTop').onclick = promptInstall;
+  $('#updBtn').onclick = applyUpdate;
   showInstallButton();
   $('#syncBtn').onclick = () => {
     const st = sync.getStatus().state;
