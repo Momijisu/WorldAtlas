@@ -13,6 +13,9 @@
 ### Header images
 - The **Torn** edge repeats seamlessly on wide screens.
 
+### Fixes
+- **Article text → Weight → Medium** now looks heavier than Regular (it was showing Regular).
+
 ## 1.56.0 · 4 November 2026
 
 ### Tables
