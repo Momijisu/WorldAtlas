@@ -1,5 +1,15 @@
 # What's new
 
+## 1.57.0
+
+### Tables, now inside articles
+- **Add a table anywhere in an article** with the new **Table** button on the editor's toolbar. A grid opens to fill in; the table is written into the article's text. Put the cursor in a table and press **Table** again to change it.
+- **Roll like a printed table:** name the first column after a die (`d8`, `d20`…) and fill it with numbers or ranges (`1–2`, `3`), and **Roll** rolls that die and lands on the matching row. A **Chance** column still weights rows instead.
+- **Cells work out what they hold:** a roll like `2d6` gets a dice button, `[ ]` and `[x]` become checkboxes you can tick on the page, and a column of numbers lines up and sorts by value.
+- **Show a table elsewhere** by quoting its section: `![[Vael#On the road]]`.
+- **The Table template is gone.** Tables made with it in 1.56 have moved into their article's text, with links, ticks and chances kept.
+- Vael's road encounters in the example world are now a d8 table in the Vael article. See [docs/TABLES.md](docs/TABLES.md).
+
 ## 1.56.0 · 4 November 2026
 
 ### Tables

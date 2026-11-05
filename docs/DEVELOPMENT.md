@@ -22,7 +22,7 @@ js/auth.js            Microsoft sign-in (auth code + PKCE)
 js/calendar.js        calendar maths and date formatting
 js/relations.js       relationship types and family links
 js/duplicates.js      finding and merging duplicate articles
-js/tables.js          tables: column types, dice, rolling, CSV, the table editor
+js/tables.js          tables in the text: reading tools, dice, rolling, CSV, the table editor
 js/edges.js           header image edges (fade, torn, mist, hard cut)
 js/picker.js          type-to-search article fields
 js/prompts.js         writing prompts
@@ -60,7 +60,7 @@ What they cover:
 - finding and merging duplicates (`duplicates`);
 - maps: the map key (`maps-key`), region shapes and names (`maps-regions`), panning and place names (`maps-input`), marker styles (`markers`), measuring distances and the scale bar (`maps-measure`);
 - family trees and organisation charts (`trees`);
-- tables: building, pasting, column types, search, sort, rolling, dice, checkboxes, embedding, renames (`tables`);
+- tables in an article's text: the Table button, pasting, search, sort, rolling by die and chance, dice, checkboxes, quoting, 1.56 tables (`tables`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).

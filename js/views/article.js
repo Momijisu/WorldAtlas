@@ -10,7 +10,6 @@ import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS } from '../focus.js';
 import { edgeOf } from '../edges.js';
-import { tableHTML } from '../tables.js';
 import { mountMap } from '../mapview.js';
 import { drawTree, articleTreeKind } from './tree.js';
 import { itemTitle, linkedArticle, applyMarkers } from './maps.js';
@@ -64,9 +63,7 @@ export function viewArticle(wid, id, { section } = {}) {
         ${promptsAnsweredBy(wid, a.id).map((p) => `<div class="prompt-callout small">${icon('feather')}<div><div class="eyebrow">Answers the prompt</div><p>${esc(p.text)}</p></div></div>`).join('')}
         <details class="toc" id="toc" hidden open><summary>${icon('list-bullets')} Contents</summary><ol></ol></details>
         ${a.summary ? `<p class="lead">${renderInline(a.summary, wid)}</p>` : ''}
-        ${a.body ? `<div class="prose">${render(a.body, wid)}</div>` : a.type === 'table' && a.table?.columns?.length ? '' : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}
-        ${a.type === 'table' ? tableHTML(a, wid) : ''}
-        ${a.type === 'table' && a.table?.columns?.length ? `<p class="small muted table-embed-hint">Show this table in any article with <code>![[${esc(a.title)}]]</code>.</p>` : ''}
+        ${a.body ? `<div class="prose" data-article="${a.id}">${render(a.body, wid)}</div>` : `<div class="empty-state small"><p>Nothing written yet. <a href="#/w/${wid}/a/${a.id}/edit">Start writing</a>.</p></div>`}
         ${a.gmNotes ? `<details class="secret"><summary>${icon('lock-simple')} Secrets &amp; GM notes</summary><div class="prose no-dropcap">${render(a.gmNotes, wid)}</div></details>` : ''}
         ${map ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Map</h2>
           <a class="btn small" href="#/w/${wid}/m/${map.id}">${icon('arrow-square-out')} Open ${esc(map.name)}</a></div>

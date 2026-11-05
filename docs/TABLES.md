@@ -1,77 +1,68 @@
 # Tables
 
-Tables hold anything that fits in rows and columns: random encounters, price lists, rosters, rumours, a party's quest checklist. Readers can search a table, sort it by any column, roll a random row and roll the dice in it.
+Tables go straight into an article's text, wherever you need one: random encounters in a region, prices in a market, a guild's ranks, a quest checklist. Readers can sort them, search the longer ones, roll a random row and roll the dice in them.
 
-A table is an article like any other. It syncs, keeps version history, can be linked to and found by search, and goes to Recently deleted if you delete it.
+A table is part of the article's text, so it syncs, keeps version history, merges line by line and can be quoted elsewhere like any other text.
 
-The example world, Aerthal, has one to try: **Road Encounters in Vael**, also shown at the bottom of the Vael article.
+The example world, Aerthal, has one to try: **On the road**, at the bottom of the Vael article.
 
-## 1. Make a table
+## 1. Add a table
 
-1. Choose **New article** and pick the **Table** template (under *Other*). If an article already exists, you can switch its template to Table in the editor.
-2. Give it a title. The **Table** section appears below the summary, with two columns and three empty rows to start.
-3. Choose **Save**.
+1. Edit an article and put the cursor where the table should go.
+2. Choose **Table** on the editor's toolbar. A grid opens with two columns and three rows.
+3. Name the columns, fill in the cells and choose **Add table**.
 
-The article's **Content** still works as usual. Whatever you write there shows above the table, so it's a good place to explain how to use it.
+The table is written into the text as a Markdown table, lined up so it reads well as plain text too:
 
-## 2. Fill it in
+```
+| d8  | Encounter                          | How many | Most likely near  |
+| --- | ---------------------------------- | -------- | ----------------- |
+| 1–2 | Lantern Guild couriers, in a hurry | 1d4      | [[Lantern Guild]] |
+| 3–4 | Flood-wardens checking the levees  | 2d4      | [[River Ost]]     |
+```
 
-- **Type in the cells.** Each row is a line of the table and each column has a name and a type (see below).
+You can write or change it by hand too.
+
+## 2. Change a table
+
+Put the cursor anywhere in the table and choose **Table** again. The grid opens with that table in it.
+
+- **Type in the cells.** **Enter** moves down a row, adding one at the end. **Shift+Enter** starts a new line in the cell.
 - **Add rows and columns** with **+ Row** and **+ Column**.
-- **Reorder rows** by dragging the handle at the left of a row. **Reorder columns** with the arrows next to the column's name.
-- **Delete** a row with the ✕ at its end, or a column with its bin icon. Both ask first if anything would be lost.
-- **Paste from a spreadsheet.** Copy cells in Excel, Google Sheets or Numbers, choose **Paste from a spreadsheet** and paste them in. CSV text works too. The first row can be the column names. You can replace the table or add the rows to it, matching columns by name. Column types are guessed from what you paste: numbers, dice rolls, ticks or text.
-- **Import CSV** reads a `.csv` file the same way. **Export CSV** saves the table as a file you can open in any spreadsheet.
+- **Reorder rows** by dragging the handle at the left of a row. **Reorder columns** with the arrows under the column's name.
+- **Delete** a row with its ✕, or a column with its bin icon. Both ask first if anything would be lost.
+- **Remove table** takes the whole table out of the text.
+- **Paste from a spreadsheet:** copy cells in Excel, Google Sheets or Numbers and paste them in. CSV text works too. You can replace the table or add the rows to it, matching columns by name.
+- **Import CSV** reads a `.csv` file the same way. **Export CSV** saves the table as a file for any spreadsheet.
 
-Rows left completely empty are dropped when you save.
+Rows left completely empty are dropped.
 
-## 3. Show it in another article
+## What cells can hold
 
-Write the table's title in an excerpt on a line of its own:
-
-```
-![[Road Encounters in Vael]]
-```
-
-The whole table appears there, ready to search, sort and roll. Give it a caption of your own with `![[Road Encounters in Vael|What comes in the night]]`. The caption links back to the table's own page.
-
-The table stays in one place, so any change to it shows everywhere it's used.
-
-## Column types
-
-Choose a column's type from the menu under its name. You can change it later. Ticks and text convert both ways.
-
-| Type | For | On the page |
-|---|---|---|
-| **Text** | Short text. `[[links]]`, **bold** and *italic* work. | As written |
-| **Long text** | Paragraphs, lists and callouts, written like an article. | Formatted like an article |
-| **Number** | Amounts, levels, prices. | Right-aligned, and sorts by value |
-| **Checkbox** | Quest steps, who has met whom, things found. | A box readers can tick straight from the article. Ticking saves it. |
-| **Article** | The title of an article in this world. Suggestions appear as you type. | A link to the article. Renaming the article updates the cell. |
-| **Web link** | An address on the web. | A link that opens in a new tab |
-| **Dice** | A roll such as `2d6+1`, `d20`, `1d8 + 1d4 - 2` or `d%`. | A button that rolls it and shows the total and each die |
-| **Chance** | How likely the row is when rolling the table. | Hidden. A row with 3 comes up three times as often as one with 1. 0 never comes up. Empty counts as 1. |
+- **Text,** with `[[links]]`, `[[Article|labels]]`, **bold** and *italic*, as anywhere else.
+- **A roll,** such as `2d6+1`, `d20`, `1d8 + 1d4 - 2` or `d%`, on its own in a cell. It becomes a button that rolls it and shows the total and each die.
+- **`[ ]` or `[x]`:** a checkbox. Tick it on the article's page and the text changes to match, so it saves and syncs. Good for quest steps and things found.
+- **Numbers:** a column of only numbers lines up on the right and sorts by value.
 
 ## Reading tools
 
-Under the table in the editor, choose which tools readers get:
+- **Sort:** click a column's name. Click again to reverse, and a third time to go back to the table's own order.
+- **Search:** tables with 6 or more rows get a search box that shows only the rows containing every word you type.
+- **Roll:** tables with 3 or more rows get a **Roll** button that picks a row, highlights it and rolls any dice in it. It picks in one of three ways:
+  - **By die:** name the first column after a die (`d4`, `d6`, `d8`, `d10`, `d12`, `d20`, `d100` or `d%`) and fill it with numbers or ranges (`1–2`, `3`, `19+`). Roll rolls that die and lands on the matching row, just like a printed table.
+  - **By chance:** a column called **Chance** makes some rows more likely than others. A row with 3 comes up three times as often as one with 1, 0 never comes up, and empty counts as 1. The column stays hidden from readers.
+  - **Evenly:** otherwise every row is as likely. If a search is active, Roll picks only from the rows shown.
 
-- **Search box:** shows only the rows containing every word you type. Rolling then picks from those rows.
-- **Roll button:** picks a random row, highlights it, rolls any dice in that row and says what came up. It uses the **Chance** column if the table has one.
-- **Row numbers:** numbers each row, in the order you set in the editor.
+## Showing a table in another article
 
-Clicking a column's name sorts by it. Click again to reverse the order, and a third time to go back to the table's own order.
+Put the table under a heading and quote that section:
 
-## Changes, history and clashes
+```
+![[Vael#On the road]]
+```
 
-Every save keeps a version in the article's **History**, so you can see or restore an earlier table.
+It appears with its tools, ready to sort and roll. A quoted table can't be ticked. Tick it on its own article's page. Change it there and it updates everywhere it's quoted.
 
-If the same table is changed on two devices before they sync, both versions are kept and the merge manager shows them side by side, so you choose which to keep.
+## Tables from 1.56
 
-Search and backlinks read table cells too. An **Article** cell counts as a link, so the table appears under *Mentioned in* on that article.
-
-## Deleting a table
-
-Delete it like any article: **Edit** → **Delete**. It goes to **Recently deleted**, where you can restore it.
-
-While it's deleted, articles that show it with `![[…]]` say there's no such article. They show it again once it's restored.
+1.56 had a separate Table template. Those tables have moved into their article's own text as ordinary tables, and the articles are now ordinary articles. Nothing is lost: links, ticks and chances are kept.

@@ -13,9 +13,7 @@ import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { pickerHTML, wirePickers } from '../picker.js';
 import { similarTo } from '../duplicates.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, pageHead, worldCrumb, sep } from '../ui.js';
-import { mountTableEditor } from '../tables.js';
-
-const TABLES_DOCS = 'https://github.com/Momijisu/WorldAtlas/blob/main/docs/TABLES.md';
+import { tableCommand } from '../tables.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const prompt = promptKey ? resolvePrompt(wid, promptKey) : null;
@@ -66,10 +64,6 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         </div>
         <p class="tpl-hint" id="tplHint"></p>
         <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
-        <div class="table-section" id="tableSection" ${a.type === 'table' ? '' : 'hidden'}>
-          <div class="field-label">Table <small>show it in any article with <code>![[${esc(a.title || 'its title')}]]</code> · <a href="${TABLES_DOCS}" target="_blank" rel="noopener">how tables work</a></small></div>
-          <div id="tableEd"></div>
-        </div>
         ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
         <div class="md-toolbar">
@@ -81,6 +75,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <button type="button" data-md="quote" title="Quote">${icon('quotes')}</button>
           <button type="button" data-md="link" title="Link to article">${icon('link-simple')}</button>
           <button type="button" data-md="hr" title="Divider">${icon('minus')}</button>
+          <button type="button" id="tableBtn" title="Table: add one, or edit the table the cursor is in">${icon('table')}<span class="hide-sm">Table</span></button>
           <span class="md-script"><button type="button" id="calloutBtn" title="Callout: a note, tip or warning box" aria-haspopup="true">${icon('info')}<span class="hide-sm">Callout</span></button>
             <span class="script-menu" id="calloutMenu" hidden>${Object.entries(CALLOUTS).map(([k, c]) => `<button type="button" data-callout="${k}" class="callout-pick callout-${k}">${icon(c.icon)}<span>${c.label}</span></button>`).join('')}</span></span>
           <span class="md-script"><button type="button" id="scriptBtn" title="Handwriting or a world font" aria-haspopup="true">${icon('feather')}<span class="hide-sm">Script</span></button>
@@ -250,14 +245,6 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     fieldsEl.insertAdjacentHTML('beforeend', customRow());
     $$('.kv .k', fieldsEl).at(-1).focus();
   };
-  // The table editor, for the Table template; made when first needed.
-  let tableEd = null;
-  const showTable = () => {
-    const on = f.type.value === 'table';
-    $('#tableSection').hidden = !on;
-    if (on && !tableEd) tableEd = mountTableEditor($('#tableEd'), a.table, { wid, onChange: () => { dirty = true; } });
-  };
-  showTable();
   const tplHint = () => { $('#tplHint').textContent = TYPES[f.type.value]?.hint || ''; };
   tplHint();
   f.type.onchange = () => {
@@ -266,7 +253,6 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     drawFields(readFields().filter(([k, v]) => v.trim() || next.has(k)), f.type.value);
     tplHint();
     drawGuide();
-    showTable();
   };
 
   // Writing guide: questions for this template; choosing one adds its heading to the article.
@@ -355,6 +341,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // Markdown helpers
   const body = f.body;
   $$('[data-md]').forEach((b) => { b.onclick = () => mdCommand(body, b.dataset.md); });
+  $('#tableBtn').onclick = () => tableCommand(body);
   // Script menu: handwriting and the world's fonts, each shown in itself.
   const menu = $('#scriptMenu');
   $('#scriptBtn').onclick = (e) => {
@@ -427,7 +414,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     pv.hidden = m !== 'preview';
     if (m === 'preview') pv.innerHTML = render(body.value, wid);
     $$('.md-mode [data-mode]', f).forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    $$('[data-md], #scriptBtn', f).forEach((b) => { b.disabled = m === 'preview'; });
+    $$('[data-md], #scriptBtn, #tableBtn', f).forEach((b) => { b.disabled = m === 'preview'; });
   };
   $('.md-mode', f).onclick = (e) => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); };
   let saved = 'live';
@@ -484,7 +471,6 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       end: en?.y ?? null, endM: en?.m ?? null, endD: en?.d ?? null,
       dateLabel: f.dateLabel.value.trim(),
       mapId: f.mapId ? f.mapId.value || null : a.mapId || null,
-      table: tableEd && f.type.value === 'table' ? tableEd.value() : a.table ?? null,
     });
     // Changed on another device while this was open: keep both versions.
     const cur = !isNew && store.article(a.id);

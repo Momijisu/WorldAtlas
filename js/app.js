@@ -8,6 +8,7 @@ import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog, worldDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground } from './backgrounds.js';
+import { convertLegacyTables } from './tables.js';
 import { wirePreviews } from './preview.js';
 import './contextmenu.js';
 import { loadWorldFonts } from './scripts.js';
@@ -42,11 +43,13 @@ async function boot() {
   let authError = null, returned = null;
   try { returned = await auth.handleRedirect(); } catch (e) { authError = e; }
   await store.load();
+  await convertLegacyTables();
   await seedDemo();
   wireChrome();
   wirePreviews();
   store.onChange((e) => {
     if (e.local) return;
+    convertLegacyTables(); // a 1.56 table synced in from another device
     if (hasUnsaved()) toast('Changes arrived from another device');
     else route({ keepScroll: true });
     if (e.conflicts) {

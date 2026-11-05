@@ -159,8 +159,6 @@ export const TYPES = {
       ['Overview', ['Author', 'Written', 'Language', 'Location']],
     ]),
 
-  table: T('Table', 'Tables', 'table', 'other',
-    'Rows and columns: random encounters, price lists, rosters, checklists. Show it in any article with ![[its title]].', []),
   article: T('Article', 'Other articles', 'file-text', 'other',
     'Anything that doesn’t fit another template.', []),
 };
