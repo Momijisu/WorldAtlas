@@ -542,3 +542,12 @@ details.guide summary .muted { font-weight: 400; }
 .sb-ed-sec { margin-bottom: .6rem; }
 .sb-ed-sec-head { display: flex; gap: .3rem; align-items: center; margin-bottom: .3rem; }
 .sb-ed-sec-head input { flex: 1; font-weight: 600; }
+
+/* A statblock, small, in a link preview. */
+.link-preview .lp-stats { margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--rule); font: 400 .82rem/1.3 var(--sans); color: var(--text-2); }
+.link-preview .lp-stats b { color: var(--rubric); font-weight: 700; margin-right: .25rem; }
+.link-preview .lp-stats-top { display: flex; flex-wrap: wrap; gap: .2rem .9rem; }
+.link-preview .lp-stats-ab { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; margin-top: .45rem; text-align: center; font-variant-numeric: tabular-nums; }
+.link-preview .lp-stats-ab span { display: flex; flex-direction: column; padding: .2rem 0; background: color-mix(in srgb, var(--brass) 10%, transparent); }
+.link-preview .lp-stats-ab b { margin: 0; font-size: .66rem; letter-spacing: .06em; }
+.link-preview .lp-stats-ab i { font-style: normal; color: var(--muted); font-size: .74rem; }

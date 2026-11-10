@@ -145,6 +145,23 @@ document.addEventListener('click', (e) => {
   out.classList.remove('fresh'); void out.offsetWidth; out.classList.add('fresh');
 });
 
+// --- link previews -----------------------------------------------------------
+// The article's first statblock, small: AC, HP and speed, then the abilities.
+export function miniStatblockHTML(body) {
+  FENCE.lastIndex = 0;
+  const m = FENCE.exec(String(body || ''));
+  FENCE.lastIndex = 0;
+  if (!m) return '';
+  const { fields: f } = parseStatblock(m[1]);
+  const first = (v) => esc(String(v).split(/[(;]/)[0].trim());
+  const top = [['AC', f.ac], ['HP', f.hp], ['Speed', f.speed], ['CR', f.cr]].filter(([, v]) => v).map(([l, v]) => `<span><b>${l}</b> ${first(v)}</span>`).join('');
+  const ab = ABILITIES.filter((k) => f[k]).map((k) => { const md = mod(f[k]); return `<span><b>${k.toUpperCase()}</b>${esc(f[k])}${md == null ? '' : `<i>${signed(md)}</i>`}</span>`; }).join('');
+  if (!top && !ab) return '';
+  return `<div class="lp-stats">${top ? `<div class="lp-stats-top">${top}</div>` : ''}${ab ? `<div class="lp-stats-ab">${ab}</div>` : ''}</div>`;
+}
+// The text without its statblocks, for a preview's opening lines.
+export const withoutStatblocks = (body) => String(body || '').replace(FENCE, '');
+
 // --- the editor's form -------------------------------------------------------
 const BLANK = `name: \ntype: \nac: \nhp: \nspeed: 30 ft.\nstr: 10 | dex: 10 | con: 10 | int: 10 | wis: 10 | cha: 10\n\n## Traits\n\n## Actions\n`;
 

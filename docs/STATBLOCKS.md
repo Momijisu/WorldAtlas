@@ -50,4 +50,5 @@ You can write or change it by hand too.
 
 - **Layout:** the core stats sit on the left and the sections on the right, one above the other on narrow screens.
 - **Rolls:** any roll in the text, such as `2d8 + 4` or `1d6 + 1`, can be clicked to roll it. The total shows beside it.
+- **Previews:** hovering a link to the article shows its AC, HP, speed, CR and abilities in the preview card.
 - **Links:** `[[links]]` in a statblock count as links to those articles (they show under *Mentioned in*), and renaming an article updates them.

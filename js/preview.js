@@ -7,6 +7,7 @@ import { TYPES } from './store.js';
 import { plain } from './markdown.js';
 import { esc } from './util.js';
 import { typeIcon } from './ui.js';
+import { miniStatblockHTML, withoutStatblocks } from './statblocks.js';
 
 // Links on pages, and [[links]] in the Live editor (marked data-link with the title).
 const LINKS = 'a.wikilink:not(.missing), a.rel-card, .cm-wikilink:not(.cm-missing)[data-link]';
@@ -31,13 +32,14 @@ function hide() {
 async function show(link, a) {
   card ||= document.body.appendChild(Object.assign(document.createElement('div'), { className: 'link-preview', role: 'tooltip' }));
   const t = TYPES[a.type] || TYPES.article;
-  const text = plain(a.summary || a.body, 240);
+  const text = plain(a.summary || withoutStatblocks(a.body), a.body?.includes('```statblock') ? 160 : 240);
   const pic = a.banner || a.image;
   card.innerHTML = `${pic ? '<div class="lp-img"></div>' : ''}
     <div class="lp-body">
       <div class="lp-type">${typeIcon(a.type)} ${esc(t.label)}</div>
       <div class="lp-title">${esc(a.title)}</div>
-      ${text ? `<p>${esc(text)}</p>` : '<p class="muted">Nothing written yet.</p>'}
+      ${text ? `<p>${esc(text)}</p>` : a.body?.includes('```statblock') ? '' : '<p class="muted">Nothing written yet.</p>'}
+      ${miniStatblockHTML(a.body)}
     </div>`;
   card.classList.toggle('portrait', !a.banner && !!a.image);
   place(link);

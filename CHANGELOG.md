@@ -1,5 +1,9 @@
 # What's new
 
+## 1.62.0
+
+- **Statblocks in link previews:** hover a link to an article with a statblock (a species, a character, a monster) and the preview shows its AC, HP, speed, CR and abilities at a glance.
+
 ## 1.61.0 · 10 November 2026
 
 ### Statblocks

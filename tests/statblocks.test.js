@@ -21,6 +21,15 @@ run('statblocks: write, read, roll, edit', async ({ newPage }) => {
   check('a roll in the text rolls when clicked', n >= 4 && n <= 7, n);
   check('statblock headings stay out of the contents list', !(await p.$$eval('#toc li', (l) => l.map((x) => x.textContent))).includes('Traits'));
 
+  // A link to an article with a statblock previews its stats.
+  await go(p, `#/w/${wid}/a/${await store(p, (s, w) => s.byTitle(w, 'Vael').id, wid)}`);
+  const fox = p.locator('.wa-table a.wikilink', { hasText: 'A mistfox' });
+  await fox.scrollIntoViewIfNeeded(); await fox.hover(); await p.waitForTimeout(700);
+  const prev = await p.$eval('.link-preview.on', (c) => ({ top: c.querySelector('.lp-stats-top')?.textContent, ab: c.querySelectorAll('.lp-stats-ab span').length, text: c.querySelector('p')?.textContent || '' })).catch(() => null);
+  check('a link preview shows the statblock in brief', prev && /AC\s*13/.test(prev.top) && /HP\s*10/.test(prev.top) && prev.ab === 6, prev);
+  check('and its text isn’t the statblock’s raw lines', prev && !/ac:|str:/.test(prev.text), prev?.text);
+  await p.mouse.move(5, 5);
+
   // Add one with the Statblock button.
   await go(p, `#/w/${wid}/new/article?title=Blighted%20Boar`);
   await p.fill('textarea[name=body]', 'A boar gone wrong in the [[Gloamwood]].');
