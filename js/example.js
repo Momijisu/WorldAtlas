@@ -132,6 +132,31 @@ export async function exampleWorld(store, { demo = false } = {}) {
   const mistfox = A('species', 'Mistfox', {
     summary: 'A pale, clever fox of the Gloamwood that can vanish into fog.',
     fields: { Lifespan: '~12 years', Habitat: '[[Gloamwood]]', Diet: 'Small game, stolen bread', Intelligence: 'Uncomfortably high' },
+    body: `## In the wild
+Travellers through the [[Gloamwood]] rarely see one twice, and never where they expected.
+
+\`\`\`statblock
+name: Mistfox
+type: Small Fey, Neutral
+ac: 13
+initiative: +3 (13)
+hp: 10 (3d6)
+speed: 40 ft.
+str: 6 | dex: 16 | con: 10 | int: 9 | wis: 14 | cha: 11
+saves: Dex +5
+skills: Perception +4, Stealth +7
+senses: Darkvision 60 ft.; Passive Perception 14
+languages: Understands Sylvan but can't speak
+cr: 1/2 (XP 100; PB +2)
+
+## Traits
+***Fog Step.*** While in fog or mist, the mistfox can take the Hide action as a Bonus Action.
+
+## Actions
+***Bite.*** *Melee Attack Roll:* +5, reach 5 ft. *Hit:* 5 (1d4 + 3) Piercing damage.
+
+***Vanish (Recharge 5–6).*** The mistfox turns to mist until the start of its next turn, then reappears up to 30 feet away in fog it can see.
+\`\`\``,
     tags: ['wilds'],
   });
 

@@ -5,6 +5,7 @@ import { esc } from './util.js';
 import { icon } from './icons.js';
 import { scriptExtensions } from './scripts.js';
 import { enhanceTables } from './tables.js';
+import { statblockHTML, FENCE as STATBLOCK } from './statblocks.js';
 
 let renderingWid = null; // the world being rendered, for its fonts
 marked.use({ gfm: true, breaks: true, extensions: scriptExtensions(() => renderingWid) });
@@ -105,6 +106,11 @@ function excerptHTML(wid, title, heading, caption, depth) {
 
 function renderBody(src, wid, depth = 0) {
   const boxes = [];
+  // Statblocks (```statblock fences) are drawn first, so their [[links]] work.
+  src = String(src || '').replace(STATBLOCK, (_, inner) => {
+    boxes.push(statblockHTML(inner, { inline: (t) => marked.parseInline(wikiLinks(t, wid)), block: (t) => renderBody(t, wid, depth + 1) }));
+    return `\n\nWAEXCERPT${boxes.length - 1}\n\n`;
+  });
   const withSlots = spaceHeadings(src).split(CODE).map((part, i) => (i % 2 ? part : part.replace(EXCERPT, (_, title, heading, caption) => {
     boxes.push(excerptHTML(wid, title, heading, caption, depth));
     return `\n\nWAEXCERPT${boxes.length - 1}\n\n`;

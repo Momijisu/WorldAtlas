@@ -53,4 +53,14 @@ run('editor: heading buttons', async ({ newPage }) => {
     await r.keyboard.press('Escape');
     for (let i = 0; i < 5; i++) await r.keyboard.press('Backspace');
   }
+
+  // Hovering a [[link]] in the Live editor shows the same preview as on the article.
+  const h = await newPage({ init: () => localStorage.setItem('wa.editMode', 'live') });
+  const hw = await openExample(h);
+  const ys = await store(h, (s, w) => s.byTitle(w, 'Queen Ysolde').id, hw);
+  await go(h, `#/w/${hw}/a/${ys}/edit`);
+  await h.waitForSelector('.cm-wikilink[data-link="Varenhold"]');
+  await h.hover('.cm-wikilink[data-link="Varenhold"]');
+  await h.waitForTimeout(700);
+  check('hovering a link in the editor previews the article', (await h.$eval('.link-preview.on .lp-title', (x) => x.textContent).catch(() => '')) === 'Varenhold');
 });

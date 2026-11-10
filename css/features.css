@@ -494,3 +494,51 @@ details.guide summary .muted { font-weight: 400; }
 .tbl-grid tr.drop-after td { box-shadow: inset 0 -2px 0 var(--brass); }
 .tbl-grid td.h-end { width: 1%; }
 .tbl-ed-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .6rem .6rem .2rem; }
+
+/* ---------- statblocks (js/statblocks.js) ---------- */
+.statblock { clear: both; margin: 1.6rem 0; padding: 1rem 1.3rem 1.2rem; border: 1px solid var(--rule-strong); border-radius: var(--r);
+  background: var(--ink-1); box-shadow: inset 0 0 0 3px var(--ink-1), inset 0 0 0 4px color-mix(in srgb, var(--brass) 18%, transparent);
+  font: 400 1rem/1.5 var(--sans); color: var(--text); }
+.statblock .sb-name { font: 600 1.9rem/1.1 var(--display); font-variant: small-caps; letter-spacing: .02em; color: var(--rubric);
+  padding-bottom: .35rem; border-bottom: 1px solid color-mix(in srgb, var(--rubric) 55%, transparent); margin-bottom: .7rem; }
+.statblock .sb-name a { color: inherit; }
+.statblock .sb-cols { display: grid; gap: .4rem 2rem; }
+.statblock.two .sb-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 760px) { .statblock.two .sb-cols { grid-template-columns: minmax(0, 1fr); } }
+.statblock .sb-type { font-style: italic; color: var(--muted); margin-bottom: .6rem; }
+.statblock .stat-line { margin: .15rem 0; }
+.statblock .stat-line > b { color: var(--rubric); font-weight: 600; margin-right: .2rem; }
+.statblock .sb-gap { display: inline-block; width: 1.2rem; }
+.statblock .sb-top, .statblock .sb-details { margin: .3rem 0; }
+.statblock .sb-abilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: .8rem 0; }
+@media (max-width: 420px) { .statblock .sb-abilities { grid-template-columns: minmax(0, 1fr); } }
+.statblock .sb-ab { width: 100%; border-collapse: separate; border-spacing: 0 2px; font-variant-numeric: tabular-nums; }
+.statblock .sb-ab thead th { font: 500 .7rem var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: center; padding: 0 .3rem .15rem; }
+.statblock .sb-ab tbody th { text-align: left; color: var(--rubric); font-weight: 700; padding: .3rem .5rem; }
+.statblock .sb-ab td { text-align: center; padding: .3rem .4rem; }
+.statblock .sb-ab tbody tr > * { background: color-mix(in srgb, var(--brass) 9%, transparent); }
+.statblock .sb-ab tbody tr > .sb-mod, .statblock .sb-ab tbody tr > .sb-save { background: color-mix(in srgb, var(--brass) 17%, transparent); }
+.statblock .sb-save.prof { color: var(--brass); font-weight: 700; }
+.statblock .sb-h { font: 600 1.35rem/1.2 var(--display); font-variant: small-caps; letter-spacing: .03em; color: var(--rubric);
+  padding-bottom: .25rem; border-bottom: 1px solid color-mix(in srgb, var(--rubric) 45%, transparent); margin: .2rem 0 .6rem; }
+.statblock .sb-sec + .sb-sec { margin-top: 1rem; }
+.statblock .sb-body { font: 400 1rem/1.55 var(--serif); }
+.statblock .sb-body p { margin: 0 0 .6rem; }
+.statblock .sb-body > :last-child { margin-bottom: 0; }
+.statblock .sb-body p:first-child::first-letter { all: unset; }
+.statblock .sb-dice { border: 0; border-bottom: 1px dotted var(--brass); background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.statblock .sb-dice:hover { color: var(--brass); }
+.statblock .sb-roll { font-variant-numeric: tabular-nums; color: var(--muted); }
+.statblock .sb-roll b { color: var(--brass); }
+.statblock .sb-roll.fresh b { animation: rollIn .3s ease; display: inline-block; }
+/* Statblock form */
+.sb-ed .row.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 640px) { .sb-ed .row.four { grid-template-columns: 1fr 1fr; } }
+.sb-ed-ab { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; margin-bottom: .8rem; }
+@media (max-width: 640px) { .sb-ed-ab { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sb-ed-ab label { text-align: center; font-weight: 600; color: var(--rubric); }
+.sb-ed-ab input { text-align: center; }
+.sb-ed-ab output { display: block; color: var(--muted); font-size: .85rem; min-height: 1.2em; }
+.sb-ed-sec { margin-bottom: .6rem; }
+.sb-ed-sec-head { display: flex; gap: .3rem; align-items: center; margin-bottom: .3rem; }
+.sb-ed-sec-head input { flex: 1; font-weight: 600; }

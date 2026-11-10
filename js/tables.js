@@ -140,7 +140,7 @@ export function enhanceTables(html) {
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
   for (const table of tpl.content.querySelectorAll('table')) {
-    if (table.closest('.wa-table')) continue;
+    if (table.closest('.wa-table, .statblock')) continue;
     const ths = [...table.querySelectorAll('thead th')];
     const trs = [...table.querySelectorAll('tbody tr')];
     if (!ths.length) continue;

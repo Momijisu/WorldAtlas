@@ -14,6 +14,7 @@ import { pickerHTML, wirePickers } from '../picker.js';
 import { similarTo } from '../duplicates.js';
 import { view, state, setTitle, hydrateImages, icon, typeIcon, pageHead, worldCrumb, sep } from '../ui.js';
 import { tableCommand } from '../tables.js';
+import { statblockCommand } from '../statblocks.js';
 
 export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const prompt = promptKey ? resolvePrompt(wid, promptKey) : null;
@@ -76,6 +77,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <button type="button" data-md="link" title="Link to article">${icon('link-simple')}</button>
           <button type="button" data-md="hr" title="Divider">${icon('minus')}</button>
           <button type="button" id="tableBtn" title="Table: add one, or edit the table the cursor is in">${icon('table')}<span class="hide-sm">Table</span></button>
+          <button type="button" id="statblockBtn" title="Statblock: add one, or edit the statblock the cursor is in">${icon('scroll')}<span class="hide-sm">Statblock</span></button>
           <span class="md-script"><button type="button" id="calloutBtn" title="Callout: a note, tip or warning box" aria-haspopup="true">${icon('info')}<span class="hide-sm">Callout</span></button>
             <span class="script-menu" id="calloutMenu" hidden>${Object.entries(CALLOUTS).map(([k, c]) => `<button type="button" data-callout="${k}" class="callout-pick callout-${k}">${icon(c.icon)}<span>${c.label}</span></button>`).join('')}</span></span>
           <span class="md-script"><button type="button" id="scriptBtn" title="Handwriting or a world font" aria-haspopup="true">${icon('feather')}<span class="hide-sm">Script</span></button>
@@ -344,6 +346,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   const body = f.body;
   $$('[data-md]').forEach((b) => { b.onclick = () => mdCommand(body, b.dataset.md); });
   $('#tableBtn').onclick = () => tableCommand(body);
+  $('#statblockBtn').onclick = () => statblockCommand(body);
   // Script menu: handwriting and the world's fonts, each shown in itself.
   const menu = $('#scriptMenu');
   $('#scriptBtn').onclick = (e) => {
@@ -416,7 +419,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     pv.hidden = m !== 'preview';
     if (m === 'preview') pv.innerHTML = render(body.value, wid);
     $$('.md-mode [data-mode]', f).forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    $$('[data-md], #scriptBtn, #tableBtn', f).forEach((b) => { b.disabled = m === 'preview'; });
+    $$('[data-md], #scriptBtn, #tableBtn, #statblockBtn', f).forEach((b) => { b.disabled = m === 'preview'; });
   };
   $('.md-mode', f).onclick = (e) => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); };
   let saved = 'live';

@@ -1,7 +1,17 @@
 # What's new
 
-## 1.60.1
+## 1.61.0 · 10 November 2026
 
+### Statblocks
+- **Add a statblock to any article** with the new **Statblock** button on the editor's toolbar: armour, hit points, speed, the six abilities (modifiers worked out for you), saves, skills, senses, languages, challenge, and sections such as Traits and Actions.
+- **Laid out like the books:** core stats on the left, sections on the right, in the theme's colours.
+- **Rolls in the text roll:** click "2d8 + 4" or "1d6 + 1" to roll it.
+- It lives in the article's text (as a ```` ```statblock ```` block), so it syncs, keeps history and merges like everything else; `[[links]]` inside count as links. The example world's **Mistfox** has one. See [docs/STATBLOCKS.md](docs/STATBLOCKS.md).
+
+### Editor
+- **Hover a [[link]] while editing** (in Live view) to see the same preview as on the article, so you can check you picked the right one.
+
+### Fixes
 - **Header image preview matches the article again.** Since headers went full width, the editor's preview was cropped to the old, narrower shape, so the article showed a different part of the picture.
 
 ## 1.60.0 · 5 November 2026

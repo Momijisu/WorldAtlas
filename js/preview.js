@@ -8,11 +8,16 @@ import { plain } from './markdown.js';
 import { esc } from './util.js';
 import { typeIcon } from './ui.js';
 
-const LINKS = 'a.wikilink:not(.missing), a.rel-card';
+// Links on pages, and [[links]] in the Live editor (marked data-link with the title).
+const LINKS = 'a.wikilink:not(.missing), a.rel-card, .cm-wikilink:not(.cm-missing)[data-link]';
 const DELAY = 350;
 let card, timer, current;
 
 function articleOf(link) {
+  if (link.dataset.link) {
+    const wid = /^#\/w\/([^/?]+)/.exec(location.hash)?.[1];
+    return wid ? store.byName(wid, link.dataset.link.split('#')[0].trim()) : null;
+  }
   const m = /^#\/w\/[^/]+\/a\/([^/?]+)(?:\?.*)?$/.exec(link.getAttribute('href') || '');
   return m && store.article(m[1]);
 }

@@ -23,6 +23,7 @@ Write about your world's people, places and history, link it all together and pi
 - Relationships between articles, drawn as a relationship web, family trees and organisation charts
 - A tidy-up page that finds duplicate articles and merges them
 - Tables in any article that readers can sort, search and roll on: random encounters, price lists, rosters, checklists
+- Statblocks for creatures and characters, laid out like the books, with rolls you can click
 
 **Map**
 - Maps with pins, regions, layers and maps nested inside maps
@@ -99,6 +100,7 @@ Ideas being considered, not promises:
 
 - [What's new](CHANGELOG.md): the latest changes, release by release
 - [Tables](docs/TABLES.md): adding tables to articles, dice, checkboxes and rolling
+- [Statblocks](docs/STATBLOCKS.md): adding a creature's or character's game statistics to an article
 - [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
 - [Development](docs/DEVELOPMENT.md): project layout, tests and releasing

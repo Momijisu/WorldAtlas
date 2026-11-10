@@ -109,7 +109,7 @@ function build(view, opts) {
       const s = from + m.index, e = s + m[0].length;
       if (code.some(([f, t]) => s >= f && s <= t)) continue;
       const known = opts.isKnown?.(m[1].trim()) ?? true;
-      add(s, e, mark(known ? 'cm-wikilink' : 'cm-wikilink cm-missing'));
+      add(s, e, mark(known ? 'cm-wikilink' : 'cm-wikilink cm-missing', { 'data-link': m[1].trim() })); // data-link: for hover previews (js/preview.js)
       if (!isActive(s)) {
         if (m[2] != null) add(s, s + 2 + m[1].length + 1, hide); // "[[Title|" when a label is shown
         else add(s, s + 2, hide);

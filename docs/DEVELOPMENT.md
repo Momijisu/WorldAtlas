@@ -22,6 +22,7 @@ js/auth.js            Microsoft sign-in (auth code + PKCE)
 js/calendar.js        calendar maths and date formatting
 js/relations.js       relationship types and family links
 js/duplicates.js      finding and merging duplicate articles
+js/statblocks.js      statblocks in the text: parsing, layout, rolls, the statblock form
 js/tables.js          tables in the text: reading tools, dice, rolling, CSV, the table editor
 js/edges.js           header image edges (fade, torn, mist, hard cut)
 js/picker.js          type-to-search article fields
@@ -56,12 +57,13 @@ What they cover:
 - the offline cache and updates, including updates waiting while you edit (`offline`);
 - backup files between devices, with clashes sent to the merge manager (`backup`);
 - articles: links, excerpts and prompts (`articles`), callouts and aliases (`callouts-aliases`);
-- the editor: its toolbar (`editor`), headings written without a space (`headings`), the article pickers (`picker`);
+- the editor: its toolbar and link previews while editing (`editor`), headings written without a space (`headings`), the article pickers (`picker`);
 - finding and merging duplicates (`duplicates`);
 - maps: the map key (`maps-key`), region shapes and names (`maps-regions`), panning and place names (`maps-input`), marker styles (`markers`), measuring distances, setting the scale from a distance or a travel time, and the scale bar (`maps-measure`);
 - family trees and organisation charts (`trees`);
 - tables in an article's text: the Table button, pasting, search, sort, rolling by die and chance, dice, checkboxes, quoting, 1.56 tables (`tables`);
 - app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);
+- statblocks: drawing, modifiers and saves, rolls, the Statblock button (`statblocks`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).
