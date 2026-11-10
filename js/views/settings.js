@@ -184,7 +184,7 @@ export function viewSettings() {
 // adding it to SYNC_METHODS with a body(el) that draws and wires its setup.
 const SYNC_METHODS = {
   onedrive: { label: 'OneDrive', icon: 'cloud-check', blurb: 'A private folder in your own OneDrive. Phones, tablets and computers.', body: oneDriveBody, stop: stopOneDrive },
-  folder: { label: 'Custom folder', icon: 'folder', blurb: 'Target a custom folder on your PC, or one your preferred cloud storage keeps in step. Chrome or Edge.', body: folderBody, stop: () => sync.stopFolder() },
+  folder: { label: 'Custom folder', icon: 'folder', blurb: 'Sync through a folder of your choosing. Chrome or Edge on a computer.', body: folderBody, stop: () => sync.stopFolder() },
 };
 const syncPick = () => { try { const v = localStorage.getItem('wa.syncPick'); return SYNC_METHODS[v] ? v : null; } catch { return null; } };
 const setSyncPick = (v) => { try { localStorage.setItem('wa.syncPick', v); } catch { /* storage blocked */ } };
