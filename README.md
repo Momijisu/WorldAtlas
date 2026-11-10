@@ -36,6 +36,7 @@ Write about your world's people, places and history, link it all together and pi
 **Keep your work safe**
 - Version history for every article, and recovery of deleted ones
 - Optional sync between your devices through your own OneDrive, or through a folder on your PC kept in step by any cloud storage you like
+- Export a whole world, pictures and all, as one **.world** file to keep, share or open on another device
 - Import from a simple format (handy for turning existing notes into a world with an AI assistant) and full backups to a single file
 
 | | | |

@@ -31,7 +31,8 @@ js/prompts.js         writing prompts
 js/guidance.js        writing guide questions
 js/backgrounds.js     background patterns and wallpaper
 js/templates.js       article templates and their infobox sections
-js/importer.js        import/export format
+js/importer.js        import/export format (text, for AI assistants)
+js/worldfile.js       .world files: a whole world in one zip archive
 js/mapview.js         map pan/zoom, pins, regions and measuring
 js/markdown.js        Markdown, [[links]], excerpts and callouts
 js/preview.js         hover previews for article links
@@ -67,6 +68,7 @@ What they cover:
 - tables in an article's text: the Table button, pasting, search, sort, rolling by die and chance, dice, checkboxes, quoting, 1.56 tables (`tables`);
 - app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);
 - statblocks: drawing, modifiers and saves, rolls, the Statblock button (`statblocks`);
+- .world files: exporting, opening on another device, merging with clashes (`worldfile`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).

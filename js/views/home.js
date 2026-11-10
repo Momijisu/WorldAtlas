@@ -105,7 +105,7 @@ export async function worldDialog(w) {
       <p class="small muted">In articles, write <code>:::Name</code> … <code>:::</code> for a passage, or <code>{{Name|text}}</code> inside a sentence. Handwriting is built in as <code>${Object.keys(HANDS).join('</code> and <code>')}</code>. Fonts you add stay with this world in your OneDrive; they aren’t published.</p>
       ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
-        ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><span class="spacer"></span>`}
+        ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><button type="button" class="btn quiet" data-export title="The whole world (articles, maps, history and pictures) in one .world file">${icon('download-simple')} Export .world</button><span class="spacer"></span>`}
         <button type="button" class="btn quiet" data-cancel>Cancel</button>
         <button class="btn primary">${isNew ? 'Create world' : 'Save'}</button>
       </div>
@@ -149,6 +149,7 @@ export async function worldDialog(w) {
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
+      $('[data-export]', m)?.addEventListener('click', async () => (await import('./settings.js')).exportWorldFile(w.id));
       let edge = worldEdge(w);
       // Noise previews live; the world keeps it only when saved.
       let noise = w.noise ?? NOISE_DEFAULT;

@@ -103,6 +103,12 @@ async function boot() {
     }).catch((e) => console.warn('SW registration failed', e));
   }
   navigator.storage?.persist?.();
+  // The installed app opening a .world file (double-clicked on the computer).
+  if ('launchQueue' in window) {
+    window.launchQueue.setConsumer(async (params) => {
+      for (const h of params.files || []) (await import('./views/settings.js')).openWorldFile(await h.getFile());
+    });
+  }
 }
 
 // ---------------------------------------------------------------- updates

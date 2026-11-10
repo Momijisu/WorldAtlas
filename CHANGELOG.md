@@ -2,6 +2,12 @@
 
 ## 1.64.0
 
+### .world files
+- **Export a whole world as one file:** its articles, maps, version history and every picture, in a single **.world** file. Settings → World files, or **Export .world** in World settings.
+- **Open a .world file** to add the world on another device, or to share it. Opening a world you already have merges it in: newer work is kept, and an article changed in both places goes to the merge manager.
+- With the installed app in Chrome or Edge, double-click a .world file to open it in WorldAtlas.
+- The text export, for AI assistants, is still in Settings → Import from text.
+
 ### Sync through a folder
 - **Point WorldAtlas to a folder on your PC** and use any cloud storage you like to keep it in step between your computers: **Settings → Sync → A folder on your PC → Choose folder**. WorldAtlas only reads and writes the folder, and never sees your cloud account.
 - Merges like OneDrive sync: edits to different articles combine, and an article changed on two computers goes to the merge manager, including when the folder app has kept a "conflicted copy".

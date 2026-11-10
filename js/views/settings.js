@@ -6,6 +6,7 @@ import { whatsNewHTML } from '../updates.js';
 import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon, rowPicturesOn } from '../ui.js';
 import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
+import { exportWorld, importWorld, isZip } from '../worldfile.js';
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
@@ -102,9 +103,19 @@ export function viewSettings() {
       <label class="check"><input type="checkbox" id="guideToggle" ${guidanceEnabled() ? 'checked' : ''}> Show the writing guide in the editor</label>
       <p class="muted small">Questions to help fill out each template. Both settings apply to this device only.</p>
     </div>
+    <div class="panel" id="worldFileCard">
+      <h2>World files</h2>
+      <p class="muted">A <b>.world</b> file holds one whole world (its articles, maps, history and pictures) in a single file, to keep, share or open on another device.</p>
+      <div class="actions left">
+        ${store.worlds().length ? `<select id="worldFileSel" aria-label="World to export">${store.worlds().map((w) => `<option value="${w.id}" ${w.id === state.wid ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
+        <button class="btn primary" id="exportWorldFile">${icon('download-simple')} Export .world file</button>` : ''}
+        <label class="btn">${icon('upload-simple')} Open a .world file<input type="file" id="openWorldFile" accept=".world,application/x-worldatlas-world,application/zip" hidden></label>
+      </div>
+      <p class="muted small">Opening a world you already have merges it in: newer work is kept, and an article changed in both places goes to the merge manager.</p>
+    </div>
     <div class="panel" id="importCard">
-      <h2>Import a world</h2>
-      <p class="muted">Add articles from a WorldAtlas import file. You’ll see a preview first. Re-importing updates articles with matching titles.</p>
+      <h2>Import from text</h2>
+      <p class="muted">Add articles from a WorldAtlas import file (text, for example from an AI assistant). You’ll see a preview first. Re-importing updates articles with matching titles.</p>
       <label class="import-into">Import into<select id="importInto">
         <option value="auto">The world named in the file (or a new one)</option>
         ${store.worlds().map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}
@@ -120,8 +131,8 @@ export function viewSettings() {
         <button class="btn small" id="copyAiPrompt">${icon('feather')} Copy instructions for an assistant</button>
         <a class="btn small quiet" href="${DOCS_URL}" target="_blank" rel="noopener">${icon('arrow-square-out')} Format guide</a>
       </div>
-      ${store.worlds().length ? `<div class="field-label" style="margin-top:1.2rem">Export a world in this format</div>
-      <p class="muted small">Give this to an assistant to extend a world, then import its reply.</p>
+      ${store.worlds().length ? `<div class="field-label" style="margin-top:1.2rem">Export a world as text</div>
+      <p class="muted small">Its articles in this text format, to give to an assistant to extend the world, then import its reply. (Pictures aren’t included; for a whole world, use a .world file.)</p>
       <div class="toolbar" style="margin:0">
         <select id="exportWorldSel">${store.worlds().map((w) => `<option value="${w.id}">${esc(w.name)}</option>`).join('')}</select>
         <button class="btn small" id="exportWorldBtn">${icon('download-simple')} Download</button>
@@ -174,6 +185,8 @@ export function viewSettings() {
   const fileName = () => `${(store.world(sel())?.name || 'world').replace(/[^\w\- ]+/g, '').trim() || 'world'}.worldatlas.json`;
   $('#exportWorldBtn')?.addEventListener('click', () => download(fileName(), new Blob([JSON.stringify(exportSimple(sel()), null, 2)], { type: 'application/json' })));
   $('#copyWorldBtn')?.addEventListener('click', () => copyText(JSON.stringify(exportSimple(sel()), null, 2), 'World copied as import text'));
+  $('#exportWorldFile')?.addEventListener('click', () => exportWorldFile($('#worldFileSel').value));
+  $('#openWorldFile').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) openWorldFile(f); };
 }
 
 // Sync: one panel. Choose a method, then set it up. A device uses one method
@@ -306,6 +319,23 @@ function folderBody(el) {
     await sync.stopFolder();
     renderSyncCard();
   });
+}
+
+// .world files (js/worldfile.js).
+export async function exportWorldFile(wid) {
+  try {
+    const { blob, name } = await exportWorld(wid);
+    download(name, blob);
+  } catch (e) { toast('Couldn’t export the world: ' + e.message, 6000); }
+}
+export async function openWorldFile(file) {
+  try {
+    // A JSON or text file picked by mistake: hand it to the text importer.
+    if (!(await isZip(file))) return handleImportText(await file.text(), 'auto');
+    const r = await importWorld(file);
+    toast(`${r.added ? 'Added' : 'Merged in'} “${r.name}”${r.clashes ? `. ${r.clashes} article${r.clashes === 1 ? ' was' : 's were'} changed in both places: see “Conflicts to resolve” in the sidebar` : ''}.`, r.clashes ? 8000 : 4000);
+    location.hash = `#/w/${r.wid}`;
+  } catch (e) { toast('Couldn’t open that file: ' + e.message, 6000); }
 }
 
 async function exportBackup() {
