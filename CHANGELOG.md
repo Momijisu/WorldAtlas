@@ -1,6 +1,6 @@
 # What's new
 
-## 1.64.1
+## 1.64.1 · 10 November 2026
 
 - Settings → Files: **Export a world** (was *Save a world*), to match **Export .world** in World settings.
 
