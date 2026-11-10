@@ -105,14 +105,14 @@ run('folder sync: through a synced folder', async ({ browser, errors }) => {
 
   // Settings: one Sync panel; the method in use is chosen, and the other offers to switch.
   await A.goto(URL + '#/settings'); await A.waitForSelector('#syncCard .sync-methods');
-  check('Settings has one Sync panel, with a choice of method', JSON.stringify(await A.$$eval('#syncCard .sync-method b', (b) => b.map((x) => x.textContent))) === JSON.stringify(['OneDrive', 'A synced folder']));
-  check('the folder is the method in use', await A.$eval('#syncCard .sync-method.on', (b) => b.dataset.method) === 'folder' && (await A.textContent('.sync-method.on')).includes('In use'));
+  check('Settings has one Sync panel, with a choice of method', JSON.stringify(await A.$$eval('#syncCard .sync-methods button', (b) => b.map((x) => x.textContent.trim()))) === JSON.stringify(['OneDrive', 'A synced folder']));
+  check('the folder is the method in use', await A.$eval('#syncCard .sync-methods .on', (b) => b.dataset.method) === 'folder' && !!(await A.$('#syncCard .sync-methods .on .sync-dot')));
   const body = await A.textContent('#syncBody');
   check('its setup shows the folder being synced', body.includes('ProtonDrive-WorldAtlas') && body.includes('Up to date'), body.slice(0, 160));
-  await A.click('.sync-method[data-method="onedrive"]');
+  await A.click('[data-method="onedrive"]');
   check('choosing OneDrive while a folder is in use offers to switch', !(await A.$('#syncBody #connectBtn')) && !!(await A.$('#switchSync')) && (await A.textContent('#syncBody')).includes('ProtonDrive-WorldAtlas'));
   await A.click('#switchSync'); await A.click('.modal .btn.primary'); await A.waitForTimeout(400);
   check('switching stops folder sync and shows OneDrive’s setup', !!(await A.$('#syncBody #connectBtn, #syncBody #cidInput')) && (await A.evaluate(async () => (await import('./js/sync.js')).target())) === null);
-  await A.click('.sync-method[data-method="folder"]');
+  await A.click('[data-method="folder"]');
   check('and the folder method offers Choose folder again', !!(await A.$('#chooseFolderBtn')));
 });

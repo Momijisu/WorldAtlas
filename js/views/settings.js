@@ -192,10 +192,11 @@ export function renderSyncCard() {
   const active = sync.target();
   const pick = syncPick() || active || 'onedrive';
   el.innerHTML = `<h2>Sync</h2>
-    <p class="muted small">Keep the same worlds on all your devices. Choose how:</p>
-    <div class="sync-methods" role="radiogroup" aria-label="Sync method">${Object.entries(SYNC_METHODS).map(([k, m]) => `
-      <button type="button" class="sync-method${k === pick ? ' on' : ''}" data-method="${k}" role="radio" aria-checked="${k === pick}">
-        ${icon(m.icon)}<span><b>${m.label}</b>${k === active ? ' <span class="sync-active">In use</span>' : ''}<small>${m.blurb}</small></span></button>`).join('')}</div>
+    <p class="muted small">Keep the same worlds on all your devices. Sync with:</p>
+    <div class="seg sync-methods" role="radiogroup" aria-label="Sync method">${Object.entries(SYNC_METHODS).map(([k, m]) => `
+      <button type="button" class="${k === pick ? 'on' : ''}" data-method="${k}" role="radio" aria-checked="${k === pick}"${k === active ? ' title="In use on this device"' : ''}>
+        ${icon(m.icon)} ${m.label}${k === active ? '<span class="sync-dot" aria-label="(in use)"></span>' : ''}</button>`).join('')}</div>
+    <p class="muted small sync-blurb">${SYNC_METHODS[pick].blurb}</p>
     <div class="sync-body" id="syncBody"></div>`;
   $('.sync-methods', el).onclick = (e) => {
     const b = e.target.closest('[data-method]');
@@ -278,9 +279,9 @@ function folderBody(el) {
     main = `<p>Keep your worlds in a folder that Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step between your computers.</p>
       <p class="muted small">This needs Chrome or Edge on a computer: other browsers and phones don’t let web pages use folders. Use OneDrive or backup files here.</p>`;
   } else if (!on) {
-    main = `<p>Keep your worlds in a folder on this computer that <b>Proton Drive</b>, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them to your other computers. WorldAtlas never sees your account with them.</p>
-      <ol class="small sync-steps"><li>In your Proton Drive (or other synced) folder, make a folder called <b>WorldAtlas</b>.</li>
+    main = `<ol class="small sync-steps"><li>In your Proton Drive (or other synced) folder, make a folder called <b>WorldAtlas</b>.</li>
         <li>Choose it below, and allow WorldAtlas to use it.</li><li>Do the same on your other computers, with the same folder.</li></ol>
+      <p class="muted small">That app carries the files between your computers. WorldAtlas never sees your account with it.</p>
       <p><button class="btn primary" id="chooseFolderBtn">${icon('folder')} Choose folder</button></p>`;
   } else if (st.state === 'reauth') {
     main = `<p>Syncing with the folder <b>${esc(sync.folderName())}</b>.</p><p class="warn">${esc(st.message)}</p>
