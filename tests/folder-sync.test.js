@@ -103,11 +103,16 @@ run('folder sync: through a synced folder', async ({ browser, errors }) => {
   files = Object.keys(await dump(A));
   check('renaming a world renames its folder', files.includes('Worlds/Millshire/world.json') && !files.some((f) => f.startsWith('Worlds/Folderland/')), [...new Set(files.map((f) => f.split('/').slice(0, 2).join('/')))]);
 
-  // Settings: the folder card; OneDrive steps aside while a folder is in use.
-  await A.goto(URL + '#/settings'); await A.waitForSelector('#folderCard h2');
-  const card = await A.textContent('#folderCard');
-  check('Settings shows the folder being synced', card.includes('ProtonDrive-WorldAtlas') && card.includes('Up to date'), card.slice(0, 160));
-  check('OneDrive can’t be connected while a folder is in use', !(await A.$('#oneDriveCard #connectBtn')) && (await A.textContent('#oneDriveCard')).includes('syncs through a folder'));
-  await A.click('#stopFolderBtn'); await A.click('.modal .btn.primary'); await A.waitForTimeout(400);
-  check('stopping folder sync offers a folder again, and OneDrive', !!(await A.$('#chooseFolderBtn')) && !!(await A.$('#oneDriveCard #connectBtn, #oneDriveCard #cidInput')));
+  // Settings: one Sync panel; the method in use is chosen, and the other offers to switch.
+  await A.goto(URL + '#/settings'); await A.waitForSelector('#syncCard .sync-methods');
+  check('Settings has one Sync panel, with a choice of method', JSON.stringify(await A.$$eval('#syncCard .sync-method b', (b) => b.map((x) => x.textContent))) === JSON.stringify(['OneDrive', 'A synced folder']));
+  check('the folder is the method in use', await A.$eval('#syncCard .sync-method.on', (b) => b.dataset.method) === 'folder' && (await A.textContent('.sync-method.on')).includes('In use'));
+  const body = await A.textContent('#syncBody');
+  check('its setup shows the folder being synced', body.includes('ProtonDrive-WorldAtlas') && body.includes('Up to date'), body.slice(0, 160));
+  await A.click('.sync-method[data-method="onedrive"]');
+  check('choosing OneDrive while a folder is in use offers to switch', !(await A.$('#syncBody #connectBtn')) && !!(await A.$('#switchSync')) && (await A.textContent('#syncBody')).includes('ProtonDrive-WorldAtlas'));
+  await A.click('#switchSync'); await A.click('.modal .btn.primary'); await A.waitForTimeout(400);
+  check('switching stops folder sync and shows OneDrive’s setup', !!(await A.$('#syncBody #connectBtn, #syncBody #cidInput')) && (await A.evaluate(async () => (await import('./js/sync.js')).target())) === null);
+  await A.click('.sync-method[data-method="folder"]');
+  check('and the folder method offers Choose folder again', !!(await A.$('#chooseFolderBtn')));
 });

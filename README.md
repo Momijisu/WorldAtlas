@@ -77,7 +77,7 @@ A copy of your own only updates when you pull in new versions.
 
 ## Syncing between devices
 
-Go to **Settings → OneDrive sync** and choose **Connect OneDrive** on each device, with the same Microsoft account.
+Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same Microsoft account on each device) or **A synced folder** (a folder that Proton Drive, Dropbox, Google Drive or iCloud Drive keeps in step between your computers).
 
 - **Only its own folder.** WorldAtlas can only reach `OneDrive/Apps/WorldAtlas`, nothing else in your OneDrive. Each world gets its own folder there; to share a world with a co-writer, share that folder from OneDrive.
 - **When it syncs:** shortly after each edit, when the app opens or comes back online, and every couple of minutes. Edits to different articles merge on their own; the same article changed in two places goes to the merge manager.

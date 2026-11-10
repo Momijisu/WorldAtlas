@@ -9,7 +9,7 @@ WorldAtlas has no server of its own. A device uses one or the other.
 
 ## Using the online version
 
-On https://momijisu.github.io/WorldAtlas/ there's nothing to set up. Go to **Settings → OneDrive sync → Connect OneDrive** and sign in with your Microsoft account.
+On https://momijisu.github.io/WorldAtlas/ there's nothing to set up. Go to **Settings → Sync**, choose **OneDrive**, then **Connect OneDrive** and sign in with your Microsoft account.
 
 On iPhone and iPad, connect from inside the installed app. iOS keeps an installed app's storage separate from the browser's.
 
@@ -23,7 +23,7 @@ Microsoft only lets a web app sign in from addresses it has registered, so a cop
    - **Redirect URI:** choose **Single-page application** and enter your copy's address, ending in `/`. For example `https://<your-name>.github.io/WorldAtlas/`, or `http://localhost:8000/` for a copy on your own computer. Settings shows the exact address, with a Copy button.
 3. Copy the **Application (client) ID** from the registration's overview page. Then either:
    - paste it into `js/config.js` (`CLIENT_ID`) so every device uses it, or
-   - leave `js/config.js` empty and paste the ID into **Settings → OneDrive sync** on each device.
+   - leave `js/config.js` empty and paste the ID into **Settings → Sync → OneDrive** on each device.
 4. In the app, choose **Connect OneDrive**.
 
 You can add more redirect addresses to the same registration later, for example your hosted copy and `http://localhost:8000/`.
@@ -70,7 +70,7 @@ Browsers that block third-party sign-in cookies, such as Safari, can't renew thi
 Use any folder that another app keeps in step between your computers. WorldAtlas reads and writes the files; that app carries them. WorldAtlas never sees your account with it.
 
 1. In your Proton Drive (or Dropbox, Google Drive, iCloud Drive…) folder, make a folder called `WorldAtlas`.
-2. In WorldAtlas, go to **Settings → Folder sync → Choose folder** and pick it. Allow WorldAtlas to view and edit files there.
+2. In WorldAtlas, go to **Settings → Sync**, choose **A synced folder**, then **Choose folder** and pick it. Allow WorldAtlas to view and edit files there.
 3. Do the same on your other computers, choosing the same folder.
 
 The folder gets the same layout as OneDrive: `Worlds/<world name>/world.json`, `history.json` and `images/`, plus `deleted.json`.
@@ -79,4 +79,4 @@ The folder gets the same layout as OneDrive: `Worlds/<world name>/world.json`, `
 - **When it syncs:** as with OneDrive, after each edit, when the app opens and every two minutes. How soon a change reaches another computer depends on the app syncing the folder.
 - **Permission:** after the browser restarts it may ask again before WorldAtlas can use the folder. The sync badge shows **Reconnect**; click it, or *Allow access* in Settings. Chrome and Edge can remember the choice ("Allow on every visit").
 - **Clashes:** if two computers save before the folder app has synced, it may keep a copy such as `world (conflicted copy).json`. WorldAtlas merges such copies in and removes them. An article changed on both goes to the merge manager, so nothing is lost.
-- **One at a time:** a device syncs with OneDrive or a folder. Disconnect one in Settings to use the other.
+- **One at a time:** a device syncs with OneDrive or a folder. Choosing the other in Settings → Sync offers to switch.

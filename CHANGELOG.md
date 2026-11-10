@@ -3,9 +3,10 @@
 ## 1.64.0
 
 ### Sync through a folder
-- **Keep your worlds in a folder** that Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them between your computers: **Settings → Folder sync → Choose folder**. WorldAtlas never sees your account with them.
+- **Keep your worlds in a folder** that Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them between your computers: **Settings → Sync → A synced folder → Choose folder**. WorldAtlas never sees your account with them.
 - Merges like OneDrive sync: edits to different articles combine, and an article changed on two computers goes to the merge manager, including when the folder app has kept a "conflicted copy".
-- Chrome and Edge on a computer. A device syncs with OneDrive or a folder, one at a time. See [docs/SYNC.md](docs/SYNC.md#syncing-through-a-folder).
+- **One Sync panel:** Settings → Sync lets you choose how to sync (OneDrive or a synced folder) and shows the setup for that one. A device uses one at a time; choosing the other offers to switch.
+- Chrome and Edge on a computer. See [docs/SYNC.md](docs/SYNC.md#syncing-through-a-folder).
 
 ### Updates
 - **No pop-up when an update arrives.** The **!** on Settings & sync is all you'll see; *What's new* and **Update now** are in Settings → About this app.

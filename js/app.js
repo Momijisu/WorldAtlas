@@ -26,7 +26,7 @@ import { viewGraph } from './views/graph.js';
 import { viewPrompts } from './views/prompts.js';
 import { viewResolve } from './views/conflict.js';
 import { promptsEnabled } from './prompts.js';
-import { viewSettings, renderOneDriveCard, renderFolderCard, applyTheme } from './views/settings.js';
+import { viewSettings, renderSyncCard, applyTheme } from './views/settings.js';
 
 const sidebar = $('#sidebar');
 let currentHash = location.hash;
@@ -220,8 +220,7 @@ function renderSyncBadge({ state: st, message }) {
   btn.className = 'sync-badge ' + st;
   btn.innerHTML = `${icon(ic)}<span class="sync-text">${text}</span>`;
   btn.title = message || (st === 'synced' ? `Synced with ${sync.targetLabel()} ${timeAgo(store.meta.lastSync)}` : text);
-  if ($('#oneDriveCard')) renderOneDriveCard();
-  if ($('#folderCard')) renderFolderCard();
+  if ($('#syncCard')) renderSyncCard();
 }
 
 // ---------------------------------------------------------------- routing

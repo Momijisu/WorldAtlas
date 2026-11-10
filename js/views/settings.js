@@ -80,8 +80,7 @@ export function viewSettings() {
                   : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
       <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
-    <div class="panel" id="oneDriveCard"></div>
-    <div class="panel" id="folderCard"></div>
+    <div class="panel" id="syncCard"></div>
     <div class="panel">
       <h2>Appearance</h2>
       <div class="seg" id="themeSeg">
@@ -139,8 +138,7 @@ export function viewSettings() {
     </div>
     <p class="muted small center">Icons: Phosphor. Type: Cormorant Garamond, Alegreya.</p>
   </section>`;
-  renderOneDriveCard();
-  renderFolderCard();
+  renderSyncCard();
   const seg = $('#themeSeg');
   const mark = () => { for (const b of seg.children) b.classList.toggle('on', b.dataset.t === (localStorage.getItem('wa.theme') || 'dark')); };
   seg.onclick = (e) => {
@@ -178,19 +176,67 @@ export function viewSettings() {
   $('#copyWorldBtn')?.addEventListener('click', () => copyText(JSON.stringify(exportSimple(sel()), null, 2), 'World copied as import text'));
 }
 
-export function renderOneDriveCard() {
-  const el = $('#oneDriveCard');
+// Sync: one panel. Choose a method, then set it up. A device uses one method
+// at a time; picking another while one is on offers to switch. Add a method by
+// adding it to SYNC_METHODS with a body(el) that draws and wires its setup.
+const SYNC_METHODS = {
+  onedrive: { label: 'OneDrive', icon: 'cloud-check', blurb: 'A private folder in your own OneDrive. Phones, tablets and computers.', body: oneDriveBody, stop: stopOneDrive },
+  folder: { label: 'A synced folder', icon: 'folder', blurb: 'A folder that Proton Drive, Dropbox, Google Drive or iCloud Drive keeps in step. Computers (Chrome or Edge).', body: folderBody, stop: () => sync.stopFolder() },
+};
+const syncPick = () => { try { const v = localStorage.getItem('wa.syncPick'); return SYNC_METHODS[v] ? v : null; } catch { return null; } };
+const setSyncPick = (v) => { try { localStorage.setItem('wa.syncPick', v); } catch { /* storage blocked */ } };
+
+export function renderSyncCard() {
+  const el = $('#syncCard');
   if (!el) return;
+  const active = sync.target();
+  const pick = syncPick() || active || 'onedrive';
+  el.innerHTML = `<h2>Sync</h2>
+    <p class="muted small">Keep the same worlds on all your devices. Choose how:</p>
+    <div class="sync-methods" role="radiogroup" aria-label="Sync method">${Object.entries(SYNC_METHODS).map(([k, m]) => `
+      <button type="button" class="sync-method${k === pick ? ' on' : ''}" data-method="${k}" role="radio" aria-checked="${k === pick}">
+        ${icon(m.icon)}<span><b>${m.label}</b>${k === active ? ' <span class="sync-active">In use</span>' : ''}<small>${m.blurb}</small></span></button>`).join('')}</div>
+    <div class="sync-body" id="syncBody"></div>`;
+  $('.sync-methods', el).onclick = (e) => {
+    const b = e.target.closest('[data-method]');
+    if (!b) return;
+    setSyncPick(b.dataset.method);
+    renderSyncCard();
+  };
+  const body = $('#syncBody', el);
+  if (active && active !== pick) {
+    // Another method is on: say so, and offer to switch.
+    body.innerHTML = `<p>This device syncs with <b>${esc(sync.targetLabel())}</b>. To use ${esc(SYNC_METHODS[pick].label.replace(/^A /, 'a '))} instead, stop that first. Your worlds stay here, and in ${esc(sync.targetLabel())}.</p>
+      <p><button class="btn" id="switchSync">${icon('arrows-clockwise')} Switch to ${esc(SYNC_METHODS[pick].label.replace(/^A /, 'a '))}</button></p>`;
+    $('#switchSync', body).onclick = async () => {
+      if (!(await confirmDialog(`Stop syncing with ${sync.targetLabel()} on this device? Your worlds stay here and there.`, 'Stop and switch', { danger: false }))) return;
+      await SYNC_METHODS[active].stop();
+      renderSyncCard();
+    };
+    return;
+  }
+  SYNC_METHODS[pick].body(body);
+}
+// Kept for callers that redraw the panel when sync's status changes.
+export const renderOneDriveCard = renderSyncCard;
+export const renderFolderCard = renderSyncCard;
+
+async function stopOneDrive() {
+  auth.signOut();
+  await store.saveMeta({ eTags: {}, folders: {} });
+  await store.resetSyncBase();
+  sync.refreshStatus();
+}
+
+function oneDriveBody(el) {
   const st = sync.getStatus();
   const acct = auth.account();
   const cid = auth.clientId();
   let main;
-  if (sync.target() === 'folder') {
-    main = `<p class="muted">This device syncs through a folder instead (below). Stop folder sync to use OneDrive here.</p>`;
-  } else if (!cid) {
+  if (!cid) {
     main = `<p>Syncing uses a private folder in your OneDrive (<code>Apps/WorldAtlas</code>). It needs a one-time Microsoft app registration (<a href="https://github.com/Momijisu/WorldAtlas/blob/main/docs/SYNC.md" target="_blank" rel="noopener">how to set it up</a>). Paste its Application (client) ID below.</p>`;
   } else if (st.state === 'off') {
-    main = `<p>Sign in with Microsoft to sync your worlds through <code>OneDrive/Apps/WorldAtlas</code>.</p>
+    main = `<p>Sign in with Microsoft to sync your worlds through <code>OneDrive/Apps/WorldAtlas</code>. WorldAtlas can reach only that folder.</p>
       <p><button class="btn primary" id="connectBtn">${icon('cloud-check')} Connect OneDrive</button></p>`;
   } else if (st.state === 'reauth') {
     main = `<p class="warn">${esc(st.message || 'Your OneDrive session expired.')}</p>
@@ -202,46 +248,40 @@ export function renderOneDriveCard() {
       ${st.state === 'error' ? `<p class="warn">${esc(st.message)}</p>` : ''}
       <p><button class="btn primary" id="syncNowBtn">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="disconnectBtn">Disconnect</button></p>`;
   }
-  el.innerHTML = `<h2>OneDrive sync</h2>${main}
+  el.innerHTML = `${main}
     ${auth.builtInClientId ? '' : `<details ${cid ? '' : 'open'}><summary>Microsoft app registration</summary>
       <label>Application (client) ID<input id="cidInput" value="${esc(cid)}" placeholder="00000000-0000-0000-0000-000000000000"></label>
       <p class="small">Redirect URI to register (platform: <b>Single-page application</b>):<br><code class="copy">${esc(auth.redirectUri())}</code> <button class="btn small quiet" id="copyRuri">Copy</button></p>
       <button class="btn small" id="saveCid">Save client ID</button>
     </details>`}`;
-  $('#connectBtn')?.addEventListener('click', () => auth.signIn().catch((e) => toast(e.message)));
-  $('#syncNowBtn')?.addEventListener('click', () => sync.sync());
-  $('#disconnectBtn')?.addEventListener('click', async () => {
+  $('#connectBtn', el)?.addEventListener('click', () => auth.signIn().catch((e) => toast(e.message)));
+  $('#syncNowBtn', el)?.addEventListener('click', () => sync.sync());
+  $('#disconnectBtn', el)?.addEventListener('click', async () => {
     if (!(await confirmDialog('Disconnect OneDrive on this device? Your worlds stay here and in OneDrive.', 'Disconnect'))) return;
-    auth.signOut();
-    await store.saveMeta({ eTags: {}, folders: {} });
-    await store.resetSyncBase();
-    sync.refreshStatus();
+    await stopOneDrive();
   });
-  $('#saveCid')?.addEventListener('click', () => {
-    auth.setClientId($('#cidInput').value);
+  $('#saveCid', el)?.addEventListener('click', () => {
+    auth.setClientId($('#cidInput', el).value);
     toast('Saved');
     sync.refreshStatus();
-    renderOneDriveCard();
+    renderSyncCard();
   });
-  $('#copyRuri')?.addEventListener('click', () => navigator.clipboard?.writeText(auth.redirectUri()).then(() => toast('Copied')));
+  $('#copyRuri', el)?.addEventListener('click', () => navigator.clipboard?.writeText(auth.redirectUri()).then(() => toast('Copied')));
 }
 
-// Folder sync: a folder on this computer that another app keeps in step across
-// devices (Proton Drive, Dropbox, Google Drive, iCloud Drive, Syncthing…).
-export function renderFolderCard() {
-  const el = $('#folderCard');
-  if (!el) return;
+// A folder on this computer that another app keeps in step across devices.
+function folderBody(el) {
   const st = sync.getStatus();
   const on = sync.target() === 'folder';
-  const intro = `<p>Keep your worlds in a folder on this computer. Point it at a folder that <b>Proton Drive</b>, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them to your other computers. WorldAtlas never sees your account with them.</p>`;
   let main;
   if (!sync.folderSupported()) {
-    main = `${intro}<p class="muted small">Needs Chrome or Edge on a computer: other browsers and phones don’t let web pages use folders. Use OneDrive sync or backup files there.</p>`;
-  } else if (sync.target() === 'onedrive') {
-    main = `${intro}<p class="muted small">This device syncs with OneDrive. Disconnect OneDrive above to use a folder instead.</p>`;
+    main = `<p>Keep your worlds in a folder that Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step between your computers.</p>
+      <p class="muted small">This needs Chrome or Edge on a computer: other browsers and phones don’t let web pages use folders. Use OneDrive or backup files here.</p>`;
   } else if (!on) {
-    main = `${intro}<p class="muted small">Tip: make a folder called <b>WorldAtlas</b> inside your Proton Drive (or other synced) folder and choose that. Use the same folder on each computer.</p>
-      <p><button class="btn primary" id="chooseFolderBtn">${icon('upload-simple')} Choose folder</button></p>`;
+    main = `<p>Keep your worlds in a folder on this computer that <b>Proton Drive</b>, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them to your other computers. WorldAtlas never sees your account with them.</p>
+      <ol class="small sync-steps"><li>In your Proton Drive (or other synced) folder, make a folder called <b>WorldAtlas</b>.</li>
+        <li>Choose it below, and allow WorldAtlas to use it.</li><li>Do the same on your other computers, with the same folder.</li></ol>
+      <p><button class="btn primary" id="chooseFolderBtn">${icon('folder')} Choose folder</button></p>`;
   } else if (st.state === 'reauth') {
     main = `<p>Syncing with the folder <b>${esc(sync.folderName())}</b>.</p><p class="warn">${esc(st.message)}</p>
       <p><button class="btn primary" id="allowFolderBtn">Allow access</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>`;
@@ -253,18 +293,17 @@ export function renderFolderCard() {
       <p><button class="btn primary" id="syncFolderNow">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="chooseFolderBtn">Choose another folder</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>
       <p class="muted small">How quickly changes reach your other computers depends on the app that syncs the folder.</p>`;
   }
-  el.innerHTML = `<h2>Folder sync</h2>${main}`;
+  el.innerHTML = main;
   $('#chooseFolderBtn', el)?.addEventListener('click', async () => {
     try { if (!(await sync.chooseFolder())) toast('WorldAtlas needs permission to use that folder'); } catch (e) { if (e.name !== 'AbortError') toast(e.message); }
-    renderFolderCard();
+    renderSyncCard();
   });
-  $('#allowFolderBtn', el)?.addEventListener('click', async () => { if (!(await sync.allowFolder())) toast('Access not allowed'); renderFolderCard(); });
+  $('#allowFolderBtn', el)?.addEventListener('click', async () => { if (!(await sync.allowFolder())) toast('Access not allowed'); renderSyncCard(); });
   $('#syncFolderNow', el)?.addEventListener('click', () => sync.sync());
   $('#stopFolderBtn', el)?.addEventListener('click', async () => {
     if (!(await confirmDialog(`Stop syncing with “${sync.folderName()}” on this device? Your worlds stay here and in the folder.`, 'Stop', { danger: false }))) return;
     await sync.stopFolder();
-    renderFolderCard();
-    renderOneDriveCard();
+    renderSyncCard();
   });
 }
 
