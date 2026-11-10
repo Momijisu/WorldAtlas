@@ -49,9 +49,11 @@ async function copyText(text) {
 
 // The picture under the pointer: an <img> or a background, by its stored image id.
 function imageAt(e) {
+  // (The page's own data-bg names its background pattern, not a picture.)
   const el = e.target.closest?.('[data-img], [data-bg]');
-  const id = el?.dataset.img || el?.dataset.bg;
-  if (!id || el.closest('.bg-swatch')) return null;
+  if (!el || el === document.body || el.closest('.bg-swatch')) return null;
+  const id = el.dataset.img || el.dataset.bg;
+  if (!id) return null;
   // A name for the file: the article or world it belongs to.
   const owner = [...store.data.articles.values(), ...store.data.worlds.values()].find((r) => r.image === id || r.banner === id);
   const what = owner?.banner === id && owner.image !== id ? 'header' : '';

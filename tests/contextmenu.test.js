@@ -7,7 +7,9 @@ run('right-click menu', async ({ newPage }) => {
   const items = () => p.$$eval('.ctx-menu button', (l) => l.map((x) => x.querySelector('span').textContent + (x.disabled ? ' (off)' : '')));
   const clip = () => p.evaluate(() => navigator.clipboard.readText());
 
-  await p.mouse.click(900, 300, { button: 'right' });
+  // A plain part of the page (not a picture, link or field).
+  const [px, py] = await center(p, '.section-head h2');
+  await p.mouse.click(px, py, { button: 'right' });
   await p.waitForTimeout(150);
   check('on the page: Back and Forward', JSON.stringify(await items()) === JSON.stringify(['Back', 'Forward (off)']), await items());
   await p.keyboard.press('Escape');
