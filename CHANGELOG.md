@@ -1,6 +1,6 @@
 # What's new
 
-## 1.63.0
+## 1.63.0 · 10 November 2026
 
 ### Updates are yours to choose
 - **Nothing updates by itself any more.** When a new version is ready, a **!** appears on **Settings & sync**, and the app keeps running as it is until you choose **Update now**.
