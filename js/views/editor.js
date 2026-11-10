@@ -308,8 +308,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // The header image's preview has the shape the article's header has on this
   // screen: as wide as the page, clamp(220px, 38vw, 420px) tall (css/features.css).
   // The header's shape on the article page: as wide as the whole content area
-  // (full width, see css/features.css), as tall as clamp(220px, 38vw, 420px).
-  const heroRatio = () => ($('#view')?.clientWidth || f.clientWidth || 1000) / Math.min(420, Math.max(220, innerWidth * 0.38));
+  // (full width, see css/features.css), as tall as clamp(240px, 40vw, 520px).
+  const heroRatio = () => ($('#view')?.clientWidth || f.clientWidth || 1000) / Math.min(520, Math.max(240, innerWidth * 0.40));
   const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: heroRatio, fallback: BANNER_POS });
   // Portrait and header image. Either can reuse the other's picture (the same
   // stored image, so nothing is imported twice).
