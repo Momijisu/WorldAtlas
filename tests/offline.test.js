@@ -1,7 +1,7 @@
 // Offline cache and updates: each version's files are served intact from that
 // version's cache (a changed file on the server doesn't leak into it), the app
-// opens offline, and a new version replaces the cache as a whole. An update
-// that arrives while something is being edited waits for the user ("!").
+// opens offline, and a new version replaces the cache as a whole. A new version
+// waits for the user ("!" on Settings, with what's new), even mid-edit.
 // Uses its own copy of the app, served on another port, so it can change files.
 const fs = require('fs');
 const os = require('os');
@@ -48,35 +48,58 @@ run('offline cache and updates', async ({ browser, errors }) => {
   check('the app opens offline', !!(await p.$('.world-card')));
   await ctx.setOffline(false);
 
-  // A new version: installs as a whole, takes over, and the page reloads onto it.
+  // A new version: installs as a whole, then waits for the user, who sees what's new in it.
   const old = version();
-  fs.writeFileSync(path.join(dir, 'js/version.js'), fs.readFileSync(path.join(dir, 'js/version.js'), 'utf8').replace(`'${old}'`, `'${old}-test'`));
-  const reloaded = p.waitForEvent('framenavigated', { timeout: 15000 }).catch(() => null);
+  const bump = (v) => { fs.writeFileSync(path.join(dir, 'js/version.js'), fs.readFileSync(path.join(dir, 'js/version.js'), 'utf8').replace(/WA_VERSION = '[^']+'/, `WA_VERSION = '${v}'`)); };
+  const log = fs.readFileSync(path.join(dir, 'CHANGELOG.md'), 'utf8');
+  fs.writeFileSync(path.join(dir, 'CHANGELOG.md'), log.replace("# What's new\n\n", "# What's new\n\n## 99.1.0\n\n- **Second test update.**\n\n## 99.0.0\n\n- **First test update.**\n\n"));
+  let navigated = false;
+  const onNav = (f) => { if (f === p.mainFrame()) navigated = true; };
+  p.on('framenavigated', onNav);
+  bump('99.0.0');
   await p.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
-  await reloaded;
-  await p.waitForSelector('.world-card');
+  await p.waitForSelector('body.update-ready', { timeout: 15000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  check('a new version doesn’t take over by itself', !navigated && (await p.evaluate(() => self.WA_VERSION)) === old);
+  check('a “!” on the Settings link says an update is ready', await p.evaluate(() => getComputedStyle(document.querySelector('#sidebar .nav-settings'), '::after').content === '"!"'));
+  await p.waitForSelector('.upd-offer', { timeout: 10000 }).catch(() => {});
+  const offer = (await p.textContent('.upd-offer').catch(() => '')) || '';
+  check('a dialog says an update is ready, with what’s in it', offer.includes('99.0.0') && offer.includes('First test update'), offer.slice(0, 160));
+  await p.click('.upd-offer [data-later]');
+  await p.waitForTimeout(300);
+  check('“Later” keeps the page as it is', !navigated && !(await p.$('.upd-offer')));
+  await p.click('#sidebar .nav-settings');
+  await p.waitForSelector('#updNotes:not([hidden])', { timeout: 10000 }).catch(() => {});
+  check('in Settings the notes start folded', await p.$eval('#updNotes details', (d) => !d.open).catch(() => false));
+  await p.click('#updNotes summary');
+  const notes = (await p.textContent('#updNotes').catch(() => '')) || '';
+  check('Settings shows what’s new in it', notes.includes('First test update') && notes.includes('99.0.0') && !notes.includes(old + ' ·'), notes.slice(0, 200));
+  p.off('framenavigated', onNav);
+  await p.click('#doUpd');
+  await p.waitForFunction(() => self.WA_VERSION === '99.0.0', null, { timeout: 15000 }).catch(() => {});
+  await p.waitForSelector('.settings, .world-card', { timeout: 10000 });
   await p.waitForTimeout(500);
   c = await caches();
-  check('the new version replaces the old cache', c.length === 1 && c[0][0] === `worldatlas-${old}-test`, c.map(([k]) => k));
+  check('Update now: the new version replaces the old cache', c.length === 1 && c[0][0] === 'worldatlas-99.0.0', c.map(([k]) => k));
   check('and brings the changed file with it', c[0][1].includes('CHANGED ON SERVER'));
-  check('the page reloaded onto the new version', (await p.evaluate(() => self.WA_VERSION)) === `${old}-test`, await p.evaluate(() => self.WA_VERSION));
+  check('the page reloaded onto the new version', (await p.evaluate(() => self.WA_VERSION)) === '99.0.0', await p.evaluate(() => self.WA_VERSION));
 
-  // Another update arrives mid-edit: no reload, a "!" instead, applied when the user chooses.
+  // Another update arrives mid-edit: nothing reloads; it's applied when the user chooses, after saving.
+  await p.goto(`${URL}#/`); await p.waitForSelector('.world-card');
   await p.click('.world-card');
   await p.waitForSelector('#newArt');
   const wid = await p.evaluate(() => location.hash.split('/')[2]);
   await p.goto(`${URL}#/w/${wid}/new/article?title=Mid-edit`);
   await p.waitForSelector('textarea[name=body]');
   await p.fill('textarea[name=summary]', 'Half written…');
-  fs.writeFileSync(path.join(dir, 'js/version.js'), fs.readFileSync(path.join(dir, 'js/version.js'), 'utf8').replace(`'${old}-test'`, `'${old}-test2'`));
-  let navigated = false;
-  const onNav = (f) => { if (f === p.mainFrame()) navigated = true; };
+  navigated = false;
   p.on('framenavigated', onNav);
+  bump('99.1.0');
   await p.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
   await p.waitForSelector('body.update-ready', { timeout: 15000 }).catch(() => {});
   await p.waitForTimeout(1500);
   check('mid-edit, the update doesn’t reload the page', !navigated && (await p.inputValue('textarea[name=summary]')) === 'Half written…');
-  check('a “!” on the Settings link says an update is ready', await p.evaluate(() => getComputedStyle(document.querySelector('#sidebar .nav-settings'), '::after').content === '"!"'));
+  check('mid-edit, no dialog interrupts', !(await p.$('.upd-offer')));
   await p.evaluate(async () => (await import('./js/app.js')).applyUpdate());
   await p.waitForTimeout(1500);
   check('updating while still editing asks to save first', !navigated && (await p.textContent('#toast')).includes('Save or cancel'));
@@ -86,10 +109,11 @@ run('offline cache and updates', async ({ browser, errors }) => {
   check('the “!” stays after saving, until the user chooses', await p.evaluate(() => document.body.classList.contains('update-ready')));
   await p.click('#sidebar .nav-settings');
   await p.waitForSelector('#doUpd:not([hidden])');
-  check('Settings → About this app offers the update', /update is (ready|available)/i.test(await p.textContent('#latestVer')));
+  const notes2 = (await p.textContent('#updNotes').catch(() => '')) || '';
+  check('the notes cover only what’s newer than this version', notes2.includes('Second test update') && !notes2.includes('First test update'), notes2.slice(0, 200));
   await p.click('#doUpd');
-  await p.waitForFunction((v) => self.WA_VERSION === v, `${old}-test2`, { timeout: 15000 }).catch(() => {});
+  await p.waitForFunction(() => self.WA_VERSION === '99.1.0', null, { timeout: 15000 }).catch(() => {});
   await p.waitForSelector('.article, .world-card, .settings', { timeout: 10000 });
-  check('then it updates and reloads onto the new version', (await p.evaluate(() => self.WA_VERSION)) === `${old}-test2`, await p.evaluate(() => self.WA_VERSION));
+  check('then it updates and reloads onto the new version', (await p.evaluate(() => self.WA_VERSION)) === '99.1.0', await p.evaluate(() => self.WA_VERSION));
   check('and the edit was saved', await p.evaluate(async () => { const s = await import('./js/store.js'); return [...s.data.articles.values()].some((a) => a.title === 'Mid-edit' && a.summary === 'Half written…'); }));
 });

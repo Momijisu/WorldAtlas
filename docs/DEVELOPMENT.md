@@ -39,6 +39,7 @@ js/contextmenu.js     the right-click menu
 js/icons.js           Phosphor icons (MIT)
 js/config.js          Microsoft client ID (see docs/SYNC.md)
 js/version.js         app version
+js/updates.js         what's new in a waiting update, and the Update ready window
 sw.js                 service worker (offline cache)
 fonts/                Cormorant Garamond, Alegreya, Alegreya Sans, Cedarville Cursive, Kalam (OFL)
 vendor/               marked, DOMPurify, live-editor.js (CodeMirror 6, MIT; rebuild with tools/live-editor/build.sh)
@@ -54,7 +55,7 @@ tests/                browser tests
 What they cover:
 - every main page opening (`smoke`);
 - OneDrive sync end to end against a fake drive (`sync`): migration, a second device, merging, rename, delete, old-version files, throttling, retries, and one stuck world not blocking the others;
-- the offline cache and updates, including updates waiting while you edit (`offline`);
+- the offline cache and updates: a new version waits for the user, with its notes (`offline`);
 - backup files between devices, with clashes sent to the merge manager (`backup`);
 - articles: links, excerpts and prompts (`articles`), callouts and aliases (`callouts-aliases`);
 - the editor: its toolbar and link previews while editing (`editor`), headings written without a space (`headings`), the article pickers (`picker`);
@@ -71,7 +72,7 @@ The tests draw their own test map (`tests/lib.js`).
 ## Releasing
 
 1. Run `tests/run.sh`.
-2. Bump `WA_VERSION` (and `WA_BUILD`) in `js/version.js`. Installed apps pick up the new version and replace their offline cache; Settings → About shows the running and latest versions.
+2. Bump `WA_VERSION` (and `WA_BUILD`) in `js/version.js`, and add a `## x.y.z` section at the top of `CHANGELOG.md`: installed apps show it as *What's new* when they offer the update, which waits until the user chooses it.
 3. When adding or removing files, update `SHELL` in `sw.js` so they're available offline.
 
 `.github/workflows/pages.yml` publishes every push to `main` to GitHub Pages.

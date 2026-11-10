@@ -2,6 +2,7 @@
 import * as store from '../store.js';
 import * as auth from '../auth.js';
 import * as sync from '../sync.js';
+import { whatsNewHTML } from '../updates.js';
 import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon, rowPicturesOn } from '../ui.js';
 import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
@@ -53,6 +54,7 @@ export function viewSettings() {
         <dt>Offline cache</dt><dd id="cacheVer" class="muted">checking…</dd>
         <dt>Latest online</dt><dd id="latestVer" class="muted">—</dd>
       </dl>
+      <div id="updNotes" hidden></div>
       <div class="actions left">
         <button class="btn" id="checkUpd">${icon('arrows-clockwise')} Check for updates</button>
         <button class="btn primary" id="doUpd" hidden>${icon('download-simple')} Update now</button>
@@ -255,6 +257,16 @@ async function importBackupJSON(text) {
 
 // ---------------------------------------------------------------- version & updates
 
+async function showNotes() {
+  const el = $('#updNotes');
+  if (!el || el.dataset.loaded) return;
+  el.dataset.loaded = '1';
+  const html = await whatsNewHTML();
+  if (!html) { delete el.dataset.loaded; return; }
+  el.innerHTML = html;
+  el.hidden = false;
+}
+
 async function wireAbout() {
   const running = self.WA_VERSION;
   const cacheEl = $('#cacheVer');
@@ -282,12 +294,13 @@ async function wireAbout() {
       const behind = latest !== running;
       latestEl.innerHTML = behind ? `<b class="warn">${esc(latest)}</b> · an update is available` : `${esc(latest)} · you’re up to date`;
       $('#doUpd').hidden = !behind;
+      if (behind) showNotes();
     } catch {
       latestEl.textContent = navigator.onLine ? 'couldn’t check right now' : 'offline: connect to check';
     }
   };
   $('#checkUpd').onclick = check;
-  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b> · save anything you’re writing, then update'; $('#doUpd').hidden = false; }
+  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b>'; $('#doUpd').hidden = false; showNotes(); }
   $('#doUpd').onclick = async () => {
     $('#doUpd').disabled = true;
     $('#doUpd').textContent = 'Updating…';

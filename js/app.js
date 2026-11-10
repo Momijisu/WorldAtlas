@@ -8,6 +8,7 @@ import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog, worldDialog } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground, moveDeviceDefaults } from './backgrounds.js';
+import { offerUpdate } from './updates.js';
 import { oldDeviceEdge } from './edges.js';
 import { convertLegacyTables } from './tables.js';
 import { wirePreviews } from './preview.js';
@@ -89,12 +90,8 @@ async function boot() {
     });
     // updateViaCache 'none': always fetch sw.js and js/version.js fresh when checking for updates.
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
-      // A downloaded update waits: it takes over now unless something's being edited.
-      const offer = (w) => {
-        if (!w || !navigator.serviceWorker.controller) return;
-        if (hasUnsaved() || updateShown) updateReady(w);
-        else w.postMessage('activate');
-      };
+      // A downloaded update waits for the user: the "!" says it's ready.
+      const offer = (w) => { if (w && navigator.serviceWorker.controller) updateReady(w); };
       if (reg.waiting) offer(reg.waiting);
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
@@ -110,14 +107,16 @@ async function boot() {
 }
 
 // ---------------------------------------------------------------- updates
-// An update that arrives mid-edit waits: a small "!" on the Settings link (and
-// the menu button on phones) says it's ready, and Settings → About this app
-// offers "Update now". It stays until the user chooses to update.
+// A new version waits for the user: a small "!" on the Settings link (and the
+// menu button on phones) says it's ready, and Settings → About this app shows
+// what's new in it and offers "Update now".
 let waitingWorker = null, updateShown = false;
 function updateReady(w) {
   if (w) waitingWorker = w;
   updateShown = true;
   document.body.classList.add('update-ready');
+  // Not mid-edit: say what's in it, once per version.
+  if (!hasUnsaved()) offerUpdate(applyUpdate);
 }
 export async function applyUpdate() {
   if (hasUnsaved()) { toast('Save or cancel what you’re editing first, then update', 4000); return; }

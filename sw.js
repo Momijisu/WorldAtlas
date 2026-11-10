@@ -2,8 +2,8 @@
 // served from that cache, so the app opens instantly (even offline) and never mixes
 // files from two versions. A new version arrives as a new service worker: it
 // downloads all of SHELL into its own cache (all or nothing), then waits until the
-// page says to take over ('activate'). js/app.js says so at once unless something
-// is being edited; then it shows that an update is ready and waits for the user. The cache is named after the app version in
+// page says to take over ('activate'): js/app.js shows that an update is ready
+// and waits for the user to choose "Update now". The cache is named after the app version in
 // js/version.js; bump that on release, and keep SHELL in step when files are
 // added or removed.
 importScripts('js/version.js');
@@ -25,7 +25,7 @@ const SHELL = [
   'fonts/cormorant-garamond-latin-400-normal.woff2', 'fonts/cormorant-garamond-latin-400-italic.woff2',
   'fonts/alegreya-latin-500-normal.woff2', 'fonts/alegreya-latin-500-italic.woff2',
   'fonts/alegreya-sans-latin-300-normal.woff2', 'fonts/alegreya-sans-latin-300-italic.woff2',
-  'assets/demo/map.svg', 'assets/demo/cover.svg', 'assets/demo/varenhold.svg', 'assets/demo/gloamwood.svg', 'assets/backgrounds/parchment.png', 'assets/backgrounds/noise.png', 'assets/edges/torn.png', 'assets/edges/mist.svg', 'js/edges.js', 'js/tables.js', 'js/statblocks.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png',
+  'assets/demo/map.svg', 'assets/demo/cover.svg', 'assets/demo/varenhold.svg', 'assets/demo/gloamwood.svg', 'assets/backgrounds/parchment.png', 'assets/backgrounds/noise.png', 'assets/edges/torn.png', 'assets/edges/mist.svg', 'js/edges.js', 'js/tables.js', 'js/statblocks.js', 'js/updates.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png',
   'icons/apple-touch-icon.png',
 ];
 

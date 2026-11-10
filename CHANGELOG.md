@@ -1,5 +1,14 @@
 # What's new
 
+## 1.63.0
+
+### Updates are yours to choose
+- **Nothing updates by itself any more.** When a new version is ready, a **!** appears on **Settings & sync**, and the app keeps running as it is until you choose **Update now**.
+- **See what's in it first:** a small *Update ready* window shows what's new, with **Update now** or **Later**. It won't interrupt you while you're editing; the **!** waits instead.
+- **What's new** is also in Settings → About this app, as a section you can open, for as long as the update waits.
+
+(This version still arrives the old way, by itself. From here on, updates wait for you.)
+
 ## 1.62.1 · 10 November 2026
 
 - **Statblocks show CR at the top right**, on the same line as the name.
