@@ -499,8 +499,11 @@ details.guide summary .muted { font-weight: 400; }
 .statblock { clear: both; margin: 1.6rem 0; padding: 1rem 1.3rem 1.2rem; border: 1px solid var(--rule-strong); border-radius: var(--r);
   background: var(--ink-1); box-shadow: inset 0 0 0 3px var(--ink-1), inset 0 0 0 4px color-mix(in srgb, var(--brass) 18%, transparent);
   font: 400 1rem/1.5 var(--sans); color: var(--text); }
-.statblock .sb-name { font: 600 1.9rem/1.1 var(--display); font-variant: small-caps; letter-spacing: .02em; color: var(--rubric);
+.statblock .sb-head { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem 1.2rem; flex-wrap: wrap;
   padding-bottom: .35rem; border-bottom: 1px solid color-mix(in srgb, var(--rubric) 55%, transparent); margin-bottom: .7rem; }
+.statblock .sb-name { font: 600 1.9rem/1.1 var(--display); font-variant: small-caps; letter-spacing: .02em; color: var(--rubric); }
+.statblock .sb-cr { margin-left: auto; font-size: .95rem; color: var(--text-2); white-space: nowrap; }
+.statblock .sb-cr b { color: var(--rubric); font-weight: 600; margin-right: .2rem; }
 .statblock .sb-name a { color: inherit; }
 .statblock .sb-cols { display: grid; gap: .4rem 2rem; }
 .statblock.two .sb-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

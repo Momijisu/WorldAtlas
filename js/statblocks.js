@@ -104,10 +104,11 @@ export function statblockHTML(src, { inline, block }) {
     f.ac || f.initiative ? `<div class="stat-line">${f.ac ? `<b>AC</b> ${inline(f.ac)}` : ''}${f.ac && f.initiative ? '<span class="sb-gap"></span>' : ''}${f.initiative ? `<b>Initiative</b> ${inline(f.initiative)}` : ''}</div>` : '',
     f.hp ? line('HP', f.hp) : '', f.speed ? line('Speed', f.speed) : '',
   ].join('');
-  const details = [...DETAILS.filter(([k]) => f[k]).map(([k, l]) => line(l, f[k])), ...extra.map(([l, v]) => line(l, v))].join('');
+  // CR sits at the top right, beside the name.
+  const details = [...DETAILS.filter(([k]) => f[k] && k !== 'cr').map(([k, l]) => line(l, f[k])), ...extra.map(([l, v]) => line(l, v))].join('');
   const secs = sections.map((s) => `<section class="sb-sec">${s.title ? `<div class="sb-h">${inline(s.title)}</div>` : ''}<div class="sb-body">${block(s.body)}</div></section>`).join('');
   return diceButtons(`<div class="statblock${secs ? ' two' : ''}">
-    ${f.name ? `<div class="sb-name">${inline(f.name)}</div>` : ''}
+    ${f.name || f.cr ? `<div class="sb-head"><div class="sb-name">${f.name ? inline(f.name) : ''}</div>${f.cr ? `<div class="sb-cr"><b>CR</b> ${inline(f.cr)}</div>` : ''}</div>` : ''}
     <div class="sb-cols"><div class="sb-core">
       ${f.type ? `<div class="sb-type">${inline(f.type)}</div>` : ''}
       ${top ? `<div class="sb-top">${top}</div>` : ''}
