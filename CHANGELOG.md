@@ -1,5 +1,9 @@
 # What's new
 
+## 1.64.0
+
+- **No pop-up when an update arrives.** The **!** on Settings & sync is all you'll see; *What's new* and **Update now** are in Settings → About this app.
+
 ## 1.63.2 · 10 November 2026
 
 - **Taller header images** on articles: up to 520px on wide screens (was 420px), so more of the picture shows.

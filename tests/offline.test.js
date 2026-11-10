@@ -62,12 +62,7 @@ run('offline cache and updates', async ({ browser, errors }) => {
   await p.waitForTimeout(1500);
   check('a new version doesn’t take over by itself', !navigated && (await p.evaluate(() => self.WA_VERSION)) === old);
   check('a “!” on the Settings link says an update is ready', await p.evaluate(() => getComputedStyle(document.querySelector('#sidebar .nav-settings'), '::after').content === '"!"'));
-  await p.waitForSelector('.upd-offer', { timeout: 10000 }).catch(() => {});
-  const offer = (await p.textContent('.upd-offer').catch(() => '')) || '';
-  check('a dialog says an update is ready, with what’s in it', offer.includes('99.0.0') && offer.includes('First test update'), offer.slice(0, 160));
-  await p.click('.upd-offer [data-later]');
-  await p.waitForTimeout(300);
-  check('“Later” keeps the page as it is', !navigated && !(await p.$('.upd-offer')));
+  check('no pop-up: the “!” is all that shows', !(await p.$('#modal-root > *')));
   await p.click('#sidebar .nav-settings');
   await p.waitForSelector('#updNotes:not([hidden])', { timeout: 10000 }).catch(() => {});
   check('in Settings the notes start folded', await p.$eval('#updNotes details', (d) => !d.open).catch(() => false));
@@ -99,7 +94,7 @@ run('offline cache and updates', async ({ browser, errors }) => {
   await p.waitForSelector('body.update-ready', { timeout: 15000 }).catch(() => {});
   await p.waitForTimeout(1500);
   check('mid-edit, the update doesn’t reload the page', !navigated && (await p.inputValue('textarea[name=summary]')) === 'Half written…');
-  check('mid-edit, no dialog interrupts', !(await p.$('.upd-offer')));
+  check('mid-edit, nothing pops up', !(await p.$('#modal-root > *')));
   await p.evaluate(async () => (await import('./js/app.js')).applyUpdate());
   await p.waitForTimeout(1500);
   check('updating while still editing asks to save first', !navigated && (await p.textContent('#toast')).includes('Save or cancel'));

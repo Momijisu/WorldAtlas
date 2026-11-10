@@ -562,8 +562,6 @@ details.guide summary .muted { font-weight: 400; }
 .upd-notes h3 { font-size: 1.15rem; margin: .8rem 0 .3rem; } .upd-notes h3:first-child { margin-top: 0; }
 .upd-notes h4 { font: 600 .72rem var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); margin: .7rem 0 .2rem; }
 .upd-notes ul { margin: .2rem 0; padding-left: 1.1rem; }
-.upd-offer .upd-notes { max-height: 50vh; margin: .6rem 0 .2rem; }
-.upd-offer > p:first-child { margin-top: 0; }
 .upd-details { margin: .5rem 0 .2rem; }
 .upd-details > summary { cursor: pointer; display: inline-flex; align-items: center; gap: .4rem; color: var(--brass); font: 500 .78rem var(--sans); letter-spacing: .12em; text-transform: uppercase; padding: .3rem 0; }
 .upd-details > summary .i { width: 15px; height: 15px; }
