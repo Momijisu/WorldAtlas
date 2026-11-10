@@ -1,5 +1,9 @@
 # What's new
 
+## 1.65.1
+
+- **Portraits are always square** in the infobox, framed as you set them in the editor, even when the picture is tall or wide.
+
 ## 1.65.0 · 10 November 2026
 
 - **Zoom and frame a portrait:** in the editor, drag the portrait to frame it and use the new **Zoom** slider to crop in. Zoomed, the infobox shows your square crop; at 100% it shows the whole picture, as before.

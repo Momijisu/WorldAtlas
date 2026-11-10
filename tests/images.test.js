@@ -15,9 +15,10 @@ run('images: portrait zoom, save and copy', async ({ newPage }) => {
     return a.id;
   }, wid);
 
-  // At 100% the infobox shows the whole picture.
+  // The infobox shows a portrait square, even a tall picture.
   await go(p, `#/w/${wid}/a/${id}`);
-  check('at 100% the infobox shows the whole portrait', !(await p.$('.infobox-frame')) && !!(await p.$('.infobox-img')));
+  const sq = await p.$eval('.infobox-frame', (f) => { const r = f.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), f.querySelector('img').style.transform]; }).catch(() => null);
+  check('the infobox shows a tall portrait square, unzoomed', sq && sq[0] === sq[1] && sq[2] === '', sq);
 
   // Zoom in, in the editor.
   await go(p, `#/w/${wid}/a/${id}/edit`);

@@ -105,7 +105,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
             <button type="button" class="btn small quiet" id="portraitFromBanner" hidden>${icon('image')} Use header image</button>
             <label class="bg-scale portrait-zoom" id="imgZoomRow" ${a.image ? '' : 'hidden'}>Zoom<input type="range" id="imgZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(a.imageZoom) * 100)}"><output>${Math.round(zoomOf(a.imageZoom) * 100)}%</output></label>
-            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in. At 100% the infobox shows the whole picture.</p>
+            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in. The infobox shows it square, as here.</p>
           </div>
         </div>
         <div class="panel">
