@@ -7,7 +7,7 @@ import { REL_TYPES, REL_GROUPS, relTarget } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
-import { wireFocus, BANNER_POS } from '../focus.js';
+import { wireFocus, BANNER_POS, applyZoom, zoomOf } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { scriptsFor, familyFor, HANDS } from '../scripts.js';
 import { pickerHTML, wirePickers } from '../picker.js';
@@ -99,12 +99,13 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         <div class="panel">
           <div class="field-label">Portrait / image</div>
           <div class="image-field">
-            <img class="thumb" ${a.image ? `data-img="${a.image}"` : 'hidden'} alt="">
+            <div class="zoom-frame"><img class="thumb" ${a.image ? `data-img="${a.image}"` : 'hidden'} alt=""></div>
             ${dropzoneEmpty('a portrait')}
             <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="imgFile"></label>
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
             <button type="button" class="btn small quiet" id="portraitFromBanner" hidden>${icon('image')} Use header image</button>
-            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag the picture to choose what shows in thumbnails. The infobox shows it whole.</p>
+            <label class="bg-scale portrait-zoom" id="imgZoomRow" ${a.image ? '' : 'hidden'}>Zoom<input type="range" id="imgZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(a.imageZoom) * 100)}"><output>${Math.round(zoomOf(a.imageZoom) * 100)}%</output></label>
+            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in. At 100% the infobox shows the whole picture.</p>
           </div>
         </div>
         <div class="panel">
@@ -302,7 +303,15 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
 
   // Image
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);
-  const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; }, ratio: 1 });
+  const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; applyZoom(thumb, v, a.imageZoom); }, ratio: 1 });
+  applyZoom(thumb, a.imagePos, a.imageZoom);
+  $('#imgZoom').addEventListener('input', (e) => {
+    const z = +e.target.value / 100;
+    a.imageZoom = z > 1 ? z : null;
+    dirty = true;
+    e.target.nextElementSibling.textContent = e.target.value + '%';
+    applyZoom(thumb, a.imagePos, a.imageZoom);
+  });
   const bThumb = $('.banner-thumb', f);
   $$('.image-field', f).forEach((z) => wireDropzone(z));
   // The header image's preview has the shape the article's header has on this
@@ -314,7 +323,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // Portrait and header image. Either can reuse the other's picture (the same
   // stored image, so nothing is imported twice).
   const pics = {
-    image: { thumb, hint: '#imgHint', rm: '#imgRm', focus: iFocus, max: undefined },
+    image: { thumb, hint: '#imgHint', rm: '#imgRm', focus: iFocus, max: undefined, zoom: '#imgZoomRow' },
     banner: { thumb: bThumb, hint: '#bannerHint', rm: '#bannerRm', focus: bFocus, max: 2400 },
   };
   const syncShare = () => {
@@ -327,6 +336,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     a[key + 'Pos'] = null;
     if (id) p.thumb.src = await store.imageURL(id);
     p.thumb.hidden = $(p.hint).hidden = $(p.rm).hidden = !id;
+    if (p.zoom) $(p.zoom).hidden = !id;
     p.focus.refresh();
     syncShare();
     dirty = true;

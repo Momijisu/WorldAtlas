@@ -69,6 +69,7 @@ What they cover:
 - app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);
 - statblocks: drawing, modifiers and saves, rolls, the Statblock button (`statblocks`);
 - .world files: exporting, opening on another device, merging with clashes (`worldfile`);
+- pictures: zooming a portrait, and saving or copying one from the right-click menu (`images`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).

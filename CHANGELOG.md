@@ -1,5 +1,10 @@
 # What's new
 
+## 1.65.0
+
+- **Zoom and frame a portrait:** in the editor, drag the portrait to frame it and use the new **Zoom** slider to crop in. Zoomed, the infobox shows your square crop; at 100% it shows the whole picture, as before.
+- **Save or copy any picture:** right-click a portrait, header image or world cover for **Save image as…**, **Copy image** and **Open image in new tab**. Saved pictures are named after their article or world.
+
 ## 1.64.1 · 10 November 2026
 
 - Settings → Files: **Export a world** (was *Save a world*), to match **Export .world** in World settings.

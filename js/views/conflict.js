@@ -155,6 +155,7 @@ export function viewResolve(wid, aid) {
       } else {
         out[b.id] = src[b.id] ?? null;
         if (b.kind === 'image') out[b.id + 'Pos'] = src[b.id + 'Pos'] ?? null; // the focus belongs to its picture
+        if (b.id === 'image') out.imageZoom = src.imageZoom ?? null; // and so does the zoom
       }
     }
     out.title = String(out.title || '').trim() || a.title;

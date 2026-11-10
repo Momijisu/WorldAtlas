@@ -8,7 +8,7 @@ import { $, esc, timeAgo } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
-import { posCSS, BANNER_POS } from '../focus.js';
+import { posCSS, BANNER_POS, zoomOf, zoomCSS } from '../focus.js';
 import { edgeOf } from '../edges.js';
 import { mountMap } from '../mapview.js';
 import { drawTree, articleTreeKind } from './tree.js';
@@ -80,7 +80,9 @@ export function viewArticle(wid, id, { section } = {}) {
         ${back.length ? `${flourish()}<div class="section-head" style="margin-top:0"><h2>Mentioned in</h2></div>${articleRows(back, wid)}` : ''}
       </div>
       <aside class="infobox"><div class="infobox-inner">
-        ${a.image ? `<img class="infobox-img" data-img="${a.image}" alt="">` : ''}
+        ${a.image ? (zoomOf(a.imageZoom) > 1
+          ? `<div class="zoom-frame infobox-frame"><img class="infobox-img" data-img="${a.image}" alt="" style="object-position:${posCSS(a.imagePos)};${zoomCSS(a.imagePos, a.imageZoom)}"></div>`
+          : `<img class="infobox-img" data-img="${a.image}" alt="">`) : ''}
         <div class="infobox-title">${esc(a.title)}</div>
         <div class="infobox-type"><a href="#/w/${wid}/t/${a.type}">${t.label}</a></div>
         ${fieldCount || date || crumbs.length || onMaps.length ? `<dl>

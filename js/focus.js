@@ -10,6 +10,15 @@ export const posCSS = (pos, fallback = DEFAULT_POS) => {
   return `${+x || 0}% ${+y || 0}%`;
 };
 
+// A portrait's zoom (article.imageZoom, 1–3): scaled about its focus point,
+// inside a frame that clips it (.zoom-frame).
+export const zoomOf = (z) => Math.min(3, Math.max(1, +z || 1));
+export const zoomCSS = (pos, z) => (zoomOf(z) > 1 ? `transform-origin:${posCSS(pos)};transform:scale(${zoomOf(z)});` : '');
+export function applyZoom(img, pos, z) {
+  img.style.transformOrigin = posCSS(pos);
+  img.style.transform = zoomOf(z) > 1 ? `scale(${zoomOf(z)})` : '';
+}
+
 const clamp = (v) => Math.round(Math.min(100, Math.max(0, v)) * 10) / 10;
 
 // Make an <img> preview draggable to choose the focus. The preview is cropped
