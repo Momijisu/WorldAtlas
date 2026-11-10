@@ -576,3 +576,10 @@ details.guide summary .muted { font-weight: 400; }
 .sync-body { border-top: 1px solid var(--rule); padding-top: .8rem; }
 .sync-steps { margin: .2rem 0 .8rem; padding-left: 1.2rem; color: var(--text-2); }
 .sync-steps li { margin: .2rem 0; }
+
+/* Settings → Files: one row per thing you can do. */
+.file-row { display: flex; align-items: center; justify-content: space-between; gap: .6rem 1.2rem; flex-wrap: wrap; padding: .8rem 0; border-top: 1px solid var(--rule); }
+.file-row:first-of-type { border-top: 0; padding-top: .2rem; }
+.file-row > div:first-child { flex: 1 1 260px; }
+.file-row b { display: block; font-weight: 600; }
+.file-row .toolbar { margin: 0; flex-wrap: wrap; }

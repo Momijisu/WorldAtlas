@@ -18,8 +18,8 @@ run('backups: restore merges, clashes go to the merge manager', async ({ browser
     return fs.readFileSync(await dl.path(), 'utf8');
   };
   const restore = async (p, text) => {
-    await p.goto(URL + '#/settings'); await p.waitForSelector('#importFile', { state: 'attached' });
-    await p.setInputFiles('#importFile', { name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(text) });
+    await p.goto(URL + '#/settings'); await p.waitForSelector('#openWorldFile', { state: 'attached' });
+    await p.setInputFiles('#openWorldFile', { name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(text) });
     await p.waitForTimeout(800);
     return p.textContent('#toast');
   };

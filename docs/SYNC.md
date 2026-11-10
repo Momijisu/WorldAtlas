@@ -3,7 +3,7 @@
 Sync is optional. It keeps the same worlds on all your devices, through either:
 
 - **OneDrive:** a private folder in your own OneDrive. Works on phones, tablets and computers.
-- **A folder on your PC:** point WorldAtlas to a folder on your computer, and use any cloud storage you like to keep it in step across your computers. See [Syncing through a folder](#syncing-through-a-folder).
+- **Custom folder:** point WorldAtlas to a folder on your computer, and use any cloud storage you like to keep it in step across your computers. See [Syncing through a folder](#syncing-through-a-folder).
 
 WorldAtlas has no server of its own. A device uses one or the other.
 
@@ -70,7 +70,7 @@ Browsers that block third-party sign-in cookies, such as Safari, can't renew thi
 Use any folder that another app keeps in step between your computers. WorldAtlas reads and writes the files; that app carries them. WorldAtlas never sees your account with it.
 
 1. Inside a folder your cloud storage keeps in step, make a folder called `WorldAtlas`.
-2. In WorldAtlas, go to **Settings → Sync**, choose **A folder on your PC**, then **Choose folder** and pick it. Allow WorldAtlas to view and edit files there.
+2. In WorldAtlas, go to **Settings → Sync**, choose **Custom folder**, then **Choose folder** and pick it. Allow WorldAtlas to view and edit files there.
 3. Do the same on your other computers, choosing the same folder.
 
 The folder gets the same layout as OneDrive: `Worlds/<world name>/world.json`, `history.json` and `images/`, plus `deleted.json`.

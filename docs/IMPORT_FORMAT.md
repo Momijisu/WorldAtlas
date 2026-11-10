@@ -2,7 +2,7 @@
 
 A JSON format for adding a world to [WorldAtlas](https://momijisu.github.io/WorldAtlas/), by hand or with an AI assistant. Articles refer to each other by title, so no IDs are needed.
 
-To import, open **Settings → Import a world** and choose **Import from file** or **Paste text**. A preview lists what will change and anything that didn't match.
+To import, open **Settings → AI assistant** and choose **Paste reply**, or open an import file with **Settings → Files → Open a file**. A preview lists what will change and anything that didn't match.
 
 ---
 
@@ -139,7 +139,7 @@ Phrases like "father", "married to", "member of" and "founded by" also work.
 
 Importing into an existing world matches articles by title. New titles are created. Existing articles change only in the keys you include, so leaving out `body` keeps the current text. Updates go into revision history and can be undone.
 
-To extend a world with an assistant, export it from **Settings → Import a world**, give the file to the assistant with your new material, and import the reply.
+To extend a world with an assistant, copy it with **Settings → AI assistant → Give it a world to extend**, give the text to the assistant with your new material, and import the reply.
 
 ---
 

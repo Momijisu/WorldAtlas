@@ -1,18 +1,21 @@
 # What's new
 
-## 1.64.0
+## 1.64.0 · 10 November 2026
 
 ### .world files
-- **Export a whole world as one file:** its articles, maps, version history and every picture, in a single **.world** file. Settings → World files, or **Export .world** in World settings.
+- **Export a whole world as one file:** its articles, maps, version history and every picture, in a single **.world** file. Settings → Files → **Save a world**, or **Export .world** in World settings.
 - **Open a .world file** to add the world on another device, or to share it. Opening a world you already have merges it in: newer work is kept, and an article changed in both places goes to the merge manager.
 - With the installed app in Chrome or Edge, double-click a .world file to open it in WorldAtlas.
-- The text export, for AI assistants, is still in Settings → Import from text.
+- **Settings is tidier:** a **Files** panel (save a world, back up everything, and one **Open a file** that recognises a .world, a backup or an import file) and an **AI assistant** panel for turning notes into articles.
 
 ### Sync through a folder
-- **Point WorldAtlas to a folder on your PC** and use any cloud storage you like to keep it in step between your computers: **Settings → Sync → A folder on your PC → Choose folder**. WorldAtlas only reads and writes the folder, and never sees your cloud account.
+- **Point WorldAtlas to a folder on your PC** and use any cloud storage you like to keep it in step between your computers: **Settings → Sync → Custom folder → Choose folder**. WorldAtlas only reads and writes the folder, and never sees your cloud account.
 - Merges like OneDrive sync: edits to different articles combine, and an article changed on two computers goes to the merge manager, including when the folder app has kept a "conflicted copy".
-- **One Sync panel:** Settings → Sync lets you choose how to sync (OneDrive or a folder on your PC) and shows the setup for that one. A device uses one at a time; choosing the other offers to switch.
+- **One Sync panel:** Settings → Sync lets you choose how to sync (OneDrive or a custom folder) and shows the setup for that one. A device uses one at a time; choosing the other offers to switch.
 - Chrome and Edge on a computer. See [docs/SYNC.md](docs/SYNC.md#syncing-through-a-folder).
+
+### Fixes
+- Opening an import file or backup whose articles contain statblocks (or other ``` blocks) now reads the whole file, rather than just one block.
 
 ### Updates
 - **No pop-up when an update arrives.** The **!** on Settings & sync is all you'll see; *What's new* and **Update now** are in Settings → About this app.

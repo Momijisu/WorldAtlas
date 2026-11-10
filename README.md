@@ -78,7 +78,7 @@ A copy of your own only updates when you pull in new versions.
 
 ## Syncing between devices
 
-Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same Microsoft account on each device) or **A folder on your PC** (a folder that any cloud storage you like keeps in step between your computers).
+Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same Microsoft account on each device) or **Custom folder** (a folder that any cloud storage you like keeps in step between your computers).
 
 - **Only its own folder.** WorldAtlas can only reach `OneDrive/Apps/WorldAtlas`, nothing else in your OneDrive. Each world gets its own folder there; to share a world with a co-writer, share that folder from OneDrive.
 - **When it syncs:** shortly after each edit, when the app opens or comes back online, and every couple of minutes. Edits to different articles merge on their own; the same article changed in two places goes to the merge manager.
@@ -94,7 +94,7 @@ Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same 
 
 Ideas being considered, not promises:
 
-- **More places to sync:** signing in to Google Drive directly, so phones can use it too (computers can already sync through a folder on the PC)
+- **More places to sync:** signing in to Google Drive directly, so phones can use it too (computers can already sync through a custom folder)
 - **Player view:** a read-only copy of a world for your players, with GM notes and secrets left out
 
 ## More
