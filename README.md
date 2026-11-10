@@ -35,7 +35,7 @@ Write about your world's people, places and history, link it all together and pi
 
 **Keep your work safe**
 - Version history for every article, and recovery of deleted ones
-- Optional sync between your devices through your own OneDrive
+- Optional sync between your devices through your own OneDrive, or through any folder that Proton Drive, Dropbox, Google Drive or iCloud Drive keeps in step
 - Import from a simple format (handy for turning existing notes into a world with an AI assistant) and full backups to a single file
 
 | | | |
@@ -93,7 +93,7 @@ Go to **Settings → OneDrive sync** and choose **Connect OneDrive** on each dev
 
 Ideas being considered, not promises:
 
-- **More places to sync:** Google Drive, and other file shares (such as Dropbox or a shared network folder), so you can keep devices in step with whatever storage you already use
+- **More places to sync:** signing in to Google Drive directly, so phones can use it too (computers can already sync through any synced folder)
 - **Player view:** a read-only copy of a world for your players, with GM notes and secrets left out
 
 ## More

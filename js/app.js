@@ -26,7 +26,7 @@ import { viewGraph } from './views/graph.js';
 import { viewPrompts } from './views/prompts.js';
 import { viewResolve } from './views/conflict.js';
 import { promptsEnabled } from './prompts.js';
-import { viewSettings, renderOneDriveCard, applyTheme } from './views/settings.js';
+import { viewSettings, renderOneDriveCard, renderFolderCard, applyTheme } from './views/settings.js';
 
 const sidebar = $('#sidebar');
 let currentHash = location.hash;
@@ -182,7 +182,8 @@ function wireChrome() {
   showInstallButton();
   $('#syncBtn').onclick = () => {
     const st = sync.getStatus().state;
-    if (st === 'reauth') auth.signIn().catch((e) => toast(e.message)); // straight back in, no picker
+    if (st === 'reauth' && sync.target() === 'folder') sync.allowFolder(); // the browser asks to use the folder again
+    else if (st === 'reauth') auth.signIn().catch((e) => toast(e.message)); // straight back in, no picker
     else if (st === 'off' || st === 'error') location.hash = '#/settings';
     else sync.sync();
   };
@@ -218,8 +219,9 @@ function renderSyncBadge({ state: st, message }) {
   const [ic, text] = labels[st];
   btn.className = 'sync-badge ' + st;
   btn.innerHTML = `${icon(ic)}<span class="sync-text">${text}</span>`;
-  btn.title = message || (st === 'synced' ? 'Synced with OneDrive ' + timeAgo(store.meta.lastSync) : text);
+  btn.title = message || (st === 'synced' ? `Synced with ${sync.targetLabel()} ${timeAgo(store.meta.lastSync)}` : text);
   if ($('#oneDriveCard')) renderOneDriveCard();
+  if ($('#folderCard')) renderFolderCard();
 }
 
 // ---------------------------------------------------------------- routing

@@ -1,6 +1,11 @@
-# Syncing with OneDrive
+# Syncing between devices
 
-Sync is optional. It keeps the same worlds on all your devices through a private folder in your own OneDrive. WorldAtlas has no server of its own.
+Sync is optional. It keeps the same worlds on all your devices, through either:
+
+- **OneDrive:** a private folder in your own OneDrive. Works on phones, tablets and computers.
+- **A synced folder:** a folder on your computer that another app keeps in step across your computers, such as Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing. See [Syncing through a folder](#syncing-through-a-folder).
+
+WorldAtlas has no server of its own. A device uses one or the other.
 
 ## Using the online version
 
@@ -59,3 +64,19 @@ Apps/WorldAtlas/
 Microsoft limits a browser sign-in to 24 hours. WorldAtlas renews it in the background before then, so nothing interrupts you.
 
 Browsers that block third-party sign-in cookies, such as Safari, can't renew this way. There the sync badge shows **Reconnect**, and one tap signs you back in.
+
+## Syncing through a folder
+
+Use any folder that another app keeps in step between your computers. WorldAtlas reads and writes the files; that app carries them. WorldAtlas never sees your account with it.
+
+1. In your Proton Drive (or Dropbox, Google Drive, iCloud Drive…) folder, make a folder called `WorldAtlas`.
+2. In WorldAtlas, go to **Settings → Folder sync → Choose folder** and pick it. Allow WorldAtlas to view and edit files there.
+3. Do the same on your other computers, choosing the same folder.
+
+The folder gets the same layout as OneDrive: `Worlds/<world name>/world.json`, `history.json` and `images/`, plus `deleted.json`.
+
+- **Where it works:** Chrome and Edge on a computer. Other browsers and phones don't let web pages use folders on disk, so use OneDrive or backup files there.
+- **When it syncs:** as with OneDrive, after each edit, when the app opens and every two minutes. How soon a change reaches another computer depends on the app syncing the folder.
+- **Permission:** after the browser restarts it may ask again before WorldAtlas can use the folder. The sync badge shows **Reconnect**; click it, or *Allow access* in Settings. Chrome and Edge can remember the choice ("Allow on every visit").
+- **Clashes:** if two computers save before the folder app has synced, it may keep a copy such as `world (conflicted copy).json`. WorldAtlas merges such copies in and removes them. An article changed on both goes to the merge manager, so nothing is lost.
+- **One at a time:** a device syncs with OneDrive or a folder. Disconnect one in Settings to use the other.

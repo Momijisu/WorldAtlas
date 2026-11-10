@@ -81,6 +81,7 @@ export function viewSettings() {
       <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
     <div class="panel" id="oneDriveCard"></div>
+    <div class="panel" id="folderCard"></div>
     <div class="panel">
       <h2>Appearance</h2>
       <div class="seg" id="themeSeg">
@@ -139,6 +140,7 @@ export function viewSettings() {
     <p class="muted small center">Icons: Phosphor. Type: Cormorant Garamond, Alegreya.</p>
   </section>`;
   renderOneDriveCard();
+  renderFolderCard();
   const seg = $('#themeSeg');
   const mark = () => { for (const b of seg.children) b.classList.toggle('on', b.dataset.t === (localStorage.getItem('wa.theme') || 'dark')); };
   seg.onclick = (e) => {
@@ -183,7 +185,9 @@ export function renderOneDriveCard() {
   const acct = auth.account();
   const cid = auth.clientId();
   let main;
-  if (!cid) {
+  if (sync.target() === 'folder') {
+    main = `<p class="muted">This device syncs through a folder instead (below). Stop folder sync to use OneDrive here.</p>`;
+  } else if (!cid) {
     main = `<p>Syncing uses a private folder in your OneDrive (<code>Apps/WorldAtlas</code>). It needs a one-time Microsoft app registration (<a href="https://github.com/Momijisu/WorldAtlas/blob/main/docs/SYNC.md" target="_blank" rel="noopener">how to set it up</a>). Paste its Application (client) ID below.</p>`;
   } else if (st.state === 'off') {
     main = `<p>Sign in with Microsoft to sync your worlds through <code>OneDrive/Apps/WorldAtlas</code>.</p>
@@ -220,6 +224,48 @@ export function renderOneDriveCard() {
     renderOneDriveCard();
   });
   $('#copyRuri')?.addEventListener('click', () => navigator.clipboard?.writeText(auth.redirectUri()).then(() => toast('Copied')));
+}
+
+// Folder sync: a folder on this computer that another app keeps in step across
+// devices (Proton Drive, Dropbox, Google Drive, iCloud Drive, Syncthing…).
+export function renderFolderCard() {
+  const el = $('#folderCard');
+  if (!el) return;
+  const st = sync.getStatus();
+  const on = sync.target() === 'folder';
+  const intro = `<p>Keep your worlds in a folder on this computer. Point it at a folder that <b>Proton Drive</b>, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them to your other computers. WorldAtlas never sees your account with them.</p>`;
+  let main;
+  if (!sync.folderSupported()) {
+    main = `${intro}<p class="muted small">Needs Chrome or Edge on a computer: other browsers and phones don’t let web pages use folders. Use OneDrive sync or backup files there.</p>`;
+  } else if (sync.target() === 'onedrive') {
+    main = `${intro}<p class="muted small">This device syncs with OneDrive. Disconnect OneDrive above to use a folder instead.</p>`;
+  } else if (!on) {
+    main = `${intro}<p class="muted small">Tip: make a folder called <b>WorldAtlas</b> inside your Proton Drive (or other synced) folder and choose that. Use the same folder on each computer.</p>
+      <p><button class="btn primary" id="chooseFolderBtn">${icon('upload-simple')} Choose folder</button></p>`;
+  } else if (st.state === 'reauth') {
+    main = `<p>Syncing with the folder <b>${esc(sync.folderName())}</b>.</p><p class="warn">${esc(st.message)}</p>
+      <p><button class="btn primary" id="allowFolderBtn">Allow access</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>`;
+  } else {
+    main = `<p>Syncing with the folder <b>${esc(sync.folderName())}</b> on this computer.</p>
+      <p>Status: <b class="status-${st.state}">${esc({ synced: 'Up to date', syncing: 'Syncing…', pending: 'Changes waiting to save', error: 'Error' }[st.state] || st.state)}</b>
+      <span class="muted">· last synced ${timeAgo(store.meta.lastSync)}</span></p>
+      ${st.state === 'error' ? `<p class="warn">${esc(st.message)}</p>` : ''}
+      <p><button class="btn primary" id="syncFolderNow">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="chooseFolderBtn">Choose another folder</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>
+      <p class="muted small">How quickly changes reach your other computers depends on the app that syncs the folder.</p>`;
+  }
+  el.innerHTML = `<h2>Folder sync</h2>${main}`;
+  $('#chooseFolderBtn', el)?.addEventListener('click', async () => {
+    try { if (!(await sync.chooseFolder())) toast('WorldAtlas needs permission to use that folder'); } catch (e) { if (e.name !== 'AbortError') toast(e.message); }
+    renderFolderCard();
+  });
+  $('#allowFolderBtn', el)?.addEventListener('click', async () => { if (!(await sync.allowFolder())) toast('Access not allowed'); renderFolderCard(); });
+  $('#syncFolderNow', el)?.addEventListener('click', () => sync.sync());
+  $('#stopFolderBtn', el)?.addEventListener('click', async () => {
+    if (!(await confirmDialog(`Stop syncing with “${sync.folderName()}” on this device? Your worlds stay here and in the folder.`, 'Stop', { danger: false }))) return;
+    await sync.stopFolder();
+    renderFolderCard();
+    renderOneDriveCard();
+  });
 }
 
 async function exportBackup() {

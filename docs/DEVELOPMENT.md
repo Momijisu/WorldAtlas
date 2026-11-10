@@ -17,7 +17,8 @@ css/graph.css         family trees, organisation charts and the relationship web
 js/app.js             boot, routing, top bar, sidebar
 js/views/*.js         one module per screen
 js/store.js           data, version history, conflict merge
-js/sync.js            OneDrive sync
+js/sync.js            sync: the shared logic, and the OneDrive provider
+js/syncfolder.js      folder sync provider (a folder another app keeps in step)
 js/auth.js            Microsoft sign-in (auth code + PKCE)
 js/calendar.js        calendar maths and date formatting
 js/relations.js       relationship types and family links
@@ -55,6 +56,7 @@ tests/                browser tests
 What they cover:
 - every main page opening (`smoke`);
 - OneDrive sync end to end against a fake drive (`sync`): migration, a second device, merging, rename, delete, old-version files, throttling, retries, and one stuck world not blocking the others;
+- folder sync through a synced folder: a second device, merging, conflicted copies, pictures, renaming (`folder-sync`);
 - the offline cache and updates: a new version waits for the user, with its notes (`offline`);
 - backup files between devices, with clashes sent to the merge manager (`backup`);
 - articles: links, excerpts and prompts (`articles`), callouts and aliases (`callouts-aliases`);

@@ -16,7 +16,7 @@ run('appearance: app-wide vs per world', async ({ newPage }) => {
 
   await go(p, '#/settings');
   const order = await p.$$eval('.settings .panel h2', (h) => h.map((x) => x.textContent));
-  check('Settings opens with About, Install, then OneDrive sync', JSON.stringify(order.slice(0, 4)) === JSON.stringify(['About this app', 'Install the app', 'OneDrive sync', 'Appearance']), order);
+  check('Settings opens with About, Install, then sync (OneDrive, folder)', JSON.stringify(order.slice(0, 5)) === JSON.stringify(['About this app', 'Install the app', 'OneDrive sync', 'Folder sync', 'Appearance']), order);
   check('Settings has no background or header edge (they’re per world)', !(await p.$('.settings .bg-picker')) && !(await p.$('.settings #edgeSeg')) && !(await p.$('.settings #noiseRange')));
   check('outside a world the app uses its own gradient', await p.evaluate(() => document.body.dataset.bg) === 'gradient');
 
