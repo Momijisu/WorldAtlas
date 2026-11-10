@@ -1,5 +1,9 @@
 # What's new
 
+## 1.60.1
+
+- **Header image preview matches the article again.** Since headers went full width, the editor's preview was cropped to the old, narrower shape, so the article showed a different part of the picture.
+
 ## 1.60.0 · 5 November 2026
 
 - **Taller world cards** on the worlds page.
