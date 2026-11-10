@@ -1,9 +1,13 @@
 # What's new
 
+## 1.64.1
+
+- Settings → Files: **Export a world** (was *Save a world*), to match **Export .world** in World settings.
+
 ## 1.64.0 · 10 November 2026
 
 ### .world files
-- **Export a whole world as one file:** its articles, maps, version history and every picture, in a single **.world** file. Settings → Files → **Save a world**, or **Export .world** in World settings.
+- **Export a whole world as one file:** its articles, maps, version history and every picture, in a single **.world** file. Settings → Files → **Export a world**, or **Export .world** in World settings.
 - **Open a .world file** to add the world on another device, or to share it. Opening a world you already have merges it in: newer work is kept, and an article changed in both places goes to the merge manager.
 - With the installed app in Chrome or Edge, double-click a .world file to open it in WorldAtlas.
 - **Settings is tidier:** a **Files** panel (save a world, back up everything, and one **Open a file** that recognises a .world, a backup or an import file) and an **AI assistant** panel for turning notes into articles.

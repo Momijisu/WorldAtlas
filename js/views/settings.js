@@ -106,9 +106,9 @@ export function viewSettings() {
     <div class="panel" id="filesCard">
       <h2>Files</h2>
       ${store.worlds().length ? `<div class="file-row">
-        <div><b>Save a world</b><span class="muted small">One world, pictures and all, in a single .world file: to keep, share or open on another device.</span></div>
-        <div class="toolbar"><select id="worldFileSel" aria-label="World to save">${store.worlds().map((w) => `<option value="${w.id}" ${w.id === state.wid ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
-          <button class="btn primary" id="exportWorldFile">${icon('download-simple')} Save .world</button></div>
+        <div><b>Export a world</b><span class="muted small">One world, pictures and all, in a single .world file: to keep, share or open on another device.</span></div>
+        <div class="toolbar"><select id="worldFileSel" aria-label="World to export">${store.worlds().map((w) => `<option value="${w.id}" ${w.id === state.wid ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
+          <button class="btn primary" id="exportWorldFile">${icon('download-simple')} Export .world</button></div>
       </div>
       <div class="file-row">
         <div><b>Back up everything</b><span class="muted small">All your worlds in one backup file.</span></div>
