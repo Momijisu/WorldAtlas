@@ -1,6 +1,6 @@
 # What's new
 
-## 1.65.1
+## 1.65.1 · 10 November 2026
 
 - **Portraits are always square** in the infobox, framed as you set them in the editor, even when the picture is tall or wide.
 
