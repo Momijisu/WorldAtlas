@@ -29,6 +29,7 @@ export async function exampleWorld(store, { demo = false } = {}) {
   const gloamwoodBanner = await assetImage(store, 'assets/demo/gloamwood.svg');
   const world = {
     id: wid, name: 'Aerthal', image: cover, calendar, ...(demo ? { demo: true } : {}),
+    heroEdge: 'torn', background: { pattern: 'spells' }, // World settings: header edge and background
     description: 'A shattered continent where the flying cities of the old **Skyward Empire** fell from the sky, and five kingdoms now squabble over the ruins. Start at [[Varenhold]], meet [[Queen Ysolde]], or open the map of [[Vael]].',
   };
   await store.save('worlds', world);
@@ -105,7 +106,8 @@ export async function exampleWorld(store, { demo = false } = {}) {
   });
   const ysolde = A('character', 'Queen Ysolde', {
     summary: 'The sharp-tongued monarch of Vael, last of the Ardent line.',
-    body: 'Ysolde took the throne at nineteen after the [[Night of Falling Lanterns]]. She rules from [[Varenhold]] and keeps an uneasy truce with the [[Lantern Guild]].\n\n## Personality\nPatient, private, and utterly unwilling to be underestimated twice.\n\n## Fears\nShe fears the dark more than any assassin. She has never slept a night without a lamp lit, and she knows exactly who lights them.',
+    aliases: ['The Iron Queen'],
+    body: 'Ysolde took the throne at nineteen after the [[Night of Falling Lanterns]]. She rules from [[Varenhold]] and keeps an uneasy truce with the [[Lantern Guild]].\n\n## Personality\nPatient, private, and utterly unwilling to be underestimated twice.\n\n## Fears\nShe fears the dark more than any assassin. She has never slept a night without a lamp lit, and she knows exactly who lights them.\n\n## A letter, never sent\n:::cursive\nCorin,\nThe Lift sank another inch this spring. Do not come home yet. If the engine fails, I would rather the river had one Ardent left.\nY.\n:::',
     fields: { 'Full name': 'Ysolde Ardent', Species: 'Human', Age: '34', Occupation: 'Queen of Vael', Residence: '[[The Lift Palace]]', Eyes: 'Grey', Hair: 'Black, cropped' },
     tags: ['vael', 'royalty'], start: 1009, startM: 4, startD: 3,
     gmNotes: 'She secretly funds an expedition to restart the Skyward engines.',
@@ -116,6 +118,30 @@ export async function exampleWorld(store, { demo = false } = {}) {
   });
   const wick = A('character', 'Mother Wick', {
     summary: 'The ancient, soft-spoken head of the Lantern Guild.',
+    body: `Nobody remembers her being young. She speaks quietly, and the whole room leans in.
+
+\`\`\`statblock
+name: Mother Wick
+type: Medium Humanoid (Human?), Lawful Neutral
+ac: 12
+initiative: +4 (14)
+hp: 33 (6d8 + 6)
+speed: 25 ft.
+str: 8 | dex: 14 | con: 12 | int: 18 | wis: 17 | cha: 15
+saves: Int +6, Wis +5
+skills: Insight +7, Deception +6, Perception +5
+senses: Passive Perception 15
+languages: Common, [[Old Skyward]]
+cr: 3 (XP 700; PB +2)
+
+## Traits
+***Every Lamp Is an Eye.*** While in [[Varenhold]], Mother Wick knows the location of anyone standing in lamplight.
+
+## Actions
+***Cane.*** *Melee Attack Roll:* +4, reach 5 ft. *Hit:* 4 (1d6 + 1) Bludgeoning damage.
+
+***[[Lanternlight]] (3/Day).*** Every light within 60 feet goes out, or flares bright. Creatures of her choice in the flare must succeed on a DC 14 Constitution saving throw or have the Blinded condition until the end of their next turn.
+\`\`\``,
     fields: { Species: 'Human?', Occupation: 'Guildmistress' }, tags: ['guild'],
   });
   const lamplighter = A('profession', 'Lamplighter', {
@@ -163,7 +189,18 @@ cr: 1/2 (XP 100; PB +2)
   // Groups, history and stories
   const guild = A('organization', 'Lantern Guild', {
     summary: 'Lamplighters by day, information brokers by night.',
-    body: 'The Guild lights every street lamp in [[Varenhold]], and so it knows who walks where after dark. Its members practise [[Lanternlight]].',
+    body: `The Guild lights every street lamp in [[Varenhold]], and so it knows who walks where after dark. Its members practise [[Lanternlight]].
+
+## Rumours for sale
+Ask a lamplighter, pay the price, and roll. Rarer rumours have a lower **Chance**.
+
+| Rumour                                                        | Price  | Chance |
+| ------------------------------------------------------------- | ------ | -----: |
+| The Lift Palace kitchens buy twice the candles they burn.     | 2 sp   |      4 |
+| [[Prince Corin]] dines with Ostmouth smugglers every new moon. | 5 sp   |      3 |
+| A stonemason was paid to forget a measurement.                | 1 gp   |      2 |
+| [[Mother Wick]] was a lamplighter before the Falling.         | 5 gp   |      1 |
+| The queen keeps a lamp lit that nobody else may touch.        | 10 gp  |      1 |`,
     fields: { Type: 'Guild', Leader: '[[Mother Wick]]', Headquarters: 'Tallowmarket, [[Varenhold]]', Founded: '640 AF', Motto: '“We see by our own light.”' },
     tags: ['guild', 'intrigue'], start: 640,
   });
@@ -186,7 +223,7 @@ cr: 1/2 (XP 100; PB +2)
   });
   const tradition = A('tradition', 'Night of Lanterns', {
     summary: 'Each year on 21 Longnight, Varenhold lights every lamp it owns.',
-    body: 'Begun the year after the [[Night of Falling Lanterns]], it is officially a remembrance. Unofficially it is the [[Lantern Guild]] reminding everyone who holds the light.',
+    body: 'Begun the year after the [[Night of Falling Lanterns]], it is officially a remembrance. Unofficially it is the [[Lantern Guild]] reminding everyone who holds the light.\n\n## What it remembers\n![[Night of Falling Lanterns|The night itself]]',
     fields: { Type: 'Festival', 'Practised by': 'The people of [[Varenhold]]', When: '21 Longnight' },
     start: 1029, startM: 11, startD: 21, tags: ['vael'],
   });
@@ -198,6 +235,21 @@ cr: 1/2 (XP 100; PB +2)
   });
   const plot = A('plot', 'The Sinking Lift', {
     summary: 'The engine under Varenhold is failing, and only the queen knows.',
+    body: `> [!warning] Don't tell the players yet
+> The Lift drops a little every session. Describe it, don't explain it.
+
+## Leads
+Tick them off as the party finds them.
+
+| Lead                                                   | Where                  | Found |
+| ------------------------------------------------------ | ---------------------- | ----- |
+| The stonemason's measurements                          | [[Varenhold]]          | [x]   |
+| Engine schematics in [[Old Skyward]]                   | [[Highcairn]]          | [ ]   |
+| Who is buying up [[Stormglass]]?                       | [[Ostmouth]]           | [ ]   |
+| What the [[Lantern Guild]] already knows               | Tallowmarket           | [ ]   |
+
+> [!tip] If the party stalls
+> A lamp in the Tallowmarket goes dark at noon. Someone wants to be found.`,
     fields: { Status: 'Unresolved', Hook: 'A stonemason notices the Lift is an inch lower than last year', Goal: 'Restart the engine before the Lift falls', Antagonist: 'Time, and anyone who profits from chaos', 'If it fails': 'The upper city crashes into Tallowmarket' },
     tags: ['vael', 'quest'],
     gmNotes: 'The [[Lantern Guild]] already knows, and is deciding what the information is worth.',
@@ -282,6 +334,7 @@ What a party might meet on Vael's roads. Roll when they make camp.
     });
     await store.save('maps', {
       id: uid(), worldId: wid, name: 'The Kingdom of Vael', image: mapImage,
+      scale: { perPx: 0.2, unit: 'miles' }, pinStyle: 'numbers', // measure distances; numbered pins with a key
       pins: [
         P(varenhold, 745, 505, 'castle-turret', 'settlement'),
         P(ostmouth, 560, 735, 'anchor', 'settlement'),

@@ -48,7 +48,7 @@ Rows left completely empty are dropped.
 
 - **Sort:** click a column's name. Click again to reverse, and a third time to go back to the table's own order.
 - **Search:** tables with 6 or more rows get a search box that shows only the rows containing every word you type.
-- **Roll:** tables with 3 or more rows get a **Roll** button that picks a row, highlights it and rolls any dice in it. It picks in one of three ways:
+- **Roll:** tables with 3 or more rows (except checklists, unless they're named after a die or have a Chance column) get a **Roll** button that picks a row, highlights it and rolls any dice in it. It picks in one of three ways:
   - **By die:** name the first column after a die (`d4`, `d6`, `d8`, `d10`, `d12`, `d20`, `d100` or `d%`) and fill it with numbers or ranges (`1–2`, `3`, `19+`). Roll rolls that die and lands on the matching row, just like a printed table.
   - **By chance:** a column called **Chance** makes some rows more likely than others. A row with 3 comes up three times as often as one with 1, 0 never comes up, and empty counts as 1. The column stays hidden from readers.
   - **Evenly:** otherwise every row is as likely. If a search is active, Roll picks only from the rows shown.

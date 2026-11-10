@@ -1,7 +1,21 @@
 # What's new
 
-## 1.62.0
+## 1.62.0 · 10 November 2026
 
+### A richer example world
+The example world, Aerthal, now shows off more of what WorldAtlas can do:
+- **The Sinking Lift** (a quest) has callouts and a checklist of leads you can tick off.
+- **The Lantern Guild** sells rumours from a table you can roll on, rarer ones less likely.
+- **Mother Wick** and the **Mistfox** have statblocks; hover a link to either for their stats.
+- **Queen Ysolde** goes by *The Iron Queen* too, and has a letter in her own hand.
+- **Night of Lanterns** quotes the event it remembers.
+- **The map** has a scale, so Measure gives distances and travel times, and numbered pins with a key.
+- Aerthal uses its own header edge (Torn) and background (Spell circles).
+
+To see it on a device that already has Aerthal, remove the example from its overview and open it again from the worlds page.
+
+### Also
+- **Checklists don't get a Roll button** (tables with tickboxes), unless they're named after a die or have a Chance column.
 - **Statblocks in link previews:** hover a link to an article with a statblock (a species, a character, a monster) and the preview shows its AC, HP, speed, CR and abilities at a glance.
 
 ## 1.61.0 · 10 November 2026

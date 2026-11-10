@@ -184,7 +184,9 @@ export function enhanceTables(html) {
     box.className = 'wa-table';
     if (die) box.dataset.die = die;
     const search = trs.length >= 6;
-    const roll = trs.length >= 3 || (trs.length >= 2 && (die || chance >= 0));
+    // Checklists (tables with [ ] boxes) aren't for rolling, unless they ask to be.
+    const checklist = !!table.querySelector('[data-check]');
+    const roll = die || chance >= 0 ? trs.length >= 2 : trs.length >= 3 && !checklist;
     box.innerHTML = (search || roll ? `<div class="wa-table-bar">
         ${search ? `<label class="wa-table-search">${icon('magnifying-glass')}<input type="search" placeholder="Search this table" aria-label="Search this table"></label><span class="wa-table-count muted small">${trs.length} rows</span>` : ''}
         ${roll ? `<button type="button" class="btn small quiet roll-btn" data-roll title="${die ? `Roll ${die} for a row` : chance >= 0 ? `Pick a random row, weighted by ${esc(ths[chance].textContent.trim())}` : 'Pick a random row'}">${icon('dice-five')} Roll${die ? ` ${esc(die)}` : ''}</button>` : ''}
