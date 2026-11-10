@@ -53,8 +53,8 @@ Write about your world's people, places and history, link it all together and pi
 - **Free, with nothing held back.** No sign-up, no paid plan, no limits, and your worlds are never made public as the price of using it.
 - **Always up to date.** New features and fixes arrive by themselves; the app picks them up the next time you open it.
 - **Works offline.** Install it from your browser and it opens in its own window, with or without internet. Anything you write offline syncs when you're back online.
-  - **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge)
-  - **Android:** browser menu → *Install app* (Chrome) or *Add to phone* (Edge)
+  - **Windows, Mac, Linux:** the install icon in the address bar (Chrome or Edge). Firefox on a computer can't install web apps, but WorldAtlas works fully in a Firefox tab, offline too.
+  - **Android:** browser menu → *Install app* (Chrome), *Add to phone* (Edge) or *Add app to Home screen* (Firefox)
   - **iPhone / iPad:** Share → *Add to Home Screen*
 
 ### Prefer to run your own copy?

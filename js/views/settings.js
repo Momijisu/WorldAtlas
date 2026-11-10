@@ -45,6 +45,7 @@ export function viewSettings() {
   const ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   const edge = /Edg/i.test(ua);
   const android = /android/i.test(ua);
+  const firefox = /Firefox|FxiOS/i.test(ua);
   view.innerHTML = `<section class="page narrow settings">
     ${pageHead({ eyebrow: 'WorldAtlas', title: 'Settings &amp; sync' })}
     <div class="panel" id="aboutCard">
@@ -70,9 +71,13 @@ export function viewSettings() {
           ? `Tap <b>Share</b>${edge ? ' (in Edge, menu ⋯ → Share)' : ''} → <b>Add to Home Screen</b>. Before iOS 16.4, use Safari.`
           : android && edge
             ? 'Menu <b>⋯</b> → <b>Add to phone</b> (or <b>Install app</b>). If it’s missing, reload and try again.'
-            : android
-              ? 'Menu ⋮ → <b>Install app</b>.'
-              : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
+            : android && firefox
+              ? 'Menu ⋮ → <b>Add app to Home screen</b>.'
+              : android
+                ? 'Menu ⋮ → <b>Install app</b>.'
+                : firefox
+                  ? 'Firefox can’t install web apps on a computer, but WorldAtlas works fully here in a tab, offline too once it has loaded. To install it as its own app, open this page in Chrome or Edge. Your worlds are kept per browser, so connect OneDrive there to bring them across.'
+                  : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
       <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
     <div class="panel" id="oneDriveCard"></div>

@@ -1,5 +1,9 @@
 # What's new
 
+## 1.63.2
+
+- **Firefox:** Settings → Install the app now gives the right steps. On Android, menu → *Add app to Home screen*. On a computer, where Firefox can't install web apps, it says so, and that WorldAtlas works fully in a tab.
+
 ## 1.63.1 · 10 November 2026
 
 - **Statblock entries are spaced apart:** each line in a section (*Multiattack*, *Bite*, *Tail*…) is its own paragraph, even without a blank line between them.
