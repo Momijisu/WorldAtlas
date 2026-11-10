@@ -1,6 +1,6 @@
 # What's new
 
-## 1.63.2
+## 1.63.2 · 10 November 2026
 
 - **Taller header images** on articles: up to 520px on wide screens (was 420px), so more of the picture shows.
 - **Firefox:** Settings → Install the app now gives the right steps. On Android, menu → *Add app to Home screen*. On a computer, where Firefox can't install web apps, it says so, and that WorldAtlas works fully in a tab.
