@@ -184,7 +184,7 @@ export function viewSettings() {
 // adding it to SYNC_METHODS with a body(el) that draws and wires its setup.
 const SYNC_METHODS = {
   onedrive: { label: 'OneDrive', icon: 'cloud-check', blurb: 'A private folder in your own OneDrive. Phones, tablets and computers.', body: oneDriveBody, stop: stopOneDrive },
-  folder: { label: 'Custom folder', icon: 'folder', blurb: 'A folder on your PC, kept in step between your computers by any cloud storage you like. Chrome or Edge.', body: folderBody, stop: () => sync.stopFolder() },
+  folder: { label: 'Custom folder', icon: 'folder', blurb: 'Target a custom folder on your PC, or one your preferred cloud storage keeps in step. Chrome or Edge.', body: folderBody, stop: () => sync.stopFolder() },
 };
 const syncPick = () => { try { const v = localStorage.getItem('wa.syncPick'); return SYNC_METHODS[v] ? v : null; } catch { return null; } };
 const setSyncPick = (v) => { try { localStorage.setItem('wa.syncPick', v); } catch { /* storage blocked */ } };
@@ -282,7 +282,7 @@ function folderBody(el) {
     main = `<p>Keep your worlds in a folder on your PC, kept in step between your computers by any cloud storage you like.</p>
       <p class="muted small">This needs Chrome or Edge on a computer: other browsers and phones don’t let web pages use folders. Use OneDrive or backup files here.</p>`;
   } else if (!on) {
-    main = `<ol class="small sync-steps"><li>Inside a folder your cloud storage keeps in step, make a folder called <b>WorldAtlas</b>.</li>
+    main = `<ol class="small sync-steps"><li>Target a custom folder on your PC, or in your preferred cloud storage.</li>
         <li>Choose it below, and allow WorldAtlas to use it.</li><li>Do the same on your other computers, with the same folder.</li></ol>
       <p class="muted small">Your cloud storage carries the files between your computers. WorldAtlas only reads and writes the folder, and never sees your account.</p>
       <p><button class="btn primary" id="chooseFolderBtn">${icon('folder')} Choose folder</button></p>`;
