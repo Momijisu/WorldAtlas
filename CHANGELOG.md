@@ -1,6 +1,6 @@
 # What's new
 
-## 1.62.1
+## 1.62.1 · 10 November 2026
 
 - **Statblocks show CR at the top right**, on the same line as the name.
 
