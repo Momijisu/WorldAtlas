@@ -35,7 +35,7 @@ Write about your world's people, places and history, link it all together and pi
 
 **Keep your work safe**
 - Version history for every article, and recovery of deleted ones
-- Optional sync between your devices through your own OneDrive, or through any folder that Proton Drive, Dropbox, Google Drive or iCloud Drive keeps in step
+- Optional sync between your devices through your own OneDrive, or through a folder on your PC kept in step by any cloud storage you like
 - Import from a simple format (handy for turning existing notes into a world with an AI assistant) and full backups to a single file
 
 | | | |
@@ -69,7 +69,7 @@ cd WorldAtlas
 python3 -m http.server 8000
 ```
 
-(`npx serve` or VS Code's Live Server work too. Double-clicking `index.html` doesn't, because browsers block web apps loaded straight from files on disk.)
+(`npx serve`, VS Code's Live Server or IIS work too; for IIS, the included `web.config` sets the file types it needs. Double-clicking `index.html` doesn't, because browsers block web apps loaded straight from files on disk.)
 
 **On your own website:** put the folder on any static host with HTTPS: GitHub Pages, Netlify, Cloudflare Pages or your own server. On GitHub, fork this repository and set **Settings → Pages → Source** to **GitHub Actions**; every push to `main` then publishes it.
 
@@ -77,7 +77,7 @@ A copy of your own only updates when you pull in new versions.
 
 ## Syncing between devices
 
-Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same Microsoft account on each device) or **A synced folder** (a folder that Proton Drive, Dropbox, Google Drive or iCloud Drive keeps in step between your computers).
+Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same Microsoft account on each device) or **A folder on your PC** (a folder that any cloud storage you like keeps in step between your computers).
 
 - **Only its own folder.** WorldAtlas can only reach `OneDrive/Apps/WorldAtlas`, nothing else in your OneDrive. Each world gets its own folder there; to share a world with a co-writer, share that folder from OneDrive.
 - **When it syncs:** shortly after each edit, when the app opens or comes back online, and every couple of minutes. Edits to different articles merge on their own; the same article changed in two places goes to the merge manager.
@@ -93,7 +93,7 @@ Go to **Settings → Sync** and choose how: **OneDrive** (sign in with the same 
 
 Ideas being considered, not promises:
 
-- **More places to sync:** signing in to Google Drive directly, so phones can use it too (computers can already sync through any synced folder)
+- **More places to sync:** signing in to Google Drive directly, so phones can use it too (computers can already sync through a folder on the PC)
 - **Player view:** a read-only copy of a world for your players, with GM notes and secrets left out
 
 ## More

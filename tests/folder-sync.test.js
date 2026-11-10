@@ -105,7 +105,7 @@ run('folder sync: through a synced folder', async ({ browser, errors }) => {
 
   // Settings: one Sync panel; the method in use is chosen, and the other offers to switch.
   await A.goto(URL + '#/settings'); await A.waitForSelector('#syncCard .sync-methods');
-  check('Settings has one Sync panel, with a choice of method', JSON.stringify(await A.$$eval('#syncCard .sync-methods button', (b) => b.map((x) => x.textContent.trim()))) === JSON.stringify(['OneDrive', 'A synced folder']));
+  check('Settings has one Sync panel, with a choice of method', JSON.stringify(await A.$$eval('#syncCard .sync-methods button', (b) => b.map((x) => x.textContent.trim()))) === JSON.stringify(['OneDrive', 'A folder on your PC']));
   check('the folder is the method in use', await A.$eval('#syncCard .sync-methods .on', (b) => b.dataset.method) === 'folder' && !!(await A.$('#syncCard .sync-methods .on .sync-dot')));
   const body = await A.textContent('#syncBody');
   check('its setup shows the folder being synced', body.includes('ProtonDrive-WorldAtlas') && body.includes('Up to date'), body.slice(0, 160));

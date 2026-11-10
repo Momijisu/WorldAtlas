@@ -3,9 +3,9 @@
 ## 1.64.0
 
 ### Sync through a folder
-- **Keep your worlds in a folder** that Proton Drive, Dropbox, Google Drive, iCloud Drive or Syncthing keeps in step, and that app carries them between your computers: **Settings → Sync → A synced folder → Choose folder**. WorldAtlas never sees your account with them.
+- **Point WorldAtlas to a folder on your PC** and use any cloud storage you like to keep it in step between your computers: **Settings → Sync → A folder on your PC → Choose folder**. WorldAtlas only reads and writes the folder, and never sees your cloud account.
 - Merges like OneDrive sync: edits to different articles combine, and an article changed on two computers goes to the merge manager, including when the folder app has kept a "conflicted copy".
-- **One Sync panel:** Settings → Sync lets you choose how to sync (OneDrive or a synced folder) and shows the setup for that one. A device uses one at a time; choosing the other offers to switch.
+- **One Sync panel:** Settings → Sync lets you choose how to sync (OneDrive or a folder on your PC) and shows the setup for that one. A device uses one at a time; choosing the other offers to switch.
 - Chrome and Edge on a computer. See [docs/SYNC.md](docs/SYNC.md#syncing-through-a-folder).
 
 ### Updates

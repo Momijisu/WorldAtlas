@@ -1,6 +1,6 @@
 // Two-way sync between IndexedDB and a shared place: a private folder in your
 // OneDrive (Apps/WorldAtlas/), or a folder on this computer that another app
-// (Proton Drive, Dropbox, Google Drive, iCloud Drive, Syncthing…) keeps in step
+// (any cloud storage the user likes) keeps in step
 // across devices (js/syncfolder.js). One at a time. The layout is the same:
 //
 //   Worlds/<world name>/world.json    the world, its articles and maps
