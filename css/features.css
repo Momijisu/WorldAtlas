@@ -568,3 +568,4 @@ details.guide summary .muted { font-weight: 400; }
 .upd-details > summary { cursor: pointer; display: inline-flex; align-items: center; gap: .4rem; color: var(--brass); font: 500 .78rem var(--sans); letter-spacing: .12em; text-transform: uppercase; padding: .3rem 0; }
 .upd-details > summary .i { width: 15px; height: 15px; }
 .upd-details[open] > summary { margin-bottom: .4rem; }
+.statblock .sb-nw { white-space: nowrap; }

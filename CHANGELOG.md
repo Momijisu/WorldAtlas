@@ -1,5 +1,11 @@
 # What's new
 
+## 1.63.1
+
+- **Statblock entries are spaced apart:** each line in a section (*Multiattack*, *Bite*, *Tail*…) is its own paragraph, even without a blank line between them.
+- **Rolls keep their brackets:** "(4d12 + 7)" no longer splits across two lines.
+- **Empty statblock sections** (such as an unfilled *Traits*) are no longer shown.
+
 ## 1.63.0 · 10 November 2026
 
 ### Updates are yours to choose

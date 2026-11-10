@@ -88,6 +88,18 @@ function savesOf(text) {
   return out;
 }
 
+// In a section each line is an entry ("***Bite.*** …"), so lines written one
+// under another become separate paragraphs. Lists, tables and quotes keep
+// their lines together.
+const KEEP = /^\s*([-*+]\s|\d+[.)]\s|\||>)/;
+function entries(body) {
+  const lines = body.split('\n');
+  return lines.map((l, i) => {
+    const next = lines[i + 1];
+    return l.trim() && next?.trim() && !KEEP.test(l) && !KEEP.test(next) ? l + '\n' : l;
+  }).join('\n');
+}
+
 // HTML for a statblock. `inline` and `block` render Markdown (with [[links]]) for this world.
 export function statblockHTML(src, { inline, block }) {
   const { fields: f, extra, sections } = parseStatblock(src);
@@ -106,7 +118,8 @@ export function statblockHTML(src, { inline, block }) {
   ].join('');
   // CR sits at the top right, beside the name.
   const details = [...DETAILS.filter(([k]) => f[k] && k !== 'cr').map(([k, l]) => line(l, f[k])), ...extra.map(([l, v]) => line(l, v))].join('');
-  const secs = sections.map((s) => `<section class="sb-sec">${s.title ? `<div class="sb-h">${inline(s.title)}</div>` : ''}<div class="sb-body">${block(s.body)}</div></section>`).join('');
+  // Sections with nothing in them (left from the form) aren't shown.
+  const secs = sections.filter((s) => s.body.trim()).map((s) => `<section class="sb-sec">${s.title ? `<div class="sb-h">${inline(s.title)}</div>` : ''}<div class="sb-body">${block(entries(s.body))}</div></section>`).join('');
   return diceButtons(`<div class="statblock${secs ? ' two' : ''}">
     ${f.name || f.cr ? `<div class="sb-head"><div class="sb-name">${f.name ? inline(f.name) : ''}</div>${f.cr ? `<div class="sb-cr"><b>CR</b> ${inline(f.cr)}</div>` : ''}</div>` : ''}
     <div class="sb-cols"><div class="sb-core">
@@ -119,7 +132,7 @@ export function statblockHTML(src, { inline, block }) {
 }
 
 // Rolls in the text ("1d6 + 1", "2d8+4", "d20") become buttons that roll them.
-const ROLL = /\b\d*d(?:\d+|%)(?:\s*[+−-]\s*\d+)?\b/g;
+const ROLL = /\(?\b\d*d(?:\d+|%)(?:\s*[+−-]\s*\d+)?\b\)?/g;
 function diceButtons(html) {
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
@@ -129,7 +142,12 @@ function diceButtons(html) {
   for (const n of nodes) {
     ROLL.lastIndex = 0;
     const span = document.createElement('span');
-    span.innerHTML = esc(n.data).replace(ROLL, (r) => (rollDice(r.replace('−', '-')) ? `<button type="button" class="sb-dice" data-dice="${r.replace('−', '-')}" title="Roll ${r}">${r}</button>` : r));
+    // A roll keeps its brackets beside it, so "(4d12 + 7)" never splits across lines.
+    span.innerHTML = esc(n.data).replace(ROLL, (whole) => {
+      const open = whole.startsWith('(') ? '(' : '', close = whole.endsWith(')') ? ')' : '';
+      const r = whole.slice(open.length, whole.length - close.length);
+      return rollDice(r.replace('−', '-')) ? `<span class="sb-nw">${open}<button type="button" class="sb-dice" data-dice="${r.replace('−', '-')}" title="Roll ${r}">${r}</button>${close}</span>` : whole;
+    });
     n.replaceWith(...span.childNodes);
   }
   return tpl.innerHTML;
