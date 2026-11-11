@@ -1,6 +1,6 @@
 # What's new
 
-## 1.69.0
+## 1.69.0 · 11 November 2026
 
 - **Click a picture to see it large:** portraits, header images, the world cover and pictures in an article open over the page, whole and uncropped, with the article's name. Esc, a click outside or ✕ closes it; right-click it to save or copy.
 
