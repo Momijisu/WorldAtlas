@@ -1,6 +1,6 @@
 # What's new
 
-## 1.68.0
+## 1.68.0 · 11 November 2026
 
 - **Arrange the whole sidebar:** the Arrange button (on each section's heading) now covers **Chronicle** (Timeline, Calendar) and **Atlas** (Maps, Relationships) too: untick what you don't use. A section with nothing left disappears, and the overview follows.
 - **Zoom the world card:** World settings has a **Zoom** slider for the card on the worlds page, alongside its own framing.
