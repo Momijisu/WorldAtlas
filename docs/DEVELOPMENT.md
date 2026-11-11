@@ -70,6 +70,7 @@ What they cover:
 - statblocks: drawing, modifiers and saves, rolls, the Statblock button (`statblocks`);
 - .world files: exporting, opening on another device, merging with clashes (`worldfile`);
 - pictures: zooming a portrait, and saving or copying one from the right-click menu (`images`);
+- arranging the codex, and the world cover's zoom (`codex`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).

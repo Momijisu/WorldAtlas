@@ -3,14 +3,14 @@ import * as store from '../store.js';
 import * as sync from '../sync.js';
 import * as auth from '../auth.js';
 import { TYPES, GROUPS } from '../store.js';
-import { templateCounts } from '../templates.js';
+import { templateCounts, codexOf } from '../templates.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
-import { posCSS, wireFocus } from '../focus.js';
+import { posCSS, wireFocus, applyZoom, zoomOf } from '../focus.js';
 import { dropzoneEmpty, wireDropzone } from '../dropzone.js';
 import { HANDS, fontFamily, loadFont, cleanFontName } from '../scripts.js';
 import { promptCard, wirePromptCard } from './prompts.js';
@@ -80,11 +80,12 @@ export async function worldDialog(w) {
       <label>Description <small>Markdown and [[links]]</small><textarea name="description" rows="5">${esc(w.description)}</textarea></label>
       <div class="field-label">Cover image</div>
       <div class="image-field">
-        <img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt="">
+        <div class="zoom-frame"><img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt=""></div>
         ${dropzoneEmpty()}
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
-        <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
+        <label class="bg-scale portrait-zoom cover-zoom" ${w.image ? '' : 'hidden'}>Zoom<input type="range" id="coverZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(w.imageZoom) * 100)}"><output>${Math.round(zoomOf(w.imageZoom) * 100)}%</output></label>
+        <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in.</p>
       </div>
       <div class="cover-previews" ${w.image ? '' : 'hidden'}>
         <div style="flex:1"><div class="field-label">On the worlds page <small>drag to choose what shows on the card</small>
@@ -145,7 +146,15 @@ export async function worldDialog(w) {
         if (hero?.offsetWidth && !isNew && state.wid === w.id) return hero.offsetWidth / hero.offsetHeight;
         return heroRatio();
       };
-      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; showCover(); }, ratio: coverRatio });
+      const focus = wireFocus(thumb, { get: () => w.imagePos, set: (v) => { w.imagePos = v; applyZoom(thumb, v, w.imageZoom); showCover(); }, ratio: coverRatio, zoom: () => w.imageZoom });
+      applyZoom(thumb, w.imagePos, w.imageZoom);
+      $('#coverZoom', m).addEventListener('input', (e) => {
+        const z = +e.target.value / 100;
+        w.imageZoom = z > 1 ? z : null;
+        e.target.nextElementSibling.textContent = e.target.value + '%';
+        applyZoom(thumb, w.imagePos, w.imageZoom);
+        showCover();
+      });
       $('[data-cancel]', m).onclick = () => close();
       wirePicker(m, w.background, (bg) => { w.background = bg || undefined; if (!bg) delete w.background; }, prepareImage);
       $('[data-cal]', m)?.addEventListener('click', () => close());
@@ -192,11 +201,13 @@ export async function worldDialog(w) {
         w.image = await store.addImage(await prepareImage(file, 2400));
         w.imagePos = null;
         w.cardPos = null;
-        thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false;
+        w.imageZoom = null;
+        thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false; $('.cover-zoom', m).hidden = false;
+        $('#coverZoom', m).value = 100; $('#coverZoom', m).nextElementSibling.textContent = '100%'; applyZoom(thumb, null, 1);
         focus.refresh();
         showCover();
       };
-      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; w.cardPos = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; showCover(); };
+      $('[data-rm]', m).onclick = (e) => { w.image = null; w.imagePos = null; w.cardPos = null; w.imageZoom = null; thumb.hidden = true; hint.hidden = true; e.currentTarget.hidden = true; $('.cover-zoom', m).hidden = true; showCover(); };
       $('[data-del]', m)?.addEventListener('click', async () => {
         if (store.isDemo(w.id)) {
           if (!(await confirmDialog('Remove the example world from this device?', 'Remove'))) return;
@@ -215,7 +226,7 @@ export async function worldDialog(w) {
         const name = f.name.value.trim();
         if (!name) return toast('Give the world a name');
         // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
-        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, cardPos: w.cardPos || null, background: w.background };
+        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, cardPos: w.cardPos || null, imageZoom: w.imageZoom || null, background: w.background };
         next.fonts = fonts.filter((ft) => ft.name);
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
@@ -232,6 +243,65 @@ export async function worldDialog(w) {
   applyBackground(state.wid);
 }
 
+// Arrange the codex: which templates the sidebar and overview show, and in what order.
+export function arrangeCodex(wid) {
+  const w = store.world(wid);
+  let rows = codexOf(w, store.articlesOf(wid), { all: true }).map(([k, t, n, hidden]) => ({ k, t, n, show: !hidden }));
+  modal('Arrange the codex', `<form id="codexF">
+      <p class="muted small" style="margin-top:0">Choose which templates show in the sidebar and on the overview, and drag them into the order you like. Hidden ones’ articles are still in All articles and search.</p>
+      <ul class="codex-list" id="codexList"></ul>
+      <div class="actions"><button type="button" class="btn quiet" data-reset>Show all, usual order</button><span class="spacer"></span>
+        <button type="button" class="btn quiet" data-cancel>Cancel</button><button class="btn primary">${icon('check')} Done</button></div></form>`, {
+    onMount: (m, close) => {
+      const list = $('#codexList', m);
+      const draw = () => {
+        list.innerHTML = rows.map((r, i) => `<li data-i="${i}" draggable="true" class="${r.show ? '' : 'off'}">
+          <span class="handle" title="Drag to reorder">${icon('dots-six-vertical')}</span>
+          <label class="check"><input type="checkbox" ${r.show ? 'checked' : ''} data-show="${i}"> ${icon(r.t.icon)} ${esc(r.t.plural)}</label>
+          <span class="count muted small">${r.n}</span>
+          <button type="button" class="icon-btn sm" data-move="-1" title="Move up" ${i ? '' : 'disabled'}>${icon('caret-up')}</button>
+          <button type="button" class="icon-btn sm" data-move="1" title="Move down" ${i < rows.length - 1 ? '' : 'disabled'}>${icon('caret-down')}</button></li>`).join('');
+      };
+      draw();
+      list.addEventListener('change', (e) => { const i = e.target.dataset.show; if (i != null) { rows[+i].show = e.target.checked; draw(); } });
+      list.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-move]');
+        if (!b) return;
+        const i = +b.closest('li').dataset.i, j = i + +b.dataset.move;
+        [rows[i], rows[j]] = [rows[j], rows[i]];
+        draw();
+        list.querySelector(`li[data-i="${j}"] [data-move="${b.dataset.move}"]`)?.focus();
+      });
+      let from = null;
+      list.addEventListener('dragstart', (e) => { from = +e.target.closest('li').dataset.i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); });
+      list.addEventListener('dragover', (e) => { if (from != null && e.target.closest('li')) e.preventDefault(); });
+      list.addEventListener('drop', (e) => {
+        const li = e.target.closest('li');
+        if (from == null || !li) return;
+        e.preventDefault();
+        const to = +li.dataset.i;
+        const [r] = rows.splice(from, 1);
+        rows.splice(to, 0, r);
+        from = null;
+        draw();
+      });
+      $('[data-reset]', m).onclick = () => { rows = codexOf({}, store.articlesOf(wid), { all: true }).map(([k, t, n]) => ({ k, t, n, show: true })); draw(); };
+      $('[data-cancel]', m).onclick = () => close();
+      $('#codexF', m).onsubmit = async (e) => {
+        e.preventDefault();
+        const next = { ...store.world(wid) };
+        const usual = codexOf({}, store.articlesOf(wid)).map(([k]) => k).join();
+        const order = rows.map((r) => r.k), hidden = rows.filter((r) => !r.show).map((r) => r.k);
+        // Saved only when it differs from the usual (all shown, usual order).
+        if (!hidden.length && order.join() === usual) delete next.codex; else next.codex = { order, hidden };
+        await store.save('worlds', next);
+        close();
+        state.route();
+      };
+    },
+  });
+}
+
 export function viewWorld(wid) {
   const w = store.world(wid);
   setTitle(w.name);
@@ -241,7 +311,7 @@ export function viewWorld(wid) {
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
   view.innerHTML = `<section class="page wide world-home" data-edge="${edgeOf(wid)}">
     <div class="hero${w.image ? ' with-img' : ''}">
-      ${w.image ? `<div class="hero-img edge-img" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)}"></div>` : ''}
+      ${w.image ? `<div class="hero-img edge-img${zoomOf(w.imageZoom) > 1 ? ' zoomed' : ''}" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)};--zoom:${zoomOf(w.imageZoom)};--zoom-at:${posCSS(w.imagePos)}"></div>` : ''}
       <div class="hero-inner">
         <div><h1>${esc(w.name)}</h1></div>
         <div class="actions">
@@ -266,7 +336,7 @@ export function viewWorld(wid) {
     </div>
     ${flourish()}
     <div class="index-grid">
-      ${templateCounts(arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
+      ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
       ${cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length)}
       ${cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '')}
       ${cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length)}

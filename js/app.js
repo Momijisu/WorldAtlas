@@ -2,10 +2,10 @@ import * as store from './store.js';
 import * as auth from './auth.js';
 import * as sync from './sync.js';
 import { TYPES } from './store.js';
-import { templateCounts } from './templates.js';
+import { codexOf } from './templates.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
-import { viewWorlds, viewWorld, newArticleDialog, worldDialog } from './views/home.js';
+import { viewWorlds, viewWorld, newArticleDialog, worldDialog, arrangeCodex } from './views/home.js';
 import { exampleWorld } from './example.js';
 import { applyBackground, moveDeviceDefaults } from './backgrounds.js';
 import { oldDeviceEdge } from './edges.js';
@@ -357,6 +357,7 @@ const foldBtn = () => {
 function wireSidebar() {
   $('#sideFold')?.addEventListener('click', () => setNavMini(!navMini()));
   $('#sideWorld')?.addEventListener('click', () => worldDialog(store.world(state.wid)));
+  $('#codexArrange')?.addEventListener('click', () => arrangeCodex(state.wid));
   if (navMini()) $$('#sidebar a').forEach((a) => { a.title ||= a.querySelector('span')?.textContent || ''; });
 }
 
@@ -393,8 +394,8 @@ function renderSidebar(wid) {
     <div class="nav-title">Atlas</div>
     ${nav(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length || '', `data-prefix="#/w/${wid}/m/"`)}
     ${nav(`#/w/${wid}/graph`, 'graph', 'Relationships')}
-    <div class="nav-title">Codex</div>
-    ${templateCounts(arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || '<p class="nav-empty">Articles you write are listed here by template.</p>'}
+    <div class="nav-title nav-title-row">Codex${arts.length ? `<button type="button" class="icon-btn sm codex-arrange" id="codexArrange" title="Arrange the codex: choose which templates show, and their order" aria-label="Arrange the codex">${icon('sliders')}</button>` : ''}</div>
+    ${codexOf(w, arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || (arts.length ? '<p class="nav-empty">Every template is hidden. Arrange the codex to show some.</p>' : '<p class="nav-empty">Articles you write are listed here by template.</p>')}
     <div class="nav-sep"></div>
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
     ${nav('#/settings', 'gear-six', 'Settings &amp; sync', '', 'class="nav-settings" data-upd="Update ready"')}

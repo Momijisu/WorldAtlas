@@ -1,5 +1,10 @@
 # What's new
 
+## 1.67.0
+
+- **Arrange the codex:** the new button beside **Codex** in the sidebar lets you choose which templates show (all, to begin with) and drag them into the order you like. The overview follows it too. It's saved with the world, so it syncs; hidden templates' articles are still in All articles and search. **Show all, usual order** puts it back.
+- **Zoom and frame the world cover:** World settings has a **Zoom** slider for the cover, shown on the world's overview.
+
 ## 1.66.0 · 11 November 2026
 
 - **Zoom and frame header images** too: the editor's header image has a **Zoom** slider like the portrait's. Drag to frame it, zoom to crop in.

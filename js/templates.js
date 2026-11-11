@@ -180,6 +180,20 @@ export function templateCounts(articles) {
   return Object.entries(TYPES).filter(([k, t]) => !t.parent && n[k]).map(([k, t]) => [k, t, n[k]]);
 }
 
+// The world's codex: its templates in the order it chose, without the ones it
+// hides (world.codex = { order: [keys], hidden: [keys] }). `all` keeps hidden
+// ones, marked, for arranging. Templates not in the saved order follow in the
+// usual order.
+export function codexOf(world, articles, { all = false } = {}) {
+  const list = templateCounts(articles);
+  const order = world?.codex?.order || [];
+  const hidden = new Set(world?.codex?.hidden || []);
+  const rank = (k) => { const i = order.indexOf(k); return i < 0 ? order.length + Object.keys(TYPES).indexOf(k) : i; };
+  return list.sort((a, b) => rank(a[0]) - rank(b[0]))
+    .map(([k, t, n]) => [k, t, n, hidden.has(k)])
+    .filter(([, , , h]) => all || !h);
+}
+
 // The infobox field that says what kind of thing an article is (a Building's
 // Type, a Character's Occupation). Lists show it instead of the template name.
 const KIND_FIELDS = {

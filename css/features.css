@@ -189,8 +189,8 @@
 /* A zoomed header image (article.bannerZoom): the picture is drawn again over
    the hero, scaled about its focus; the hero clips it, and its edge and shading
    still apply on top. */
-.article-hero.zoomed { overflow: hidden; }
-.article-hero.zoomed::before { content: ""; position: absolute; inset: 0; background: inherit; background-image: inherit;
+.article-hero.zoomed, .hero-img.zoomed { overflow: hidden; }
+.article-hero.zoomed::before, .hero-img.zoomed::before { content: ""; position: absolute; inset: 0; background: inherit; background-image: inherit;
   -webkit-mask: none; mask: none; transform: scale(var(--zoom)); transform-origin: var(--zoom-at); }
 /* Full width: article header images and world covers span the content area
    (--view-w, measured in js/app.js); the title and text keep the page's width. */
@@ -589,3 +589,16 @@ details.guide summary .muted { font-weight: 400; }
 .file-row > div:first-child { flex: 1 1 260px; }
 .file-row b { display: block; font-weight: 600; }
 .file-row .toolbar { margin: 0; flex-wrap: wrap; }
+
+/* Sidebar: the Codex heading's Arrange button; the arrange dialog. */
+.nav-title-row { display: flex; align-items: center; justify-content: space-between; }
+.codex-arrange { width: 24px; height: 22px; color: var(--muted); opacity: .6; }
+.codex-arrange:hover { opacity: 1; }
+body.nav-mini .codex-arrange { display: none; }
+.codex-list { list-style: none; margin: .4rem 0 1rem; padding: 0; max-height: 55vh; overflow-y: auto; }
+.codex-list li { display: flex; align-items: center; gap: .4rem; padding: .25rem .3rem; border-bottom: 1px solid var(--rule); }
+.codex-list li.off label { color: var(--muted); }
+.codex-list .handle { color: var(--muted); cursor: grab; display: inline-flex; }
+.codex-list label.check { flex: 1; margin: 0; gap: .5rem; }
+.codex-list label .i { color: var(--brass); }
+.codex-list .count { min-width: 2.5rem; text-align: right; }
