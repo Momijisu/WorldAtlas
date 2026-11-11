@@ -1,6 +1,6 @@
 # What's new
 
-## 1.68.2
+## 1.68.2 · 11 November 2026
 
 - **Tighter spacing above headings in articles.** Space above a heading no longer grows with its size, which left a large gap above `#` headings; `#` headings inside an article are also a step smaller than the article's title.
 
