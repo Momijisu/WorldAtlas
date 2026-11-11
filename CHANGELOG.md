@@ -1,5 +1,12 @@
 # What's new
 
+## 1.68.0
+
+- **Arrange the whole sidebar:** the Arrange button (on each section's heading) now covers **Chronicle** (Timeline, Calendar) and **Atlas** (Maps, Relationships) too: untick what you don't use. A section with nothing left disappears, and the overview follows.
+- **Zoom the world card:** World settings has a **Zoom** slider for the card on the worlds page, alongside its own framing.
+- **What's new stays readable:** after updating, Settings → About this app keeps this version's notes, folded, to read any time.
+- **Fix:** **Update now** clicked before the new version had finished downloading could sit on "Updating…" and reload into the old version. It now waits for the download, then updates.
+
 ## 1.67.0 · 11 November 2026
 
 - **Arrange the codex:** the new button beside **Codex** in the sidebar lets you choose which templates show (all, to begin with) and drag them into the order you like. The overview follows it too. It's saved with the world, so it syncs; hidden templates' articles are still in All articles and search. **Show all, usual order** puts it back.

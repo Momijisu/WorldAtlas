@@ -401,21 +401,21 @@ async function wireAbout() {
       const behind = latest !== running;
       latestEl.innerHTML = behind ? `<b class="warn">${esc(latest)}</b> · an update is available` : `${esc(latest)} · you’re up to date`;
       $('#doUpd').hidden = !behind;
-      if (behind) showNotes();
+      if (behind) { const n = $('#updNotes'); if (n) delete n.dataset.loaded; showNotes(); }
     } catch {
       latestEl.textContent = navigator.onLine ? 'couldn’t check right now' : 'offline: connect to check';
     }
   };
   $('#checkUpd').onclick = check;
-  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b>'; $('#doUpd').hidden = false; showNotes(); }
+  if (state.updateWaiting?.()) { latestEl.innerHTML = '<b class="warn">An update is ready</b>'; $('#doUpd').hidden = false; }
+  showNotes(); // a waiting update's notes, or this version's
   $('#doUpd').onclick = async () => {
     $('#doUpd').disabled = true;
     $('#doUpd').textContent = 'Updating…';
-    if (state.updateWaiting?.()) { state.applyUpdate(); return; }
-    const reg = await navigator.serviceWorker?.getRegistration();
-    await reg?.update().catch(() => {});
-    // The new version takes over and the page reloads itself; reload anyway if that takes too long.
-    setTimeout(() => location.reload(), 6000);
+    // Downloads the new version if it isn't in yet; it takes over and the page reloads.
+    await state.applyUpdate();
+    // Still here a while later (offline, or the download failed): let the user try again.
+    setTimeout(() => { const b = $('#doUpd'); if (b) { b.disabled = false; b.textContent = 'Update now'; toast('The update is still downloading. Try again in a moment.', 5000); } }, 30000);
   };
   $('#resetCache').onclick = async () => {
     if (!(await confirmDialog('Clear the app’s downloaded files and reload? Your worlds, images and settings stay.', 'Reset and reload', { title: 'Reset offline cache', danger: false }))) return;

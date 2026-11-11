@@ -111,4 +111,20 @@ run('offline cache and updates', async ({ browser, errors }) => {
   await p.waitForSelector('.article, .world-card, .settings', { timeout: 10000 });
   check('then it updates and reloads onto the new version', (await p.evaluate(() => self.WA_VERSION)) === '99.1.0', await p.evaluate(() => self.WA_VERSION));
   check('and the edit was saved', await p.evaluate(async () => { const s = await import('./js/store.js'); return [...s.data.articles.values()].some((a) => a.title === 'Mid-edit' && a.summary === 'Half written…'); }));
+
+  // After updating, this version's notes are still there to read.
+  await p.goto(`${URL}#/settings`); await p.waitForSelector('#updNotes:not([hidden])', { timeout: 10000 }).catch(() => {});
+  const mine = (await p.textContent('#updNotes').catch(() => '')) || '';
+  check('after updating, What’s new shows this version’s notes', mine.includes('99.1.0') && mine.includes('this version') && mine.includes('Second test update'), mine.slice(0, 120));
+
+  // Update now, clicked before the new version has downloaded, still updates.
+  const log2 = fs.readFileSync(path.join(dir, 'CHANGELOG.md'), 'utf8');
+  fs.writeFileSync(path.join(dir, 'CHANGELOG.md'), log2.replace("# What's new\n\n", "# What's new\n\n## 99.2.0\n\n- **Third test update.**\n\n"));
+  bump('99.2.0');
+  await p.goto(`${URL}#/settings`); await p.waitForSelector('#checkUpd');
+  await p.click('#checkUpd');
+  await p.waitForSelector('#doUpd:not([hidden])', { timeout: 10000 });
+  await p.click('#doUpd');
+  await p.waitForFunction(() => self.WA_VERSION === '99.2.0', null, { timeout: 20000 }).catch(() => {});
+  check('Update now works even before the download has finished', (await p.evaluate(() => self.WA_VERSION)) === '99.2.0', await p.evaluate(() => self.WA_VERSION));
 });

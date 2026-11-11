@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import * as sync from '../sync.js';
 import * as auth from '../auth.js';
 import { TYPES, GROUPS } from '../store.js';
-import { templateCounts, codexOf } from '../templates.js';
+import { templateCounts, codexOf, navShown, NAV_SECTIONS } from '../templates.js';
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
@@ -42,7 +42,7 @@ export function viewWorlds() {
       ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
-          <div class="card-cover" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.cardPos || w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
+          <div class="card-cover${zoomOf(w.cardZoom) > 1 ? ' zoomed' : ''}" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.cardPos || w.imagePos)};--zoom:${zoomOf(w.cardZoom)};--zoom-at:${posCSS(w.cardPos || w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
           <div class="card-body">
             <div class="eyebrow">${store.isDemo(w.id) ? 'Example · ' : ''}${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}</div>
             <h3>${esc(w.name)}</h3>
@@ -91,7 +91,8 @@ export async function worldDialog(w) {
         <div style="flex:1"><div class="field-label">On the worlds page <small>drag to choose what shows on the card</small>
           <button type="button" class="link-btn" data-card-match ${w.cardPos ? '' : 'hidden'}>Same as the header</button></div>
           <div class="card world-card cover-card-prev"><img class="card-cover-img" alt=""><div class="card-cover has-img"></div>
-            <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div></div>
+            <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div>
+          <label class="bg-scale portrait-zoom card-zoom">Zoom<input type="range" id="cardZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(w.cardZoom) * 100)}"><output>${Math.round(zoomOf(w.cardZoom) * 100)}%</output></label></div>
       </div>
       <div class="field-label" style="margin-top:1rem">Background <small>Default is the app’s own gradient</small></div>
       ${pickerHTML(w.background, { allowDefault: true })}
@@ -171,8 +172,16 @@ export async function worldDialog(w) {
       // The card's own focus; until it's dragged it follows the header's.
       const cardFocus = wireFocus(cardImg, {
         get: () => w.cardPos || w.imagePos,
-        set: (v) => { w.cardPos = v; $('[data-card-match]', m).hidden = false; },
+        set: (v) => { w.cardPos = v; $('[data-card-match]', m).hidden = false; applyZoom(cardImg, v, w.cardZoom); },
         ratio: 4 / 5,
+        zoom: () => w.cardZoom,
+      });
+      applyZoom(cardImg, w.cardPos || w.imagePos, w.cardZoom);
+      $('#cardZoom', m).addEventListener('input', (e) => {
+        const z = +e.target.value / 100;
+        w.cardZoom = z > 1 ? z : null;
+        e.target.nextElementSibling.textContent = e.target.value + '%';
+        applyZoom(cardImg, w.cardPos || w.imagePos, w.cardZoom);
       });
       $('[data-card-match]', m).onclick = (e) => { w.cardPos = null; e.currentTarget.hidden = true; cardFocus.refresh(); };
       // Both previews use the world's own cover when it has one.
@@ -202,6 +211,7 @@ export async function worldDialog(w) {
         w.imagePos = null;
         w.cardPos = null;
         w.imageZoom = null;
+        w.cardZoom = null;
         thumb.src = await store.imageURL(w.image); thumb.hidden = false; hint.hidden = false; $('[data-rm]', m).hidden = false; $('.cover-zoom', m).hidden = false;
         $('#coverZoom', m).value = 100; $('#coverZoom', m).nextElementSibling.textContent = '100%'; applyZoom(thumb, null, 1);
         focus.refresh();
@@ -226,7 +236,7 @@ export async function worldDialog(w) {
         const name = f.name.value.trim();
         if (!name) return toast('Give the world a name');
         // Apply the form to the latest copy, so changes saved meanwhile (prompts, calendar, sync) survive.
-        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, cardPos: w.cardPos || null, imageZoom: w.imageZoom || null, background: w.background };
+        const next = isNew ? w : { ...(store.world(w.id) || w), name, description: f.description.value, image: w.image, imagePos: w.imagePos || null, cardPos: w.cardPos || null, imageZoom: w.imageZoom || null, cardZoom: w.cardZoom || null, background: w.background };
         next.fonts = fonts.filter((ft) => ft.name);
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
@@ -247,10 +257,14 @@ export async function worldDialog(w) {
 export function arrangeCodex(wid) {
   const w = store.world(wid);
   let rows = codexOf(w, store.articlesOf(wid), { all: true }).map(([k, t, n, hidden]) => ({ k, t, n, show: !hidden }));
-  modal('Arrange the codex', `<form id="codexF">
-      <p class="muted small" style="margin-top:0">Choose which templates show in the sidebar and on the overview, and drag them into the order you like. Hidden ones’ articles are still in All articles and search.</p>
+  const navRows = Object.values(NAV_SECTIONS).map((sec) => `<div class="field-label">${sec.label}</div>
+      <div class="arrange-checks">${sec.items.map(([k, label, ic]) => `<label class="check"><input type="checkbox" data-nav="${k}" ${navShown(w, k) ? 'checked' : ''}> ${icon(ic)} ${label}</label>`).join('')}</div>`).join('');
+  modal('Arrange the sidebar', `<form id="codexF">
+      <p class="muted small" style="margin-top:0">Choose what shows in the sidebar and on the overview, and drag the codex into the order you like. Hidden templates’ articles are still in All articles and search.</p>
+      ${navRows}
+      <div class="field-label">Codex</div>
       <ul class="codex-list" id="codexList"></ul>
-      <div class="actions"><button type="button" class="btn quiet" data-reset>Show all, usual order</button><span class="spacer"></span>
+      <div class="actions"><button type="button" class="btn quiet" data-reset>Show everything, usual order</button><span class="spacer"></span>
         <button type="button" class="btn quiet" data-cancel>Cancel</button><button class="btn primary">${icon('check')} Done</button></div></form>`, {
     onMount: (m, close) => {
       const list = $('#codexList', m);
@@ -285,13 +299,14 @@ export function arrangeCodex(wid) {
         from = null;
         draw();
       });
-      $('[data-reset]', m).onclick = () => { rows = codexOf({}, store.articlesOf(wid), { all: true }).map(([k, t, n]) => ({ k, t, n, show: true })); draw(); };
+      $('[data-reset]', m).onclick = () => { rows = codexOf({}, store.articlesOf(wid), { all: true }).map(([k, t, n]) => ({ k, t, n, show: true })); m.querySelectorAll('[data-nav]').forEach((c) => { c.checked = true; }); draw(); };
       $('[data-cancel]', m).onclick = () => close();
       $('#codexF', m).onsubmit = async (e) => {
         e.preventDefault();
         const next = { ...store.world(wid) };
         const usual = codexOf({}, store.articlesOf(wid)).map(([k]) => k).join();
-        const order = rows.map((r) => r.k), hidden = rows.filter((r) => !r.show).map((r) => r.k);
+        const order = rows.map((r) => r.k);
+        const hidden = [...[...m.querySelectorAll('[data-nav]')].filter((c) => !c.checked).map((c) => c.dataset.nav), ...rows.filter((r) => !r.show).map((r) => r.k)];
         // Saved only when it differs from the usual (all shown, usual order).
         if (!hidden.length && order.join() === usual) delete next.codex; else next.codex = { order, hidden };
         await store.save('worlds', next);
@@ -337,10 +352,10 @@ export function viewWorld(wid) {
     ${flourish()}
     <div class="index-grid">
       ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
-      ${cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length)}
-      ${cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '')}
-      ${cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length)}
-      ${cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '')}
+      ${navShown(w, 'timeline') ? cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length) : ''}
+      ${navShown(w, 'calendar') ? cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '') : ''}
+      ${navShown(w, 'maps') ? cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length) : ''}
+      ${navShown(w, 'graph') ? cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '') : ''}
     </div>
     <div class="section-head"><h2>Recently written</h2><a class="small" href="#/w/${wid}/t/all">All articles →</a></div>
     ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. <a href="#" id="newArt2">Write the first one</a>.</p></div>`}

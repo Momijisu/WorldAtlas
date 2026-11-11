@@ -2,7 +2,7 @@ import * as store from './store.js';
 import * as auth from './auth.js';
 import * as sync from './sync.js';
 import { TYPES } from './store.js';
-import { codexOf } from './templates.js';
+import { codexOf, navShown } from './templates.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog, worldDialog, arrangeCodex } from './views/home.js';
@@ -90,7 +90,12 @@ async function boot() {
     // updateViaCache 'none': always fetch sw.js and js/version.js fresh when checking for updates.
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       // A downloaded update waits for the user: the "!" says it's ready.
-      const offer = (w) => { if (w && navigator.serviceWorker.controller) updateReady(w); };
+      // (Unless "Update now" was chosen before it finished downloading: then it takes over.)
+      const offer = (w) => {
+        if (!w || !navigator.serviceWorker.controller) return;
+        if (wantUpdate) w.postMessage('activate'); else updateReady(w);
+      };
+      swReg = reg;
       if (reg.waiting) offer(reg.waiting);
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
@@ -115,7 +120,7 @@ async function boot() {
 // A new version waits for the user: a small "!" on the Settings link (and the
 // menu button on phones) says it's ready, and Settings → About this app shows
 // what's new in it and offers "Update now". No pop-up.
-let waitingWorker = null, updateShown = false;
+let waitingWorker = null, updateShown = false, wantUpdate = false, swReg = null;
 function updateReady(w) {
   if (w) waitingWorker = w;
   updateShown = true;
@@ -123,9 +128,16 @@ function updateReady(w) {
 }
 export async function applyUpdate() {
   if (hasUnsaved()) { toast('Save or cancel what you’re editing first, then update', 4000); return; }
-  // Still waiting: tell it to take over (controllerchange then reloads). Already in charge: just reload.
-  if (waitingWorker?.state === 'installed') waitingWorker.postMessage('activate');
-  else location.reload();
+  // Downloaded and waiting: tell it to take over (controllerchange then reloads).
+  if (waitingWorker?.state === 'installed') { waitingWorker.postMessage('activate'); return; }
+  // Not downloaded yet (or no service worker): fetch it, and take over as soon as it's in.
+  wantUpdate = true;
+  const reg = swReg || await navigator.serviceWorker?.getRegistration();
+  if (!reg) { location.reload(); return; }
+  if (reg.waiting) { reg.waiting.postMessage('activate'); return; }
+  await reg.update().catch(() => {});
+  if (reg.waiting) reg.waiting.postMessage('activate');
+  // Otherwise it's downloading: offer() activates it once installed.
 }
 state.applyUpdate = applyUpdate;
 state.updateWaiting = () => updateShown;
@@ -357,12 +369,18 @@ const foldBtn = () => {
 function wireSidebar() {
   $('#sideFold')?.addEventListener('click', () => setNavMini(!navMini()));
   $('#sideWorld')?.addEventListener('click', () => worldDialog(store.world(state.wid)));
-  $('#codexArrange')?.addEventListener('click', () => arrangeCodex(state.wid));
+  $$('#sidebar [data-arrange]').forEach((b) => b.addEventListener('click', () => arrangeCodex(state.wid)));
   if (navMini()) $$('#sidebar a').forEach((a) => { a.title ||= a.querySelector('span')?.textContent || ''; });
 }
 
 const nav = (href, ic, label, count = '', extra = '') =>
   `<a href="${href}" ${extra}>${icon(ic)}<span>${label}</span>${count !== '' ? `<span class="count">${count}</span>` : ''}</a>`;
+
+// A sidebar section: its title (with the Arrange button) and the items it shows; nothing if all are hidden.
+const section = (title, items) => {
+  const shown = items.filter(Boolean);
+  return shown.length ? `<div class="nav-title nav-title-row">${title}<button type="button" class="icon-btn sm codex-arrange" data-arrange title="Arrange the sidebar: choose what shows, and the codex's order" aria-label="Arrange the sidebar">${icon('sliders')}</button></div>${shown.join('')}` : '';
+};
 
 function renderSidebar(wid) {
   if (!wid) {
@@ -388,14 +406,14 @@ function renderSidebar(wid) {
     ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
     ${promptsEnabled() ? nav(`#/w/${wid}/prompts`, 'feather', 'Writing prompts') : ''}
-    <div class="nav-title">Chronicle</div>
-    ${nav(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline')}
-    ${nav(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '', `data-prefix="#/w/${wid}/calendar"`)}
-    <div class="nav-title">Atlas</div>
-    ${nav(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length || '', `data-prefix="#/w/${wid}/m/"`)}
-    ${nav(`#/w/${wid}/graph`, 'graph', 'Relationships')}
-    <div class="nav-title nav-title-row">Codex${arts.length ? `<button type="button" class="icon-btn sm codex-arrange" id="codexArrange" title="Arrange the codex: choose which templates show, and their order" aria-label="Arrange the codex">${icon('sliders')}</button>` : ''}</div>
-    ${codexOf(w, arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || (arts.length ? '<p class="nav-empty">Every template is hidden. Arrange the codex to show some.</p>' : '<p class="nav-empty">Articles you write are listed here by template.</p>')}
+    ${section('Chronicle', [
+      navShown(w, 'timeline') && nav(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline'),
+      navShown(w, 'calendar') && nav(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '', `data-prefix="#/w/${wid}/calendar"`)])}
+    ${section('Atlas', [
+      navShown(w, 'maps') && nav(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length || '', `data-prefix="#/w/${wid}/m/"`),
+      navShown(w, 'graph') && nav(`#/w/${wid}/graph`, 'graph', 'Relationships')])}
+    <div class="nav-title nav-title-row">Codex<button type="button" class="icon-btn sm codex-arrange" data-arrange title="Arrange the sidebar: choose what shows, and the codex's order" aria-label="Arrange the sidebar">${icon('sliders')}</button></div>
+    ${codexOf(w, arts).map(([k, t, n]) => nav(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('') || (arts.length ? '<p class="nav-empty">Every template is hidden. Arrange the sidebar to show some.</p>' : '<p class="nav-empty">Articles you write are listed here by template.</p>')}
     <div class="nav-sep"></div>
     ${nav(`#/w/${wid}/trash`, 'trash', 'Recently deleted')}
     ${nav('#/settings', 'gear-six', 'Settings &amp; sync', '', 'class="nav-settings" data-upd="Update ready"')}

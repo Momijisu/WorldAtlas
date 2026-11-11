@@ -180,6 +180,14 @@ export function templateCounts(articles) {
   return Object.entries(TYPES).filter(([k, t]) => !t.parent && n[k]).map(([k, t]) => [k, t, n[k]]);
 }
 
+// The sidebar's Chronicle and Atlas pages, which a world can hide too (their
+// keys go in world.codex.hidden alongside templates').
+export const NAV_SECTIONS = {
+  chronicle: { label: 'Chronicle', items: [['timeline', 'Timeline', 'hourglass-medium'], ['calendar', 'Calendar', 'calendar-blank']] },
+  atlas: { label: 'Atlas', items: [['maps', 'Maps', 'map-trifold'], ['graph', 'Relationships', 'graph']] },
+};
+export const navShown = (world, key) => !(world?.codex?.hidden || []).includes(key);
+
 // The world's codex: its templates in the order it chose, without the ones it
 // hides (world.codex = { order: [keys], hidden: [keys] }). `all` keeps hidden
 // ones, marked, for arranging. Templates not in the saved order follow in the
