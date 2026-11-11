@@ -57,8 +57,12 @@ run('offline cache and updates', async ({ browser, errors }) => {
   const onNav = (f) => { if (f === p.mainFrame()) navigated = true; };
   p.on('framenavigated', onNav);
   bump('99.0.0');
-  await p.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
-  await p.waitForSelector('body.update-ready', { timeout: 15000 }).catch(() => {});
+  // The app's own check (on opening, every ten minutes, on coming back) shows the "!" at once.
+  await p.evaluate(async () => (await import('./js/app.js')).checkForUpdate());
+  await p.waitForSelector('body.update-ready', { timeout: 3000 }).catch(() => {});
+  check('a new version on the server shows the “!” as soon as the app checks', await p.evaluate(() => document.body.classList.contains('update-ready')));
+  for (let i = 0; i < 30 && !(await p.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()).waiting)); i++) await p.waitForTimeout(500);
+  check('and downloads it in the background', await p.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()).waiting));
   await p.waitForTimeout(1500);
   check('a new version doesn’t take over by itself', !navigated && (await p.evaluate(() => self.WA_VERSION)) === old);
   check('a “!” on the Settings link says an update is ready', await p.evaluate(() => getComputedStyle(document.querySelector('#sidebar .nav-settings'), '::after').content === '"!"'));

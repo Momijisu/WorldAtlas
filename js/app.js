@@ -101,10 +101,11 @@ async function boot() {
         const w = reg.installing;
         w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
       });
-      // Apps are often left open for days: check for a new version regularly and on return.
-      const check = () => { if (navigator.onLine) reg.update().catch(() => {}); };
-      setInterval(check, 30 * 60e3);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      // Apps are often left open for days: check for a new version shortly after
+      // opening, every ten minutes, and on coming back to the app.
+      setTimeout(checkForUpdate, 3000);
+      setInterval(checkForUpdate, 10 * 60e3);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
     }).catch((e) => console.warn('SW registration failed', e));
   }
   navigator.storage?.persist?.();
@@ -140,6 +141,29 @@ export async function applyUpdate() {
   // Otherwise it's downloading: offer() activates it once installed.
 }
 state.applyUpdate = applyUpdate;
+
+// One check for the whole app: ask the server which version is current. A newer
+// one shows the "!" at once and starts downloading it in the background (the
+// service worker's own check can lag behind); "Update now" waits for that
+// download if needed. Returns the latest version, or null if it couldn't tell.
+let latestSeen = null;
+export async function checkForUpdate() {
+  if (!navigator.onLine) return null;
+  try {
+    const text = await (await fetch(`js/version.js?check=${Date.now()}`, { cache: 'no-store' })).text();
+    const latest = text.match(/WA_VERSION\s*=\s*'([^']+)'/)?.[1];
+    if (!latest) return null;
+    latestSeen = latest;
+    if (latest !== self.WA_VERSION) {
+      updateReady(null);
+      const reg = swReg || await navigator.serviceWorker?.getRegistration();
+      await reg?.update().catch(() => {});
+    }
+    return latest;
+  } catch { return null; }
+}
+state.checkForUpdate = checkForUpdate;
+state.latestVersion = () => latestSeen;
 state.updateWaiting = () => updateShown;
 
 // On a first visit with nothing saved, open a local-only example world so there

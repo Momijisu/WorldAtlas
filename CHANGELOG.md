@@ -1,5 +1,9 @@
 # What's new
 
+## 1.68.1
+
+- **The ! shows as soon as an update lands.** The app now checks for a new version shortly after opening, every ten minutes and whenever you come back to it, and shows the **!** straight away while the update downloads in the background. Before, the **!** could lag behind Settings → About by up to half an hour.
+
 ## 1.68.0 · 11 November 2026
 
 - **Arrange the whole sidebar:** the Arrange button (on each section's heading) now covers **Chronicle** (Timeline, Calendar) and **Atlas** (Maps, Relationships) too: untick what you don't use. A section with nothing left disappears, and the overview follows.

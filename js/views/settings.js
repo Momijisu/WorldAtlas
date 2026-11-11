@@ -395,8 +395,8 @@ async function wireAbout() {
   const check = async () => {
     latestEl.textContent = 'checking…';
     try {
-      const text = await (await fetch(`js/version.js?check=${Date.now()}`, { cache: 'no-store' })).text();
-      const latest = text.match(/WA_VERSION\s*=\s*'([^']+)'/)?.[1];
+      // The app's own check: a newer version also shows the "!" and starts downloading.
+      const latest = await state.checkForUpdate?.();
       if (!latest) throw new Error('unreadable');
       const behind = latest !== running;
       latestEl.innerHTML = behind ? `<b class="warn">${esc(latest)}</b> · an update is available` : `${esc(latest)} · you’re up to date`;
