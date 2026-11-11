@@ -25,7 +25,7 @@ const clamp = (v) => Math.round(Math.min(100, Math.max(0, v)) * 10) / 10;
 // to `ratio` (width / height, or a function giving it) like the real display;
 // `fallback` is where an undragged picture sits there. get()/set() read and
 // write the [x, y] value.
-export function wireFocus(img, { get, set, ratio, fallback = DEFAULT_POS }) {
+export function wireFocus(img, { get, set, ratio, fallback = DEFAULT_POS, zoom = () => 1 }) {
   img.classList.add('focus-pick');
   const shape = () => { img.style.aspectRatio = String(typeof ratio === 'function' ? ratio() : ratio); };
   shape();
@@ -40,11 +40,12 @@ export function wireFocus(img, { get, set, ratio, fallback = DEFAULT_POS }) {
   const show = () => { img.style.objectPosition = posCSS(get(), fallback); };
   show();
 
-  // How far (px) the picture overflows the frame on each axis.
+  // How far (px) the picture overflows the frame on each axis, zoom included,
+  // so a zoomed picture can be moved up and down as well as across.
   const overflow = () => {
     const w = img.clientWidth, h = img.clientHeight;
     const nw = img.naturalWidth || w, nh = img.naturalHeight || h;
-    const s = Math.max(w / nw, h / nh);
+    const s = Math.max(w / nw, h / nh) * zoomOf(zoom());
     return [nw * s - w, nh * s - h];
   };
 

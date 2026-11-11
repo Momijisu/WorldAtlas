@@ -111,12 +111,13 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         <div class="panel">
           <div class="field-label">Header image <small>banner behind the title</small></div>
           <div class="image-field">
-            <img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt="">
+            <div class="zoom-frame"><img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt=""></div>
             ${dropzoneEmpty('a header image')}
             <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden id="bannerFile"></label>
             <button type="button" class="btn small quiet" id="bannerRm" ${a.banner ? '' : 'hidden'}>Remove</button>
             <button type="button" class="btn small quiet" id="bannerFromPortrait" hidden>${icon('image')} Use portrait</button>
-            <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag the picture to choose what stays in view.</p>
+            <label class="bg-scale portrait-zoom" id="bannerZoomRow" ${a.banner ? '' : 'hidden'}>Zoom<input type="range" id="bannerZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(a.bannerZoom) * 100)}"><output>${Math.round(zoomOf(a.bannerZoom) * 100)}%</output></label>
+            <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in.</p>
           </div>
         </div>
         ${store.mapsOf(wid).length ? `<div class="panel">
@@ -303,7 +304,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
 
   // Image
   const thumb = $('.image-field .thumb:not(.banner-thumb)', f);
-  const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; applyZoom(thumb, v, a.imageZoom); }, ratio: 1 });
+  const iFocus = wireFocus(thumb, { get: () => a.imagePos, set: (v) => { a.imagePos = v; dirty = true; applyZoom(thumb, v, a.imageZoom); }, ratio: 1, zoom: () => a.imageZoom });
   applyZoom(thumb, a.imagePos, a.imageZoom);
   $('#imgZoom').addEventListener('input', (e) => {
     const z = +e.target.value / 100;
@@ -319,12 +320,20 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // The header's shape on the article page: as wide as the whole content area
   // (full width, see css/features.css), as tall as clamp(240px, 40vw, 520px).
   const heroRatio = () => ($('#view')?.clientWidth || f.clientWidth || 1000) / Math.min(520, Math.max(240, innerWidth * 0.40));
-  const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; }, ratio: heroRatio, fallback: BANNER_POS });
+  const bFocus = wireFocus(bThumb, { get: () => a.bannerPos, set: (v) => { a.bannerPos = v; dirty = true; applyZoom(bThumb, v, a.bannerZoom); }, ratio: heroRatio, fallback: BANNER_POS, zoom: () => a.bannerZoom });
+  applyZoom(bThumb, a.bannerPos || BANNER_POS, a.bannerZoom);
+  $('#bannerZoom').addEventListener('input', (e) => {
+    const z = +e.target.value / 100;
+    a.bannerZoom = z > 1 ? z : null;
+    dirty = true;
+    e.target.nextElementSibling.textContent = e.target.value + '%';
+    applyZoom(bThumb, a.bannerPos || BANNER_POS, a.bannerZoom);
+  });
   // Portrait and header image. Either can reuse the other's picture (the same
   // stored image, so nothing is imported twice).
   const pics = {
     image: { thumb, hint: '#imgHint', rm: '#imgRm', focus: iFocus, max: undefined, zoom: '#imgZoomRow' },
-    banner: { thumb: bThumb, hint: '#bannerHint', rm: '#bannerRm', focus: bFocus, max: 2400 },
+    banner: { thumb: bThumb, hint: '#bannerHint', rm: '#bannerRm', focus: bFocus, max: 2400, zoom: '#bannerZoomRow' },
   };
   const syncShare = () => {
     $('#bannerFromPortrait').hidden = !a.image || a.banner === a.image;

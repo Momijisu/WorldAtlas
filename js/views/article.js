@@ -8,7 +8,7 @@ import { $, esc, timeAgo } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
-import { posCSS, BANNER_POS, zoomCSS } from '../focus.js';
+import { posCSS, BANNER_POS, zoomCSS, zoomOf } from '../focus.js';
 import { edgeOf } from '../edges.js';
 import { mountMap } from '../mapview.js';
 import { drawTree, articleTreeKind } from './tree.js';
@@ -43,7 +43,7 @@ export function viewArticle(wid, id, { section } = {}) {
         ${r.note ? `<br><span class="rel-note">${esc(r.note)}</span>` : ''}</span></a>`).join('')}</div>`).join('');
 
   view.innerHTML = `<article class="page article" data-edge="${edgeOf(wid)}">
-    ${a.banner ? `<div class="article-hero edge-img" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
+    ${a.banner ? `<div class="article-hero edge-img${zoomOf(a.bannerZoom) > 1 ? ' zoomed' : ''}" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)};--zoom:${zoomOf(a.bannerZoom)};--zoom-at:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
     <div class="page-head article-head${a.banner ? ' over-hero' : ''}">
       <div>
         <div class="eyebrow"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` ${sep} <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')}</div>

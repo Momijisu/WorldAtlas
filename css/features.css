@@ -186,6 +186,12 @@
 .article-head.over-hero { position: relative; z-index: 1; margin-top: -7.5rem; }
 .article-head.over-hero h1 { text-shadow: 0 2px 18px color-mix(in srgb, var(--ink-0) 80%, transparent); }
 @media (max-width: 920px) { .article-hero { margin-top: -1.3rem; } .article-head.over-hero { margin-top: -5rem; } }
+/* A zoomed header image (article.bannerZoom): the picture is drawn again over
+   the hero, scaled about its focus; the hero clips it, and its edge and shading
+   still apply on top. */
+.article-hero.zoomed { overflow: hidden; }
+.article-hero.zoomed::before { content: ""; position: absolute; inset: 0; background: inherit; background-image: inherit;
+  -webkit-mask: none; mask: none; transform: scale(var(--zoom)); transform-origin: var(--zoom-at); }
 /* Full width: article header images and world covers span the content area
    (--view-w, measured in js/app.js); the title and text keep the page's width. */
 .article-hero, .world-home .hero { width: var(--view-w, auto); margin-left: calc(50% - var(--view-w, 100%) / 2); margin-right: 0; }

@@ -173,7 +173,7 @@ export async function resolveConflict(id, content) {
 // Every save of an article stores a snapshot. History syncs (append-only) via
 // its own OneDrive file and is pruned to the newest HISTORY_LIMIT per article.
 
-const CONTENT_KEYS = ['title', 'aliases', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'imageZoom', 'banner', 'bannerPos', 'mapId',
+const CONTENT_KEYS = ['title', 'aliases', 'type', 'parentId', 'tags', 'summary', 'body', 'fields', 'gmNotes', 'image', 'imagePos', 'imageZoom', 'banner', 'bannerZoom', 'bannerPos', 'mapId',
   'start', 'startM', 'startD', 'end', 'endM', 'endD', 'dateLabel', 'relations', 'table']; // table: 1.56 only (now in the text)
 // (No aliases and an empty list read the same, so older articles don't look changed.)
 export const contentOf = (a) => Object.fromEntries(CONTENT_KEYS.map((k) => [k, k === 'aliases' ? (a.aliases?.length ? a.aliases : null) : a[k] ?? null]));

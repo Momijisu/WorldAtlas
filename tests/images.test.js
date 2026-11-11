@@ -25,11 +25,28 @@ run('images: portrait zoom, save and copy', async ({ newPage }) => {
   check('the editor has a zoom slider for the portrait', await p.isVisible('#imgZoom'));
   await p.$eval('#imgZoom', (e) => { e.value = 200; e.dispatchEvent(new Event('input', { bubbles: true })); });
   check('the preview zooms as you slide', (await p.$eval('.image-field .thumb', (t) => t.style.transform)) === 'scale(2)');
+  // The picture is tall, so unzoomed it only moves up and down; zoomed, it moves across too.
+  const th = await (await p.$('.image-field .thumb')).boundingBox();
+  await p.mouse.move(th.x + th.width / 2, th.y + th.height / 2); await p.mouse.down();
+  await p.mouse.move(th.x + th.width / 2 + 40, th.y + th.height / 2 + 40, { steps: 6 }); await p.mouse.up();
+  const pos = await store(p, () => null).then(() => p.evaluate(() => document.querySelector('.image-field .thumb').style.objectPosition));
+  const [px, py] = pos.split(' ').map(parseFloat);
+  check('a zoomed portrait can be moved both across and up and down', px < 50 && py < 50, pos);
   await p.click('button:has-text("Save")');
   await p.waitForTimeout(700);
   check('the zoom is saved with the article', (await store(p, (s, x) => s.article(x).imageZoom, id)) === 2);
   const frame = await p.$eval('.infobox-frame', (f) => { const r = f.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), t: f.querySelector('img').style.transform }; }).catch(() => null);
   check('zoomed, the infobox shows a square crop, scaled', frame && frame.w === frame.h && frame.t === 'scale(2)', frame);
+
+  // The header image zooms too.
+  const vh = await store(p, (s, w) => s.byTitle(w, 'Varenhold').id, wid);
+  await go(p, `#/w/${wid}/a/${vh}/edit`);
+  await p.$eval('#bannerZoom', (e) => { e.value = 150; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.click('button:has-text("Save")'); await p.waitForTimeout(700);
+  check('the header image zoom is saved', (await store(p, (s, x) => s.article(x).bannerZoom, vh)) === 1.5);
+  const hero = await p.$eval('.article-hero', (h) => [h.classList.contains('zoomed'), getComputedStyle(h, '::before').transform]);
+  check('and the header shows zoomed', hero[0] && /matrix\(1\.5, 0, 0, 1\.5/.test(hero[1]), hero);
+  await go(p, `#/w/${wid}/a/${id}`);
 
   // Right-click the portrait: save and copy.
   await p.click('.infobox-img', { button: 'right' });

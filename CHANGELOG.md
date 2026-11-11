@@ -1,5 +1,10 @@
 # What's new
 
+## 1.66.0
+
+- **Zoom and frame header images** too: the editor's header image has a **Zoom** slider like the portrait's. Drag to frame it, zoom to crop in.
+- **Zoomed pictures move both ways:** a zoomed portrait or header can now be dragged up and down as well as across (before, only the direction the picture already overflowed).
+
 ## 1.65.1 · 10 November 2026
 
 - **Portraits are always square** in the infobox, framed as you set them in the editor, even when the picture is tall or wide.
