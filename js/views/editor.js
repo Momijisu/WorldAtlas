@@ -58,15 +58,15 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       <div class="editor-main">
         <label>Title<input name="title" required value="${esc(a.title)}" placeholder="e.g. Queen Ysolde"></label>
         <p class="similar-note" id="similarNote" hidden></p>
-        <label>Also known as <small>comma separated</small><input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
+        <label>Also known as<input name="aliases" value="${esc((a.aliases || []).join(', '))}" placeholder="e.g. The Iron Queen, Ysolde Ardent"></label>
         <div class="row">
           <label>Template<select name="type">${Object.entries(GROUPS).map(([g, gl]) => `<optgroup label="${esc(gl)}">${Object.entries(TYPES).filter(([, t]) => t.group === g).map(([k, t]) => `<option value="${k}" ${k === a.type ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('')}</select></label>
-          <label>Part of <small>(parent article)</small>${pickerHTML({ name: 'parentId', value: a.parentId || '', placeholder: 'None · type to find one', label: 'Part of' })}</label>
+          <label>Part of${pickerHTML({ name: 'parentId', value: a.parentId || '', placeholder: 'None · type to find one', label: 'Part of' })}</label>
         </div>
         <p class="tpl-hint" id="tplHint"></p>
-        <label>Summary <small>shown in lists and link previews</small><textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
+        <label>Summary<textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
         ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
-        <div class="field-label">Content <small>Markdown · type <code>[[</code> to link another article</small></div>
+        <div class="field-label">Content <small>type <code>[[</code> to link</small></div>
         <div class="md-toolbar">
           <button type="button" data-md="bold" title="Bold">${icon('text-b')}</button>
           <button type="button" data-md="italic" title="Italic">${icon('text-italic')}</button>
@@ -105,11 +105,11 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <button type="button" class="btn small quiet" id="imgRm" ${a.image ? '' : 'hidden'}>Remove</button>
             <button type="button" class="btn small quiet" id="portraitFromBanner" hidden>${icon('image')} Use header image</button>
             <label class="bg-scale portrait-zoom" id="imgZoomRow" ${a.image ? '' : 'hidden'}>Zoom<input type="range" id="imgZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(a.imageZoom) * 100)}"><output>${Math.round(zoomOf(a.imageZoom) * 100)}%</output></label>
-            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in. The infobox shows it square, as here.</p>
+            <p class="small muted focus-hint" id="imgHint" ${a.image ? '' : 'hidden'}>Drag to frame.</p>
           </div>
         </div>
         <div class="panel">
-          <div class="field-label">Header image <small>banner behind the title</small></div>
+          <div class="field-label">Header image</div>
           <div class="image-field">
             <div class="zoom-frame"><img class="thumb banner-thumb" ${a.banner ? `data-img="${a.banner}"` : 'hidden'} alt=""></div>
             ${dropzoneEmpty('a header image')}
@@ -117,22 +117,22 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
             <button type="button" class="btn small quiet" id="bannerRm" ${a.banner ? '' : 'hidden'}>Remove</button>
             <button type="button" class="btn small quiet" id="bannerFromPortrait" hidden>${icon('image')} Use portrait</button>
             <label class="bg-scale portrait-zoom" id="bannerZoomRow" ${a.banner ? '' : 'hidden'}>Zoom<input type="range" id="bannerZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(a.bannerZoom) * 100)}"><output>${Math.round(zoomOf(a.bannerZoom) * 100)}%</output></label>
-            <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in.</p>
+            <p class="small muted focus-hint" id="bannerHint" ${a.banner ? '' : 'hidden'}>Drag to frame.</p>
           </div>
         </div>
         ${store.mapsOf(wid).length ? `<div class="panel">
-          <label class="field-label" for="mapPick">Map <small>shown on this article</small></label>
+          <label class="field-label" for="mapPick">Map</label>
           <select id="mapPick" name="mapId"><option value="">None</option>${store.mapsOf(wid).sort((x, y) => x.name.localeCompare(y.name))
             .map((m) => `<option value="${m.id}" ${a.mapId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
         </div>` : ''}
         <div class="panel">
-          <div class="field-label">Date <small>for the timeline and calendar</small></div>
+          <div class="field-label">Date</div>
           <div class="muted small" style="margin-bottom:.3rem">Date / start</div>
           ${dateRow('start', a.start, a.startM, a.startD)}
           <div class="muted small" style="margin:.6rem 0 .3rem">End <small>(optional)</small></div>
           ${dateRow('end', a.end, a.endM, a.endD)}
           <div class="date-preview" id="datePreview"></div>
-          <label>Date text <small>optional, replaces the date shown</small><input name="dateLabel" value="${esc(a.dateLabel)}" placeholder="e.g. The Long Winter"></label>
+          <label>Date text <small>shown instead</small><input name="dateLabel" value="${esc(a.dateLabel)}" placeholder="e.g. The Long Winter"></label>
           <a class="small" href="#/w/${wid}/calendar/edit">${icon('calendar-blank')} Calendar settings</a>
         </div>
         <div class="panel">
@@ -146,7 +146,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
           <button type="button" class="btn small" id="addField">${icon('plus')} Add field</button>
         </div>
         <div class="panel">
-          <label>Tags <small>comma separated</small><input name="tags" value="${esc(a.tags.join(', '))}" placeholder="noble, ancient, war"></label>
+          <label>Tags<input name="tags" value="${esc(a.tags.join(', '))}" placeholder="noble, ancient, war"></label>
         </div>
       </aside>
     </div>

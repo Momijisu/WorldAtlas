@@ -77,7 +77,7 @@ export async function worldDialog(w) {
   await modal(isNew ? 'New world' : 'World settings', `
     <form class="form" id="wf">
       <label>Name<input name="name" required value="${esc(w.name)}" placeholder="e.g. Aerthal"></label>
-      <label>Description <small>Markdown and [[links]]</small><textarea name="description" rows="5">${esc(w.description)}</textarea></label>
+      <label>Description<textarea name="description" rows="5">${esc(w.description)}</textarea></label>
       <div class="field-label">Cover image</div>
       <div class="image-field">
         <div class="zoom-frame"><img class="thumb" ${w.image ? `data-img="${w.image}"` : 'hidden'} alt=""></div>
@@ -85,26 +85,26 @@ export async function worldDialog(w) {
         <label class="btn small">${icon('image')} Choose image<input type="file" accept="image/*" hidden name="file"></label>
         <button type="button" class="btn small quiet" data-rm ${w.image ? '' : 'hidden'}>Remove</button>
         <label class="bg-scale portrait-zoom cover-zoom" ${w.image ? '' : 'hidden'}>Zoom<input type="range" id="coverZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(w.imageZoom) * 100)}"><output>${Math.round(zoomOf(w.imageZoom) * 100)}%</output></label>
-        <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag to frame the picture, and zoom to crop in.</p>
+        <p class="small muted focus-hint" ${w.image ? '' : 'hidden'}>Drag to frame.</p>
       </div>
       <div class="cover-previews" ${w.image ? '' : 'hidden'}>
-        <div style="flex:1"><div class="field-label">On the worlds page <small>drag to choose what shows on the card</small>
+        <div style="flex:1"><div class="field-label">On the worlds page
           <button type="button" class="link-btn" data-card-match ${w.cardPos ? '' : 'hidden'}>Same as the header</button></div>
           <div class="card world-card cover-card-prev"><img class="card-cover-img" alt=""><div class="card-cover has-img"></div>
             <div class="card-body"><div class="eyebrow">${isNew ? '0 articles · 0 maps' : `${count(store.articlesOf(w.id).length, 'article')} · ${count(store.mapsOf(w.id).length, 'map')}`}</div><h3 class="card-prev-name">${esc(w.name || 'World name')}</h3></div></div>
           <label class="bg-scale portrait-zoom card-zoom">Zoom<input type="range" id="cardZoom" min="100" max="300" step="5" value="${Math.round(zoomOf(w.cardZoom) * 100)}"><output>${Math.round(zoomOf(w.cardZoom) * 100)}%</output></label></div>
       </div>
-      <div class="field-label" style="margin-top:1rem">Background <small>Default is the app’s own gradient</small></div>
+      <div class="field-label" style="margin-top:1rem">Background</div>
       ${pickerHTML(w.background, { allowDefault: true })}
       <label class="bg-scale" style="margin-top:.6rem" title="Fine grain over the page that softens flat colours">Noise
         <input type="range" id="noiseRange" min="0" max="100" step="1" value="${w.noise ?? NOISE_DEFAULT}"><output>${w.noise ?? NOISE_DEFAULT}%</output></label>
-      <div class="field-label" style="margin-top:1.2rem">Header edge <small>where header images meet the page</small></div>
+      <div class="field-label" style="margin-top:1.2rem">Header edge</div>
       <div class="seg" id="edgeSeg">${edgeSegHTML(worldEdge(w))}</div>
       ${edgePreviewHTML(worldEdge(w) || edgeOf(null), esc(w.name || 'World name'))}
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
       <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
-      <p class="small muted">In articles, write <code>:::Name</code> … <code>:::</code> for a passage, or <code>{{Name|text}}</code> inside a sentence. Handwriting is built in as <code>${Object.keys(HANDS).join('</code> and <code>')}</code>. Fonts you add stay with this world in your OneDrive; they aren’t published.</p>
+      <p class="small muted">Use <code>:::Name</code> … <code>:::</code> or <code>{{Name|text}}</code> in articles. Built in: <code>${Object.keys(HANDS).join('</code>, <code>')}</code>.</p>
       ${isNew ? '' : `<p class="small muted">Months, eras and moons: <a href="#/w/${w.id}/calendar/edit" data-cal>calendar settings</a>.</p>`}
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete world</button><button type="button" class="btn quiet" data-export title="The whole world (articles, maps, history and pictures) in one .world file">${icon('download-simple')} Export .world</button><span class="spacer"></span>`}
@@ -260,7 +260,7 @@ export function arrangeCodex(wid) {
   const navRows = Object.values(NAV_SECTIONS).map((sec) => `<div class="field-label">${sec.label}</div>
       <div class="arrange-checks">${sec.items.map(([k, label, ic]) => `<label class="check"><input type="checkbox" data-nav="${k}" ${navShown(w, k) ? 'checked' : ''}> ${icon(ic)} ${label}</label>`).join('')}</div>`).join('');
   modal('Arrange the sidebar', `<form id="codexF">
-      <p class="muted small" style="margin-top:0">Choose what shows in the sidebar and on the overview, and drag the codex into the order you like. Hidden templates’ articles are still in All articles and search.</p>
+      <p class="muted small" style="margin-top:0">Untick to hide; drag the codex to reorder. Hidden articles stay in search.</p>
       ${navRows}
       <div class="field-label">Codex</div>
       <ul class="codex-list" id="codexList"></ul>

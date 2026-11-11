@@ -417,7 +417,7 @@ export function editTable(initial, { isNew } = {}) {
       function fill(text) {
         const has = t.rows.some((r) => r.some((v) => v.trim()));
         modal('Paste from a spreadsheet', `<form id="tp">
-          <p class="muted small">Copy cells from Excel, Google Sheets or Numbers and paste them here, or paste CSV text.</p>
+          <p class="muted small">Paste cells from a spreadsheet, or CSV text.</p>
           <textarea name="text" rows="9" class="mono" placeholder="Name&#9;Description&#10;Goblin&#9;Small and mean">${esc(text)}</textarea>
           <label class="check"><input type="checkbox" name="headers" checked> The first row holds the column names</label>
           ${has ? '<label class="check"><input type="checkbox" name="append"> Add to the rows already here</label>' : ''}

@@ -62,7 +62,6 @@ export function viewSettings() {
         <button class="btn primary" id="doUpd" hidden>${icon('download-simple')} Update now</button>
         <button class="btn quiet" id="resetCache" title="Clears downloaded app files only. Your worlds are not affected.">Reset offline cache</button>
       </div>
-      <p class="muted small">Resetting the cache re-downloads the app. Your worlds and settings aren’t touched.</p>
     </div>
     <div class="panel">
       <h2>Install the app</h2>
@@ -79,7 +78,6 @@ export function viewSettings() {
                 : firefox
                   ? 'Firefox can’t install web apps on a computer, but WorldAtlas works fully here in a tab, offline too once it has loaded. To install it as its own app, open this page in Chrome or Edge. Your worlds are kept per browser, so connect OneDrive there to bring them across.'
                   : 'Use the install icon in the address bar, or menu → <b>Apps</b> → <b>Install WorldAtlas</b>.'}</p>`}
-      <p class="muted small">Works offline. Changes sync to OneDrive when you’re online.</p>
     </div>
     <div class="panel" id="syncCard"></div>
     <div class="panel">
@@ -89,39 +87,37 @@ export function viewSettings() {
         <button data-t="light">${icon('sun')} Vellum</button>
         <button data-t="auto">Match device</button>
       </div>
-      <div class="field-label" style="margin-top:1.2rem">Article text <small>what you write in articles; the rest of the app stays as it is</small></div>
+      <div class="field-label" style="margin-top:1.2rem">Article text</div>
       <label class="bg-scale">Size<input type="range" id="proseSize" min="85" max="135" step="5" value="${proseSettings().size}"><output>${proseSettings().size}%</output></label>
       <label class="bg-scale">Weight<input type="range" id="proseWeight" min="0" max="${PROSE_WEIGHTS.length - 1}" step="1" value="${PROSE_WEIGHTS.findIndex(([w]) => w === proseSettings().weight)}"><output>${PROSE_WEIGHTS.find(([w]) => w === proseSettings().weight)[1]}</output></label>
       <div class="prose prose-sample"><p>The rain-slick capital of Vael was built on the bones of a Skyward citadel. Its <a href="#" onclick="return false">harbour</a> never sleeps, and the <strong>Lantern Guild</strong> keeps the old roads lit, <em>for a price</em>.</p></div>
-      <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show header images behind list rows <small class="muted">faded, on the right</small></label>
-      <p class="muted small" style="margin-top:1rem">${icon('globe-hemisphere-west')} Each world’s background, noise and header edge are in its <b>World settings</b>.</p>
+      <label class="check" style="margin-top:1rem"><input type="checkbox" id="rowPicsToggle" ${rowPicturesOn() ? 'checked' : ''}> Show header images behind list rows</label>
+      <p class="muted small" style="margin-top:1rem">${icon('globe-hemisphere-west')} Backgrounds and header edges are in each world’s settings.</p>
     </div>
     <div class="panel">
       <h2>Writing help</h2>
       <label class="check"><input type="checkbox" id="promptsToggle" ${promptsEnabled() ? 'checked' : ''}> Show writing prompts</label>
-      <p class="muted small">A daily prompt on each world’s overview, and the Writing prompts page.</p>
       <label class="check"><input type="checkbox" id="guideToggle" ${guidanceEnabled() ? 'checked' : ''}> Show the writing guide in the editor</label>
-      <p class="muted small">Questions to help fill out each template. Both settings apply to this device only.</p>
     </div>
     <div class="panel" id="filesCard">
       <h2>Files</h2>
       ${store.worlds().length ? `<div class="file-row">
-        <div><b>Export a world</b><span class="muted small">One world, pictures and all, in a single .world file: to keep, share or open on another device.</span></div>
+        <div><b>Export a world</b><span class="muted small">One world, with its pictures, as a .world file.</span></div>
         <div class="toolbar"><select id="worldFileSel" aria-label="World to export">${store.worlds().map((w) => `<option value="${w.id}" ${w.id === state.wid ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
           <button class="btn primary" id="exportWorldFile">${icon('download-simple')} Export .world</button></div>
       </div>
       <div class="file-row">
-        <div><b>Back up everything</b><span class="muted small">All your worlds in one backup file.</span></div>
+        <div><b>Back up everything</b></div>
         <button class="btn" id="exportBtn">${icon('download-simple')} Back up</button>
       </div>` : ''}
       <div class="file-row">
-        <div><b>Open a file</b><span class="muted small">A .world file, a backup, or an import file. Anything you already have merges in: newer work is kept, and an article changed in both places goes to the merge manager.</span></div>
+        <div><b>Open a file</b><span class="muted small">A .world, backup or import file. Clashes go to the merge manager.</span></div>
         <label class="btn">${icon('upload-simple')} Open a file<input type="file" id="openWorldFile" accept=".world,.json,.txt,application/x-worldatlas-world,application/zip,application/json,text/plain" hidden></label>
       </div>
     </div>
     <div class="panel" id="importCard">
       <h2>AI assistant</h2>
-      <p class="muted">Turn notes into articles with an AI assistant: copy the instructions, give them to the assistant with your notes, then paste its reply. You’ll see a preview first.</p>
+      <p class="muted">Give an assistant the instructions and your notes, then paste its reply.</p>
       <div class="actions left">
         <button class="btn" id="copyAiPrompt">${icon('feather')} Copy instructions</button>
         <button class="btn primary" id="pasteImport">${icon('file-text')} Paste reply</button>
@@ -183,8 +179,8 @@ export function viewSettings() {
 // at a time; picking another while one is on offers to switch. Add a method by
 // adding it to SYNC_METHODS with a body(el) that draws and wires its setup.
 const SYNC_METHODS = {
-  onedrive: { label: 'OneDrive', icon: 'cloud-check', blurb: 'A private folder in your own OneDrive. Phones, tablets and computers.', body: oneDriveBody, stop: stopOneDrive },
-  folder: { label: 'Custom folder', icon: 'folder', blurb: 'Sync through a folder of your choosing. Chrome or Edge on a computer.', body: folderBody, stop: () => sync.stopFolder() },
+  onedrive: { label: 'OneDrive', icon: 'cloud-check', blurb: 'A private folder in your OneDrive. Any device.', body: oneDriveBody, stop: stopOneDrive },
+  folder: { label: 'Custom folder', icon: 'folder', blurb: 'A folder of your choosing. Chrome or Edge on a computer.', body: folderBody, stop: () => sync.stopFolder() },
 };
 const syncPick = () => { try { const v = localStorage.getItem('wa.syncPick'); return SYNC_METHODS[v] ? v : null; } catch { return null; } };
 const setSyncPick = (v) => { try { localStorage.setItem('wa.syncPick', v); } catch { /* storage blocked */ } };
@@ -195,7 +191,6 @@ export function renderSyncCard() {
   const active = sync.target();
   const pick = syncPick() || active || 'onedrive';
   el.innerHTML = `<h2>Sync</h2>
-    <p class="muted small">Keep the same worlds on all your devices. Sync with:</p>
     <div class="seg sync-methods" role="radiogroup" aria-label="Sync method">${Object.entries(SYNC_METHODS).map(([k, m]) => `
       <button type="button" class="${k === pick ? 'on' : ''}" data-method="${k}" role="radio" aria-checked="${k === pick}"${k === active ? ' title="In use on this device"' : ''}>
         ${icon(m.icon)} ${m.label}${k === active ? '<span class="sync-dot" aria-label="(in use)"></span>' : ''}</button>`).join('')}</div>
@@ -284,7 +279,7 @@ function folderBody(el) {
   } else if (!on) {
     main = `<ol class="small sync-steps"><li>Target a custom folder on your PC, or in your preferred cloud storage.</li>
         <li>Choose it below, and allow WorldAtlas to use it.</li><li>Do the same on your other computers, with the same folder.</li></ol>
-      <p class="muted small">Your cloud storage carries the files between your computers. WorldAtlas only reads and writes the folder, and never sees your account.</p>
+
       <p><button class="btn primary" id="chooseFolderBtn">${icon('folder')} Choose folder</button></p>`;
   } else if (st.state === 'reauth') {
     main = `<p>Syncing with the folder <b>${esc(sync.folderName())}</b>.</p><p class="warn">${esc(st.message)}</p>
@@ -294,8 +289,7 @@ function folderBody(el) {
       <p>Status: <b class="status-${st.state}">${esc({ synced: 'Up to date', syncing: 'Syncing…', pending: 'Changes waiting to save', error: 'Error' }[st.state] || st.state)}</b>
       <span class="muted">· last synced ${timeAgo(store.meta.lastSync)}</span></p>
       ${st.state === 'error' ? `<p class="warn">${esc(st.message)}</p>` : ''}
-      <p><button class="btn primary" id="syncFolderNow">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="chooseFolderBtn">Choose another folder</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>
-      <p class="muted small">How quickly changes reach your other computers depends on the app that syncs the folder.</p>`;
+      <p><button class="btn primary" id="syncFolderNow">${icon('arrows-clockwise')} Sync now</button> <button class="btn quiet" id="chooseFolderBtn">Choose another folder</button> <button class="btn quiet" id="stopFolderBtn">Stop folder sync</button></p>`;
   }
   el.innerHTML = main;
   $('#chooseFolderBtn', el)?.addEventListener('click', async () => {

@@ -942,7 +942,7 @@ export async function viewMap(wid, mid, q) {
             <label><span class="sr-only">Travelling</span><select name="by">${Object.entries(TRAVEL).map(([k, t]) => `<option value="${k}">${t.label}</option>`).join('')}</select></label></div>
           <label>Measure the map in<select name="unit2">${UNITS.filter((u) => PER_MILE[u]).map((u) => `<option ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
         </div>
-        <label>Walking pace <small>per day, for travel times on foot; leave empty for the usual</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
+        <label>Walking pace <small>per day</small><input name="pace" type="number" min="0" step="any" value="${m.pace || ''}" placeholder="${DEFAULT_PACE[unit] || ''}"></label>
         <div class="scale-preview" aria-live="polite"></div>
         <div class="actions"><button class="btn primary">Save scale</button></div></form>`, {
       onMount: (el, close) => {
@@ -1004,7 +1004,7 @@ export async function viewMap(wid, mid, q) {
   const layerField = (value) => {
     const own = layersOf(cur()).filter((l) => l && !isTemplateLayer(l));
     if (value && !isTemplateLayer(value) && !own.includes(value)) own.push(value);
-    return `<label>Layer <small>its template's articles are suggested first</small><select name="layer">
+    return `<label>Layer<select name="layer">
         <option value="" ${value ? '' : 'selected'}>General</option>
         <optgroup label="Templates">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${value === k ? 'selected' : ''}>${esc(t.plural)}</option>`).join('')}</optgroup>
         ${own.length ? `<optgroup label="This map’s layers">${own.map((l) => `<option value="${esc(l)}" ${value === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>` : ''}
@@ -1108,7 +1108,7 @@ export async function viewMap(wid, mid, q) {
       <form class="form" id="pf">
         ${nameField(pin, 'e.g. Varenhold')}
         ${layerField(pin.layer || '')}
-        <label>Opens map <small>e.g. a city map from a pin on the continent</small><select name="mapId">${mapOptions(pin.mapId)}</select></label>
+        <label>Opens map<select name="mapId">${mapOptions(pin.mapId)}</select></label>
         <div class="field-label">Marker</div>
         <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${PIN_NAMES[n] || n.replace(/-/g, ' ')}" aria-label="${PIN_NAMES[n] || n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
         ${colourField(pin.color)}

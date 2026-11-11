@@ -194,14 +194,14 @@ function statblockDialog(src, isNew) {
   return modal(isNew ? 'Add a statblock' : 'Edit statblock', `<form id="sbF" class="form sb-ed">
     <div class="row">${fld('name', 'Name', 'e.g. Boar')}${fld('type', 'Type', 'e.g. Medium Beast, Unaligned')}</div>
     <div class="row four">${fld('ac', 'AC', '11')}${fld('initiative', 'Initiative', '+0 (10)')}${fld('hp', 'HP', '13 (2d8 + 4)')}${fld('speed', 'Speed', '40 ft.')}</div>
-    <div class="field-label">Abilities <small>modifiers are worked out for you</small></div>
+    <div class="field-label">Abilities</div>
     <div class="sb-ed-ab">${ABILITIES.map((k) => `<label>${k.toUpperCase()}<input name="${k}" inputmode="numeric" value="${esc(f0[k] ?? '')}"><output data-mod="${k}"></output></label>`).join('')}</div>
-    ${fld('saves', 'Saving throws <small>only those that differ from the modifier</small>', 'e.g. Con +4, Wis +2')}
+    ${fld('saves', 'Saving throws <small>only if different</small>', 'e.g. Con +4, Wis +2')}
     <div class="row">${fld('skills', 'Skills', 'e.g. Perception +3')}${fld('senses', 'Senses', 'e.g. Passive Perception 9')}</div>
     <div class="row">${fld('resistances', 'Resistances')}${fld('immunities', 'Immunities')}</div>
     <div class="row">${fld('vulnerabilities', 'Vulnerabilities')}${fld('gear', 'Gear')}</div>
     <div class="row">${fld('languages', 'Languages', 'e.g. None')}${fld('cr', 'CR', 'e.g. 1/4 (XP 50; PB +2)')}</div>
-    <div class="field-label" style="margin-top:.6rem">Sections <small>traits, actions, reactions… in Markdown</small></div>
+    <div class="field-label" style="margin-top:.6rem">Sections</div>
     <div id="sbSecs">${(sb.sections.length ? sb.sections : [{ title: 'Traits', body: '' }, { title: 'Actions', body: '' }]).map(secRow).join('')}</div>
     <button type="button" class="btn small" data-addsec>${icon('plus')} Section</button>
     <div class="actions">
