@@ -536,7 +536,12 @@ html { scrollbar-color: var(--rule-strong) transparent; }
   float: left; font: 600 3.7em/.82 var(--display); color: var(--rubric); padding: .06em .1em 0 0;
 }
 .prose.no-dropcap > p:first-child::first-letter { all: unset; }
-.prose h1, .prose h2, .prose h3 { margin: 1.6em 0 .5em; }
+/* Headings in an article: fixed spacing (not relative to their own size, which
+   left big gaps above large ones), and # a step below the page's title. */
+.prose h1, .prose h2, .prose h3 { margin: 1.5rem 0 .5rem; }
+.prose h1 { font-size: 2.1rem; margin-top: 1.8rem; }
+.prose h3 { margin-top: 1.2rem; }
+.prose > :first-child { margin-top: 0; }
 .prose h2 { font-size: 1.75rem; padding-bottom: .3em; border-bottom: 1px solid var(--rule); }
 .prose h3 { font-size: 1.35rem; color: var(--text-2); }
 .prose blockquote { margin: 1.4em 0; padding: .2em 1.4em; border-left: 2px solid var(--rubric); font: italic 500 1.25rem/1.5 var(--display); color: var(--text-2); }

@@ -1,5 +1,9 @@
 # What's new
 
+## 1.68.2
+
+- **Tighter spacing above headings in articles.** Space above a heading no longer grows with its size, which left a large gap above `#` headings; `#` headings inside an article are also a step smaller than the article's title.
+
 ## 1.68.1 · 11 November 2026
 
 - **The ! shows as soon as an update lands.** The app now checks for a new version shortly after opening, every ten minutes and whenever you come back to it, and shows the **!** straight away while the update downloads in the background. Before, the **!** could lag behind Settings → About by up to half an hour.
