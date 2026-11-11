@@ -38,6 +38,7 @@ js/markdown.js        Markdown, [[links]], excerpts and callouts
 js/preview.js         hover previews for article links
 js/scripts.js         handwriting and world fonts (:::Name blocks, {{Name|text}})
 js/contextmenu.js     the right-click menu
+js/lightbox.js        clicking a picture to see it large
 js/icons.js           Phosphor icons (MIT)
 js/config.js          Microsoft client ID (see docs/SYNC.md)
 js/version.js         app version
@@ -69,7 +70,7 @@ What they cover:
 - app-wide and per-world appearance, and moving old device defaults into worlds (`appearance`);
 - statblocks: drawing, modifiers and saves, rolls, the Statblock button (`statblocks`);
 - .world files: exporting, opening on another device, merging with clashes (`worldfile`);
-- pictures: zooming a portrait, and saving or copying one from the right-click menu (`images`);
+- pictures: zooming a portrait or header, saving or copying one, and opening one large (`images`);
 - arranging the codex, and the world cover's zoom (`codex`);
 - the right-click menu (`contextmenu`).
 

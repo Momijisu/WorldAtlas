@@ -12,6 +12,7 @@ import { oldDeviceEdge } from './edges.js';
 import { convertLegacyTables } from './tables.js';
 import { wirePreviews } from './preview.js';
 import './contextmenu.js';
+import './lightbox.js';
 import { loadWorldFonts } from './scripts.js';
 import { viewList, viewSearch } from './views/list.js';
 import { viewArticle } from './views/article.js';

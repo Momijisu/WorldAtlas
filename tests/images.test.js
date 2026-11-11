@@ -65,4 +65,22 @@ run('images: portrait zoom, save and copy', async ({ newPage }) => {
   await p.click('.article-hero', { button: 'right', position: { x: 300, y: 100 } });
   const [dl2] = await Promise.all([p.waitForEvent('download'), p.click('.ctx-menu button:has-text("Save image as…")')]);
   check('a header image saves too, marked as the header', dl2.suggestedFilename() === 'Varenhold header.svg', dl2.suggestedFilename());
+
+  // Clicking a picture shows it large: the whole picture, with its article's title.
+  await go(p, `#/w/${wid}/a/${id}`);
+  const fr = await (await p.$('.infobox-frame')).boundingBox();
+  await p.mouse.click(fr.x + 40, fr.y + 40);
+  await p.waitForSelector('.lightbox img', { timeout: 3000 }).catch(() => {});
+  const lb = await p.$eval('.lightbox', (l) => ({ cap: l.querySelector('figcaption')?.textContent, w: l.querySelector('img').naturalWidth, h: l.querySelector('img').naturalHeight })).catch(() => null);
+  check('clicking a portrait opens it large, whole and uncropped', lb && lb.cap === 'Queen Ysolde' && lb.w === 200 && lb.h === 300, lb);
+  await p.keyboard.press('Escape');
+  check('Esc closes it', !(await p.$('.lightbox')));
+  await go(p, `#/w/${wid}/a/${vh}`);
+  await p.click('.article-hero', { position: { x: 200, y: 60 } });
+  check('clicking a header image opens it too', (await p.textContent('.lightbox figcaption').catch(() => '')) === 'Varenhold');
+  await p.mouse.click(10, 10);
+  check('clicking outside the picture closes it', !(await p.$('.lightbox')));
+  await go(p, `#/w/${wid}/a/${id}/edit`);
+  await p.click('.image-field .thumb');
+  check('editor previews don’t open it (they’re for framing)', !(await p.$('.lightbox')));
 });

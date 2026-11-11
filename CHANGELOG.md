@@ -1,5 +1,9 @@
 # What's new
 
+## 1.69.0
+
+- **Click a picture to see it large:** portraits, header images, the world cover and pictures in an article open over the page, whole and uncropped, with the article's name. Esc, a click outside or ✕ closes it; right-click it to save or copy.
+
 ## 1.68.2 · 11 November 2026
 
 - **Tighter spacing above headings in articles.** Space above a heading no longer grows with its size, which left a large gap above `#` headings; `#` headings inside an article are also a step smaller than the article's title.
