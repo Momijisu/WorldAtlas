@@ -6,7 +6,7 @@ const { run, check, openExample, go, store, seedVillage } = require('./lib');
 run('maps: display options', async ({ newPage }) => {
   const p = await newPage();
   await openExample(p);
-  const wid = await seedVillage(p);
+  const wid = await seedVillage(p, { pinStyle: 'numbers' }); // numbered: a long, two-column key
   await go(p, `#/w/${wid}/m/village`, 1200);
   const wrap = () => p.$eval('#mapWrap', (w) => ({ cls: [...w.classList], w: w.offsetWidth, h: w.offsetHeight }));
   const map = () => store(p, (s) => s.map('village'));
@@ -59,6 +59,20 @@ run('maps: display options', async ({ newPage }) => {
   check('fitted, the key sits outside the map, on its left', side.side && side.kr <= side.ml, side);
   const box2 = await p.$eval('#mapBox', (b) => ({ w: b.offsetWidth, h: b.offsetHeight }));
   check('and the map keeps its shape beside it', Math.abs(box2.w / box2.h - 1500 / 1125) < 0.02, box2);
+  // Beside the map, a long key keeps to one column when it fits the map's height.
+  const vp = p.viewportSize();
+  const keyCols = () => p.$eval('#layersPanel', (k) => ({ cols: getComputedStyle(k.querySelector('.layer-groups')).columnCount, fits: k.scrollHeight <= k.clientHeight + 1, w: k.offsetWidth }));
+  await p.setViewportSize({ width: 2000, height: 1300 });
+  await p.waitForTimeout(400);
+  const tall = await keyCols();
+  check('with room, the key is one column', tall.cols === '1' && tall.w === 260 && tall.fits, tall);
+  await p.setViewportSize({ width: 1500, height: 600 });
+  await p.waitForTimeout(400);
+  const short = await keyCols();
+  check('without room, two', short.cols === '2' && short.w === 500, short);
+  await p.setViewportSize(vp);
+  await p.waitForTimeout(400);
+
   // In edit mode the key goes back over the map, which gets the room.
   await p.click('#editBtn');
   await p.waitForTimeout(400);

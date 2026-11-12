@@ -437,6 +437,8 @@
 .map-wrap.side-panel > .map-panel { left: auto; right: calc(100% + 1rem); top: 0; max-height: 100%; width: 260px; }
 .map-wrap.side-panel > .map-panel.two-col { width: 500px; }
 .map-wrap.side-panel > .map-panel.arranging { width: 340px; }
+.map-wrap.side-panel.key-one > .map-panel.two-col { width: 260px; }
+.map-wrap.side-panel.key-one > .map-panel.two-col .layer-groups { column-count: 1; }
 .map-corner { display: none; position: absolute; width: 34px; height: 34px; color: var(--brass); z-index: 3; pointer-events: none; }
 .map-corner svg { width: 100%; height: 100%; }
 .map-wrap.framed { padding: 22px; border: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);

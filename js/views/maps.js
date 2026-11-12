@@ -903,10 +903,18 @@ export async function viewMap(wid, mid, q) {
     const ar = imgSize.w / imgSize.h;
     let side = 0;
     const panel = ['#layersPanel', '#placesPanel'].map((id) => $(id)).find((x) => x && !x.hidden);
+    wrap.classList.remove('key-one');
     if (panel && !editing && !matchMedia('(max-width: 700px)').matches) {
       wrap.classList.add('side-panel'); // gives the panel its beside-the-map width
+      // A long key keeps to one column when that fits the map's height.
+      if (panel.classList.contains('two-col')) {
+        wrap.classList.add('key-one');
+        const side1 = panel.offsetWidth + 16;
+        const h1 = Math.min(availW - side1 - padX, (availH - padY) * ar) / ar + padY;
+        if (panel.scrollHeight > h1) wrap.classList.remove('key-one');
+      }
       side = panel.offsetWidth + 16;
-      if (availW - side < 320) { side = 0; wrap.classList.remove('side-panel'); }
+      if (availW - side < 320) { side = 0; wrap.classList.remove('side-panel', 'key-one'); }
     }
     const inner = Math.max(200, Math.min(availW - side - padX, (availH - padY) * ar));
     wrap.style.width = inner + padX + 'px';
