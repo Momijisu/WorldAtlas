@@ -7,7 +7,7 @@ import { templateCounts, codexOf, navShown, NAV_SECTIONS } from '../templates.js
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
-import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
+import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
 import { posCSS, wireFocus, applyZoom, zoomOf } from '../focus.js';
@@ -77,6 +77,7 @@ export async function worldDialog(w) {
   await modal(isNew ? 'New world' : 'World settings', `
     <form class="form" id="wf">
       <label>Name<input name="name" required value="${esc(w.name)}" placeholder="e.g. Aerthal"></label>
+      <label>Subtitle <small>optional</small><input name="subtitle" value="${esc(w.subtitle || '')}" placeholder="e.g. An atlas of the shattered continent"></label>
       <label>Description<textarea name="description" rows="5">${esc(w.description)}</textarea></label>
       <div class="field-label">Cover image</div>
       <div class="image-field">
@@ -101,6 +102,8 @@ export async function worldDialog(w) {
       <div class="field-label" style="margin-top:1.2rem">Header edge</div>
       <div class="seg" id="edgeSeg">${edgeSegHTML(worldEdge(w))}</div>
       ${edgePreviewHTML(worldEdge(w) || edgeOf(null), esc(w.name || 'World name'))}
+      <div class="field-label" style="margin-top:1.2rem">Article infoboxes</div>
+      <div class="seg" id="infoboxSeg">${[['', 'Boxed'], ['margin', 'Margin']].map(([k, l]) => `<button type="button" data-ib="${k}" class="${(w.infobox || '') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       <div class="field-label" style="margin-top:1.2rem">Fonts <small>for runes and invented alphabets</small></div>
       <div class="font-list" id="fontList"></div>
       <label class="btn small">${icon('upload-simple')} Add a font<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden></label>
@@ -203,6 +206,13 @@ export async function worldDialog(w) {
         for (const x of $('#edgeSeg', m).children) x.classList.toggle('on', x === b);
         prev.dataset.edge = edge || edgeOf(null);
       };
+      let infobox = w.infobox || '';
+      $('#infoboxSeg', m).onclick = (e) => {
+        const b = e.target.closest('[data-ib]');
+        if (!b) return;
+        infobox = b.dataset.ib;
+        for (const x of $('#infoboxSeg', m).children) x.classList.toggle('on', x === b);
+      };
       f.name.addEventListener('input', () => { $('.edge-title', prev).textContent = $('.card-prev-name', m).textContent = f.name.value || 'World name'; });
       f.file.onchange = async () => {
         const file = f.file.files[0];
@@ -240,6 +250,9 @@ export async function worldDialog(w) {
         next.fonts = fonts.filter((ft) => ft.name);
         if (!next.fonts.length) delete next.fonts;
         Object.assign(next, { name, description: f.description.value });
+        const subtitle = f.subtitle.value.trim();
+        if (subtitle) next.subtitle = subtitle; else delete next.subtitle;
+        if (infobox) next.infobox = infobox; else delete next.infobox;
         if (!next.background) delete next.background;
         setWorldEdge(next, edge);
         if (noise === NOISE_DEFAULT) delete next.noise; else next.noise = noise;
@@ -322,13 +335,15 @@ export function viewWorld(wid) {
   setTitle(w.name);
   const arts = store.articlesOf(wid);
   const recent = [...arts].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
+  const prompts = promptsEnabled();
+  const randomBtn = arts.length ? `<button class="btn random-art" id="randomArt">${icon('shuffle')} Read a random article</button>` : '';
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
   view.innerHTML = `<section class="page wide world-home" data-edge="${edgeOf(wid)}">
     <div class="hero${w.image ? ' with-img' : ''}">
       ${w.image ? `<div class="hero-img edge-img${zoomOf(w.imageZoom) > 1 ? ' zoomed' : ''}" data-bg="${w.image}" style="background-position:${posCSS(w.imagePos)};--zoom:${zoomOf(w.imageZoom)};--zoom-at:${posCSS(w.imagePos)}"></div>` : ''}
       <div class="hero-inner">
-        <div><h1>${esc(w.name)}</h1></div>
+        <div class="hero-title"><h1>${esc(w.name)}</h1><div class="title-rule" aria-hidden="true"><span></span></div>${w.subtitle ? `<p class="world-subtitle">${esc(w.subtitle)}</p>` : ''}</div>
         <div class="actions">
           <button class="btn" id="editWorld">${icon('gear-six')} World settings</button>
           <button class="btn primary" id="newArt">${icon('plus')} New article</button>
@@ -342,20 +357,20 @@ export function viewWorld(wid) {
         <button class="btn small" id="keepDemo">Keep this as my own</button>
         <button class="btn small quiet" id="removeDemo">Remove example</button>
       </div></div></div>` : ''}
-    <div class="world-intro${w.description ? ' two-col' : ''}">
-      ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
-      <div class="intro-side">
-        <div id="todayPrompt" class="today-prompt"></div>
-        ${arts.length ? `<button class="btn random-art" id="randomArt">${icon('shuffle')} Read a random article</button>` : ''}
+    <div class="world-intro${prompts ? ' two-col' : ''}">
+      <div class="intro-main">
+        ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
+        <h2 class="contents-head">Contents</h2>
+        <div class="index-grid">
+          ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
+          ${navShown(w, 'timeline') ? cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length) : ''}
+          ${navShown(w, 'calendar') ? cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '') : ''}
+          ${navShown(w, 'maps') ? cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length) : ''}
+          ${navShown(w, 'graph') ? cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '') : ''}
+        </div>
+        ${prompts ? '' : randomBtn}
       </div>
-    </div>
-    ${flourish()}
-    <div class="index-grid">
-      ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
-      ${navShown(w, 'timeline') ? cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length) : ''}
-      ${navShown(w, 'calendar') ? cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '') : ''}
-      ${navShown(w, 'maps') ? cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length) : ''}
-      ${navShown(w, 'graph') ? cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '') : ''}
+      ${prompts ? `<div class="intro-side"><div id="todayPrompt" class="today-prompt"></div>${randomBtn}</div>` : ''}
     </div>
     <div class="section-head"><h2>Recently written</h2><a class="small" href="#/w/${wid}/t/all">All articles →</a></div>
     ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. <a href="#" id="newArt2">Write the first one</a>.</p></div>`}
@@ -364,7 +379,7 @@ export function viewWorld(wid) {
     $('#todayPrompt').innerHTML = promptCard(wid, p, { eyebrow }) + `<a class="small more-prompts" href="#/w/${wid}/prompts">All writing prompts →</a>`;
     wirePromptCard(wid, $('#todayPrompt'), { onChange: (np) => showPrompt(np, 'Another prompt') });
   };
-  if (promptsEnabled()) showPrompt(todaysPrompt(wid));
+  if (prompts) showPrompt(todaysPrompt(wid));
   $('#editWorld').onclick = () => worldDialog(store.world(wid));
   // A different article each time; never the one just shown.
   $('#randomArt')?.addEventListener('click', () => {

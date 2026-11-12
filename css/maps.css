@@ -428,3 +428,19 @@
 .scale-dist .i, .scale-times .i { color: var(--brass); }
 .scale-times { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; }
 .scale-times li { display: inline-flex; align-items: center; gap: .4rem; }
+
+/* Map display options (map settings → Display, Grid over the map). */
+.map-wrap.no-bg-grid { background: var(--ink-1); }
+.map-wrap.fit { flex: none; align-self: center; min-height: 0; }
+.map-corner { display: none; position: absolute; width: 34px; height: 34px; color: var(--brass); z-index: 3; pointer-events: none; }
+.map-corner svg { width: 100%; height: 100%; }
+.map-wrap.framed { padding: 22px; border: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);
+  box-shadow: inset 0 0 0 5px var(--ink-1), inset 0 0 0 6px color-mix(in srgb, var(--brass) 45%, transparent), 0 10px 40px rgba(0,0,0,.3); }
+.map-wrap.framed .map-box { inset: 22px; outline: 1px solid color-mix(in srgb, var(--brass) 45%, transparent); }
+.map-wrap.framed .map-corner { display: block; }
+.map-grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.map-grid path { fill: none; stroke: rgba(30, 22, 12, .55); stroke-width: calc(1.2px * var(--inv, 1)); }
+.map-display { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; margin-bottom: .6rem; }
+.map-display .check { margin: 0; }
+.map-grid-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem; margin-bottom: .6rem; }
+.map-grid-row .bg-scale { flex: 1 1 220px; margin: 0; }

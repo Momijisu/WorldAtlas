@@ -111,6 +111,9 @@ function timeFor(d, pc) {
   return `≈ ${Math.floor(half) || ''}${half % 1 ? '½' : ''} day${half > 1 ? 's' : ''}`;
 }
 
+// The frame's corner ornament (map settings → Frame).
+const FRAME_CORNER = '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 38V2h36"/><path d="M8 38V8h30" opacity=".6"/><path d="M2 2l10 10M12 2c0 6 4 10 10 10M2 12c6 0 10 4 10 10"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>';
+
 // Marker shape and style, set per map (see the map settings dialog).
 export const MARKER_SHAPES = { pin: 'Pin', circle: 'Circle', hexagon: 'Hexagon', diamond: 'Diamond', square: 'Square' };
 export const MARKER_STYLES = { colour: 'Colour', ivory: 'Ivory', parchment: 'Parchment', hologram: 'Hologram' };
@@ -152,7 +155,7 @@ export function viewMaps(wid) {
   hydrateImages();
 }
 
-function mapDialog(wid, m, { onSetScale } = {}) {
+function mapDialog(wid, m, { onSetScale, onPreview } = {}) {
   const isNew = !m;
   m = m ? { ...m } : { id: uid(), worldId: wid, name: '', image: null, pins: [], regions: [] };
   modal(isNew ? 'New map' : 'Map settings', `
@@ -174,6 +177,15 @@ function mapDialog(wid, m, { onSetScale } = {}) {
         <label>Marker shape<select name="pinShape">${Object.entries(MARKER_SHAPES).map(([k, l]) => `<option value="${k}" ${(m.pinShape || 'pin') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label>Marker style<select name="pinFinish">${Object.entries(MARKER_STYLES).map(([k, l]) => `<option value="${k}" ${(m.pinFinish || 'colour') === k ? 'selected' : ''}>${l}${k === 'colour' ? ' (each pin’s own)' : ''}</option>`).join('')}</select></label>
       </div>
+      <div class="field-label">Display</div>
+      <div class="map-display">
+        <label class="check"><input type="checkbox" name="fit" ${m.fit ? 'checked' : ''}> Fit the window to the map</label>
+        <label class="check"><input type="checkbox" name="bgGrid" ${m.bgGrid === false ? '' : 'checked'}> Grid behind the map</label>
+        <label class="check"><input type="checkbox" name="frame" ${m.frame ? 'checked' : ''}> Frame</label>
+      </div>
+      <div class="field-label">Grid over the map</div>
+      <div class="map-grid-row"><div class="seg" id="gridKind">${[['none', 'None'], ['square', 'Squares'], ['hex', 'Hexes']].map(([k, l]) => `<button type="button" data-grid="${k}" class="${(m.grid?.kind || 'none') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <label class="bg-scale" id="gridSizeRow" ${m.grid?.kind ? '' : 'hidden'}>Size<input type="range" name="gridSize" min="10" max="400" step="2" value="${m.grid?.size || 70}"><output>${m.grid?.size || 70}px</output></label></div>
       <div class="actions">
         ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete map</button><span class="spacer"></span>`}
         <button class="btn primary">${isNew ? 'Create map' : 'Save'}</button>
@@ -187,6 +199,20 @@ function mapDialog(wid, m, { onSetScale } = {}) {
       const showStyle = () => $$('[data-ps]', el).forEach((b) => b.classList.toggle('on', b.dataset.ps === pinStyle));
       $$('[data-ps]', el).forEach((b) => b.onclick = () => { pinStyle = b.dataset.ps; showStyle(); });
       showStyle();
+      // Display: previewed on the map behind the dialog; kept when saved.
+      let gridKind = m.grid?.kind || 'none';
+      const display = () => ({ fit: f.fit.checked, bgGrid: f.bgGrid.checked, frame: f.frame.checked, grid: gridKind === 'none' ? null : { kind: gridKind, size: +f.gridSize.value } });
+      const preview = () => onPreview?.(display());
+      $('#gridKind', el).onclick = (e) => {
+        const b = e.target.closest('[data-grid]');
+        if (!b) return;
+        gridKind = b.dataset.grid;
+        $$('#gridKind [data-grid]', el).forEach((x) => x.classList.toggle('on', x === b));
+        $('#gridSizeRow', el).hidden = gridKind === 'none';
+        preview();
+      };
+      f.gridSize.addEventListener('input', () => { f.gridSize.nextElementSibling.textContent = f.gridSize.value + 'px'; preview(); });
+      for (const n of ['fit', 'bgGrid', 'frame']) f[n].addEventListener('change', preview);
       f.file.addEventListener('change', () => {
         const file = f.file.files[0];
         if (!file) return;
@@ -210,13 +236,18 @@ function mapDialog(wid, m, { onSetScale } = {}) {
           m.pinStyle = pinStyle === 'numbers' ? 'numbers' : undefined;
           m.pinShape = f.pinShape.value === 'pin' ? undefined : f.pinShape.value;
           m.pinFinish = f.pinFinish.value === 'colour' ? undefined : f.pinFinish.value;
+          const d = display();
+          m.fit = d.fit || undefined;
+          m.bgGrid = d.bgGrid ? undefined : false;
+          m.frame = d.frame || undefined;
+          m.grid = d.grid || undefined;
           await store.save('maps', m);
           close();
           if (isNew) location.hash = `#/w/${wid}/m/${m.id}`; else state.route();
         } catch (err) { toast(err.message); btn.disabled = false; btn.textContent = 'Save'; }
       };
     },
-  });
+  }).then(() => onPreview?.()); // closed: show the map as saved
 }
 
 // ---------------------------------------------------------------- map page
@@ -252,8 +283,9 @@ export async function viewMap(wid, mid, q) {
         <button class="btn small" id="editBtn">${icon('pencil-simple')}<span>Edit</span></button>
         <button class="icon-btn" id="settingsBtn" title="Map settings">${icon('gear-six')}</button>`,
     })}
-    <div class="map-wrap">
+    <div class="map-wrap" id="mapWrap">
       <div class="map-box" id="mapBox"></div>
+      ${[['left:2px;top:2px', ''], ['right:2px;top:2px', 'scaleX(-1)'], ['left:2px;bottom:2px', 'scaleY(-1)'], ['right:2px;bottom:2px', 'scale(-1,-1)']].map(([p, t]) => `<div class="map-corner" style="${p};transform:${t}" aria-hidden="true">${FRAME_CORNER}</div>`).join('')}
       <div class="map-zoom">
         <button class="icon-btn" data-z="in" title="Zoom in">${icon('plus')}</button>
         <button class="icon-btn" data-z="out" title="Zoom out">${icon('minus')}</button>
@@ -320,6 +352,7 @@ export async function viewMap(wid, mid, q) {
   }
 
   // ---- viewer
+  let imgSize = null;
   const ctl = mountMap(box, {
     src,
     isDrawing: () => editing && (tool === 'region' || !!reshaping),
@@ -333,6 +366,7 @@ export async function viewMap(wid, mid, q) {
     },
     onZoom: (z) => { zoom = z; drawScaleBar(); },
     onMeasureChange: (points) => { mPts = points; showMeasure(); },
+    onLoad: (size) => { imgSize = size; applyDisplay(); },
     onRegionMenu: (r, cx, cy) => {
       const reg = (cur().regions || []).find((x) => x.id === r.id);
       if (reg && !reshaping) regionMenu(reg, cx, cy);
@@ -833,7 +867,42 @@ export async function viewMap(wid, mid, q) {
   if (layersOpen) { $('#layersPanel').hidden = false; $('#layersBtn').classList.add('on'); }
   $('#layersBtn').onclick = () => togglePanel('#layersPanel', '#layersBtn', '#placesPanel', '#placesBtn');
   $('#placesBtn').onclick = () => togglePanel('#placesPanel', '#placesBtn', '#layersPanel', '#layersBtn');
-  $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true) });
+  // Display: fit the window to the map, the grid behind it, a frame, and a grid
+  // over it. From the map, or from the settings dialog while it's open.
+  function applyDisplay(d) {
+    const m = cur();
+    d ||= { fit: !!m.fit, bgGrid: m.bgGrid !== false, frame: !!m.frame, grid: m.grid || null };
+    const wrap = $('#mapWrap');
+    if (!wrap) return;
+    wrap.classList.toggle('no-bg-grid', !d.bgGrid);
+    wrap.classList.toggle('framed', !!d.frame);
+    ctl.setGrid(d.grid);
+    fitWindow(d.fit);
+  }
+  // Fit the window: as big as the space allows, in the map's own shape.
+  function fitWindow(on) {
+    const wrap = $('#mapWrap');
+    wrap.classList.toggle('fit', !!on && !!imgSize);
+    if (!on || !imgSize) { wrap.style.width = wrap.style.height = ''; return; }
+    wrap.style.width = wrap.style.height = '';
+    const page = wrap.parentElement, head = page.querySelector('.map-head');
+    const cs = getComputedStyle(page);
+    const availW = page.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = page.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (head ? head.offsetHeight + parseFloat(getComputedStyle(head).marginBottom) : 0);
+    // The frame's padding and border sit around the map, not in its shape.
+    const ws = getComputedStyle(wrap);
+    const padX = parseFloat(ws.paddingLeft) + parseFloat(ws.paddingRight) + parseFloat(ws.borderLeftWidth) + parseFloat(ws.borderRightWidth);
+    const padY = parseFloat(ws.paddingTop) + parseFloat(ws.paddingBottom) + parseFloat(ws.borderTopWidth) + parseFloat(ws.borderBottomWidth);
+    const ar = imgSize.w / imgSize.h;
+    const inner = Math.max(200, Math.min(availW - padX, (availH - padY) * ar));
+    wrap.style.width = inner + padX + 'px';
+    wrap.style.height = inner / ar + padY + 'px';
+  }
+  const onResize = () => { if (cur()?.fit) fitWindow(true); };
+  addEventListener('resize', onResize);
+  const prevCleanup = state.cleanup;
+  state.cleanup = () => { prevCleanup?.(); removeEventListener('resize', onResize); };
+  $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true), onPreview: (d) => applyDisplay(d) });
 
   // ---- the scale bar (bottom right): a round length that's 80–200 px on screen at this zoom
   function drawScaleBar() {

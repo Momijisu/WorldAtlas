@@ -1,0 +1,69 @@
+// Map display, per map: fit the window to the map, the grid behind it, a frame,
+// and a grid over it (squares or hexes). Previewed live in map settings.
+const { run, check, openExample, go, store, seedVillage } = require('./lib');
+
+run('maps: display options', async ({ newPage }) => {
+  const p = await newPage();
+  await openExample(p);
+  const wid = await seedVillage(p);
+  await go(p, `#/w/${wid}/m/village`, 1200);
+  const wrap = () => p.$eval('#mapWrap', (w) => ({ cls: [...w.classList], w: w.offsetWidth, h: w.offsetHeight }));
+  const map = () => store(p, (s) => s.map('village'));
+
+  let w = await wrap();
+  check('by default: the grid behind, no frame, not fitted', !w.cls.includes('no-bg-grid') && !w.cls.includes('framed') && !w.cls.includes('fit'));
+  check('no grid over the map', !(await p.$('#mapBox .map-grid rect')));
+
+  // The dialog previews as you change it.
+  await p.click('#settingsBtn');
+  await p.waitForSelector('#modal-root [name="fit"]');
+  await p.check('#modal-root [name="fit"]');
+  await p.uncheck('#modal-root [name="bgGrid"]');
+  await p.check('#modal-root [name="frame"]');
+  await p.click('#gridKind [data-grid="hex"]');
+  await p.waitForTimeout(200);
+  w = await wrap();
+  check('previews: fitted, framed, no grid behind', w.cls.includes('fit') && w.cls.includes('framed') && w.cls.includes('no-bg-grid'), w.cls);
+  check('previews the hex grid', !!(await p.$('#mapBox .map-grid pattern path')));
+  check('the size slider shows with a grid', await p.isVisible('#gridSizeRow'));
+
+  // Closing without saving puts it back.
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+  w = await wrap();
+  check('cancelling restores the saved display', !w.cls.includes('fit') && !w.cls.includes('framed') && !w.cls.includes('no-bg-grid') && !(await p.$('#mapBox .map-grid rect')), w.cls);
+
+  // Saving keeps it.
+  await p.click('#settingsBtn');
+  await p.waitForSelector('#modal-root [name="fit"]');
+  await p.check('#modal-root [name="fit"]');
+  await p.uncheck('#modal-root [name="bgGrid"]');
+  await p.check('#modal-root [name="frame"]');
+  await p.click('#gridKind [data-grid="square"]');
+  await p.fill('#modal-root [name="gridSize"]', '120');
+  await p.click('#modal-root .btn.primary');
+  await p.waitForTimeout(1200);
+  const m = await map();
+  check('saved on the map', m.fit === true && m.bgGrid === false && m.frame === true && m.grid?.kind === 'square' && m.grid?.size === 120, m);
+  w = await wrap();
+  check('shown after saving', w.cls.includes('fit') && w.cls.includes('framed') && w.cls.includes('no-bg-grid'), w.cls);
+  // The window takes the map's shape (1500 × 1125), inside the frame.
+  const box = await p.$eval('#mapBox', (b) => ({ w: b.offsetWidth, h: b.offsetHeight }));
+  check('the fitted window has the map’s shape', Math.abs(box.w / box.h - 1500 / 1125) < 0.02, box);
+  check('the corners show', await p.isVisible('.map-corner'));
+  check('the square grid is drawn in the map’s pixels', await p.$eval('#mapBox .map-grid pattern', (x) => x.getAttribute('width') === '120'));
+
+  // Turning them off clears the stored keys.
+  await p.click('#settingsBtn');
+  await p.waitForSelector('#modal-root [name="fit"]');
+  await p.uncheck('#modal-root [name="fit"]');
+  await p.check('#modal-root [name="bgGrid"]');
+  await p.uncheck('#modal-root [name="frame"]');
+  await p.click('#gridKind [data-grid="none"]');
+  await p.click('#modal-root .btn.primary');
+  await p.waitForTimeout(1200);
+  const m2 = await map();
+  check('off again leaves nothing stored', !('fit' in m2 && m2.fit) && m2.bgGrid === undefined && !m2.frame && !m2.grid, m2);
+  w = await wrap();
+  check('and the map is back to normal', !w.cls.includes('fit') && !w.cls.includes('framed') && !w.cls.includes('no-bg-grid') && !(await p.$('#mapBox .map-grid rect')), w.cls);
+});

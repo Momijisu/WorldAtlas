@@ -8,22 +8,41 @@ import { esc } from './util.js';
 const SVG = 'http://www.w3.org/2000/svg';
 
 // embedded: inside a page that scrolls, so the wheel zooms only with Ctrl/⌘.
-export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, onZoom, onMeasureChange, embedded = false }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, onZoom, onMeasureChange, onLoad, embedded = false }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
+      <svg class="map-grid" xmlns="${SVG}" preserveAspectRatio="none" aria-hidden="true"></svg>
       <svg class="map-regions" xmlns="${SVG}" preserveAspectRatio="none"></svg>
       <div class="map-labels"></div>
       <div class="map-pins"></div>
     </div>`;
   const stage = container.querySelector('.map-stage');
   const img = stage.querySelector('img');
-  const svg = stage.querySelector('svg');
+  const svg = stage.querySelector('.map-regions');
   const labelLayer = stage.querySelector('.map-labels');
   const pinLayer = stage.querySelector('.map-pins');
   let s = 1, x = 0, y = 0, w = 1, h = 1;
   let items = { pins: [], regions: [], hidden: new Set() };
   let draft = null;
   let measure = null; // { points, label }: a ruler line, not saved
+  let grid = null; // { kind: 'square' | 'hex', size: px in the image }
+  const gridSvg = stage.querySelector('.map-grid');
+  // Squares or hexes over the whole map. Hexes are pointy-topped, `size` across the flats.
+  function drawGrid() {
+    if (!grid || w <= 1) { gridSvg.innerHTML = ''; return; }
+    const z = Math.max(8, +grid.size || 70);
+    gridSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    let tile, pw, ph;
+    if (grid.kind === 'hex') {
+      const r = z / Math.sqrt(3), hx = (cx, cy) => `M${Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 6 + (i * Math.PI) / 3; return `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`; }).join('L')}Z`;
+      pw = z; ph = 3 * r;
+      tile = `<path d="${hx(0, 0)}${hx(z, 0)}${hx(z / 2, 1.5 * r)}${hx(0, 3 * r)}${hx(z, 3 * r)}"/>`;
+    } else {
+      pw = ph = z;
+      tile = `<path d="M0 0H${z}M0 0V${z}"/>`;
+    }
+    gridSvg.innerHTML = `<defs><pattern id="mapGridPat" width="${pw}" height="${ph}" patternUnits="userSpaceOnUse">${tile}</pattern></defs><rect width="${w}" height="${h}" fill="url(#mapGridPat)"/>`;
+  }
 
   // Keep the map in view: bigger than the frame, its edges can't come more
   // than EDGE px inside; smaller, it stays wholly inside the frame.
@@ -239,7 +258,9 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     w = img.naturalWidth; h = img.naturalHeight;
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
     draw();
+    drawGrid();
     fit();
+    onLoad?.({ w, h });
   };
   img.src = src;
 
@@ -417,6 +438,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       if (w > 1) draw();
     },
     setDraft(points) { draft = points ? [...points] : null; if (w > 1) draw(); },
+    setGrid(g) { grid = g && g.kind && g.kind !== 'none' ? g : null; drawGrid(); },
     // A ruler line: points in image fractions, and the text to show at its end.
     setMeasure(points, label = '') { measure = points ? { points: [...points], label } : null; if (w > 1) draw(); },
     // The image's size in pixels, for turning fractions into distances.

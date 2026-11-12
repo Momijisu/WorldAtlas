@@ -259,6 +259,7 @@
 @media (min-width: 1100px) {
   .world-intro.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 460px); gap: 2.6rem; align-items: start; }
   .world-intro.two-col .world-desc { max-width: none; }
+  .world-intro.two-col .index-grid { columns: 2 220px; }
   .world-intro.two-col .today-prompt { margin-top: 1.6rem; }
 }
 .more-prompts { display: inline-block; margin-top: -.3rem; }
