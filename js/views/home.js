@@ -37,9 +37,11 @@ export function viewWorlds() {
   setTitle('');
   const ws = store.worlds();
   const signedOut = sync.getStatus().state === 'off';
+  // Opens a .world file: an exported world, or an assistant's import package.
+  const openBtn = `<label class="btn" title="An exported world, or an AI assistant’s import with pictures">${icon('upload-simple')} Open .world<input type="file" id="openWorldInput" accept=".world,.zip,.json,application/x-worldatlas-world,application/zip,application/json" hidden></label>`;
   view.innerHTML = `<section class="page">
     ${ws.length ? `
-      ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
+      ${pageHead({ title: 'Your worlds', actions: `${ws.some((w) => store.isDemo(w.id)) ? '' : `<button class="btn quiet" id="openExample">${icon('book-open-text')} Open example</button>`}${openBtn}<button class="btn primary" id="newWorld">${icon('plus')} New world</button>` })}
       <div class="cards">${ws.map((w) => `
         <a class="card world-card" href="#/w/${w.id}">
           <div class="card-cover${zoomOf(w.cardZoom) > 1 ? ' zoomed' : ''}" ${w.image ? `data-bg="${w.image}" style="background-position:${posCSS(w.cardPos || w.imagePos)};--zoom:${zoomOf(w.cardZoom)};--zoom-at:${posCSS(w.cardPos || w.imagePos)}"` : ''}><span>${esc((w.name[0] || '?').toUpperCase())}</span></div>
@@ -55,12 +57,18 @@ export function viewWorlds() {
         <p>Write up its people and places, link them together, and map out its history.</p>
         <div class="actions center">
           <button class="btn primary" id="newWorld">${icon('plus')} Create a world</button>
+          ${openBtn}
           <button class="btn" id="example">${icon('book-open-text')} Try an example</button>
         </div>
         ${signedOut ? `<p class="muted small" style="margin-top:1.6rem">Using WorldAtlas on another device? <a href="#/settings">Connect OneDrive</a> to load your worlds.</p>` : ''}
       </div>`}
   </section>`;
   $('#newWorld').onclick = () => worldDialog();
+  $('#openWorldInput').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (f) (await import('./settings.js')).openWorldFile(f);
+  };
   $('#openExample')?.addEventListener('click', async () => {
     location.hash = `#/w/${await exampleWorld(store, { demo: true })}`;
   });

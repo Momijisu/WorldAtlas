@@ -317,11 +317,13 @@ export async function openWorldFile(file) {
     // A JSON or text file picked by mistake: hand it to the text importer.
     if (!(await isZip(file))) return handleImportText(await file.text(), 'auto');
     // An import package (import.json and its pictures), as an assistant makes it.
-    const pkg = importFromPackage(await unzip(file));
+    const files = await unzip(file);
+    const pkg = importFromPackage(files);
     if (pkg) {
       if (!isImportFormat(pkg)) throw new Error('its import.json has no articles.');
       return previewImport(pkg, $('#importInto')?.value || 'auto');
     }
+    if (![...files.keys()].some((n) => n === 'manifest.json')) throw new Error(`it holds no import.json (an import) or manifest.json (an exported world). It has: ${[...files.keys()].slice(0, 6).join(', ')}${files.size > 6 ? '…' : ''}`);
     const r = await importWorld(file);
     toast(`${r.added ? 'Added' : 'Merged in'} “${r.name}”${r.clashes ? `. ${r.clashes} article${r.clashes === 1 ? ' was' : 's were'} changed in both places: see “Conflicts to resolve” in the sidebar` : ''}.`, r.clashes ? 8000 : 4000);
     location.hash = `#/w/${r.wid}`;

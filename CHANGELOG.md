@@ -1,5 +1,10 @@
 # What's new
 
+## 1.70.1 · 12 November 2026
+
+- **Open .world on the worlds page:** beside **New world** (and **Create a world** on a first visit), for an exported world or an assistant's import with pictures.
+- **Assistant imports are more forgiving:** the import JSON can have any name inside the archive (not only `import.json`), paths written with `\` work, and an archive the app can't use now says what it found in it.
+
 ## 1.70.0 · 12 November 2026
 
 - **AI imports with pictures:** the assistant instructions (Settings → AI assistant → Copy instructions) now explain how to include pictures: the assistant packs its reply and your images into a **.world** file (`import.json` plus an `images/` folder) that you open with **Open a file**. It can set the world's cover, article pictures and banners, and add maps. See the format guide's *With pictures* section.

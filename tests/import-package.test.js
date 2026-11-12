@@ -65,5 +65,28 @@ z.close()`, file, root]);
   check('the article gets its picture and banner', got.portrait && got.banner, got);
   check('the map is added with its picture', got.maps.join() === 'The Lantern Coast' && got.map, got);
   check('a missing picture leaves the article without one', got.lamp === null, got);
+
+  // The worlds page opens one too, beside New world.
+  await go(p, '#/');
+  check('the worlds page has an Open .world button', !!(await p.$('.page-head #openWorldInput')));
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'import.json'), 'utf8'));
+  pkg.world.name = 'Lumen Two';
+  // Named something other than import.json this time: any import-format JSON will do.
+  fs.rmSync(path.join(root, 'import.json'));
+  fs.writeFileSync(path.join(root, 'lumen-two.json'), JSON.stringify(pkg));
+  fs.rmSync(file);
+  execFileSync('python3', ['-c', 'import shutil,sys; shutil.make_archive(sys.argv[1], "zip", sys.argv[2])', file.replace(/\.world$/, ''), root]);
+  await p.setInputFiles('#openWorldInput', { name: 'Lumen Two.zip', mimeType: 'application/zip', buffer: fs.readFileSync(file.replace(/\.world$/, '.zip')) });
+  await p.waitForSelector('#ipGo');
+  await p.click('#ipGo');
+  await p.waitForTimeout(1500);
+  check('it imports from there (the JSON under another name)', await store(p, (s) => !!s.worlds().find((x) => x.name === 'Lumen Two')));
+
+  // A zip with neither says what it found.
+  await go(p, '#/settings');
+  const junk = await p.evaluate(async () => { const { zip } = await import('./js/worldfile.js'); const b = zip([{ name: 'notes.txt', data: new TextEncoder().encode('hi') }]); return [...new Uint8Array(await b.arrayBuffer())]; });
+  await p.setInputFiles('#openWorldFile', { name: 'odd.world', mimeType: 'application/zip', buffer: Buffer.from(junk) });
+  await p.waitForTimeout(500);
+  check('an archive with neither says what it holds', (await p.textContent('#toast')).includes('no import.json') && (await p.textContent('#toast')).includes('notes.txt'), await p.textContent('#toast'));
   fs.rmSync(dir, { recursive: true, force: true });
 });

@@ -308,12 +308,21 @@ export async function applyImport(plan) {
 // by path, e.g. "image": "images/varenhold.jpg". The paths become blob: URLs, which
 // applyImport reads like any other image address.
 const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml' };
-export function importFromPackage(files) {
-  // import.json at the top, or inside the one folder the archive was made from.
-  const main = [...files.keys()].filter((n) => /(^|\/)import\.json$/i.test(n) && !n.startsWith('__MACOSX/')).sort((a, b) => a.length - b.length)[0];
-  if (!main) return null;
-  const json = JSON.parse(new TextDecoder().decode(files.get(main)).replace(/^\uFEFF/, ''));
-  const base = main.slice(0, main.length - 'import.json'.length);
+export function importFromPackage(zipFiles) {
+  // Paths with / (an archive made on Windows may use \), without macOS's extras.
+  const files = new Map([...zipFiles].map(([n, d]) => [n.replace(/\\/g, '/'), d]).filter(([n]) => !n.startsWith('__MACOSX/')));
+  const parse = (n) => { try { return JSON.parse(new TextDecoder().decode(files.get(n)).replace(/^\uFEFF/, '')); } catch { return null; } };
+  const byDepth = (a, b) => a.split('/').length - b.split('/').length || a.length - b.length;
+  // import.json at the top, or inside the one folder the archive was made from;
+  // failing that, any other JSON file in the import format.
+  let main = [...files.keys()].filter((n) => /(^|\/)import\.json$/i.test(n)).sort(byDepth)[0];
+  let json = main && parse(main);
+  if (!json) {
+    main = [...files.keys()].filter((n) => /\.json$/i.test(n) && !/(^|\/)(manifest|world)\.json$/i.test(n)).sort(byDepth).find((n) => isImportFormat(parse(n)));
+    json = main && parse(main);
+  }
+  if (!json) return null;
+  const base = main.slice(0, main.lastIndexOf('/') + 1);
   const urls = new Map();
   const resolve = (ref) => {
     if (typeof ref !== 'string' || !ref || /^(data:|blob:|https?:)/i.test(ref)) return ref;
