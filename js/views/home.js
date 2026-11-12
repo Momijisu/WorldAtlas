@@ -399,6 +399,20 @@ export function viewWorld(wid) {
   });
   $('#newArt').onclick = () => newArticleDialog(wid);
   $('#newArt2')?.addEventListener('click', (e) => { e.preventDefault(); newArticleDialog(wid); });
+  // The contents grid: as many columns as fit, then evened out so the last row
+  // isn't left short (21 entries in 8 columns becomes 3 rows of 7).
+  const grid = $('.index-grid');
+  const balance = () => {
+    const n = grid.children.length;
+    if (!n || !grid.clientWidth) return;
+    const rows = Math.ceil(n / Math.max(1, Math.floor(grid.clientWidth / 165)));
+    grid.style.gridTemplateColumns = `repeat(${Math.ceil(n / rows)}, minmax(0, 1fr))`;
+  };
+  balance();
+  const ro = new ResizeObserver(balance);
+  ro.observe(grid);
+  const prev = state.cleanup;
+  state.cleanup = () => { prev?.(); ro.disconnect(); };
   recordHeroRatio();
   hydrateImages();
 }

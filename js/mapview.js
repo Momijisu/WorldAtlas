@@ -8,7 +8,7 @@ import { esc } from './util.js';
 const SVG = 'http://www.w3.org/2000/svg';
 
 // embedded: inside a page that scrolls, so the wheel zooms only with Ctrl/⌘.
-export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, onZoom, onMeasureChange, onLoad, embedded = false }) {
+export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMenu, onBackgroundTap, isDrawing, regionTaps, onDraftChange, onZoom, onMeasureChange, onLoad, startView, embedded = false }) {
   container.innerHTML = `<div class="map-stage">
       <img draggable="false" alt="">
       <svg class="map-grid" xmlns="${SVG}" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -73,6 +73,18 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     s = Math.min(r.width / w, r.height / h);
     x = (r.width - w * s) / 2;
     y = (r.height - h * s) / 2;
+    apply();
+  };
+  // The map's starting view (map settings), if it has one: its centre in image
+  // fractions and its zoom relative to "fit the whole map". Else the whole map.
+  const home = () => {
+    const v = startView?.();
+    const r = container.getBoundingClientRect();
+    if (!v || !r.width || !r.height || !(v.z > 0)) return fit();
+    const base = Math.min(r.width / w, r.height / h);
+    s = Math.max(minScale(), Math.min(base * v.z, 16));
+    x = r.width / 2 - v.x * w * s;
+    y = r.height / 2 - v.y * h * s;
     apply();
   };
   const zoomAt = (cx, cy, factor) => {
@@ -259,7 +271,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     stage.style.width = w + 'px'; stage.style.height = h + 'px';
     draw();
     drawGrid();
-    fit();
+    home();
     onLoad?.({ w, h });
   };
   img.src = src;
@@ -428,7 +440,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
   const ro = new ResizeObserver(() => {
     const r = container.getBoundingClientRect();
     const key = Math.round(r.width) + 'x' + Math.round(r.height);
-    if (w > 1 && key !== lastSize) { lastSize = key; fit(); }
+    if (w > 1 && key !== lastSize) { lastSize = key; home(); }
   });
   ro.observe(container);
 
@@ -444,6 +456,14 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     // The image's size in pixels, for turning fractions into distances.
     size: () => ({ w, h }),
     fit,
+    home,
+    // The view now, in the form a starting view is saved in.
+    view() {
+      const r = container.getBoundingClientRect();
+      const base = Math.min(r.width / w, r.height / h);
+      const round = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
+      return { x: round((r.width / 2 - x) / (w * s), 4), y: round((r.height / 2 - y) / (h * s), 4), z: round(s / base, 3) };
+    },
     zoom: (f) => { const r = container.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, f); },
     // Centre on a point ({x,y}) or a region (points array), zooming in if needed.
     focus(target) {

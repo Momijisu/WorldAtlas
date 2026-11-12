@@ -87,6 +87,38 @@ run('maps: display options', async ({ newPage }) => {
   check('closing the key brings the map back to the middle', !(await p.$eval('#mapWrap', (w) => w.classList.contains('side-panel') || !!w.style.marginLeft)));
   check('the square grid is drawn in the map’s pixels', await p.$eval('#mapBox .map-grid pattern', (x) => x.getAttribute('width') === '120'));
 
+  // Starting view: zoom in on one spot, save it, and the map opens there.
+  await p.click('[data-z="fit"]');
+  await p.waitForTimeout(200);
+  await p.click('[data-z="in"]');
+  await p.click('[data-z="in"]');
+  await p.waitForTimeout(300);
+  const before = await p.$eval('#mapBox .map-stage', (x) => x.style.transform);
+  await p.click('#settingsBtn');
+  await p.waitForSelector('[data-start-set]');
+  check('a map starts with the whole map', (await p.textContent('#startViewNote')).includes('whole map'));
+  await p.click('[data-start-set]');
+  await p.click('#modal-root .btn.primary');
+  await p.waitForTimeout(800);
+  const view = (await map()).view;
+  check('the starting view saves: centre and zoom', view && view.z > 2 && view.x > 0 && view.x < 1 && view.y > 0 && view.y < 1, view);
+  await p.reload();
+  await p.waitForSelector('#mapBox .map-stage');
+  await p.waitForTimeout(1500);
+  const opened = await p.$eval('#mapBox .map-stage', (x) => x.style.transform);
+  check('the map opens at the starting view', opened === before, [opened, before]);
+  await p.click('[data-z="out"]');
+  await p.click('[data-z="out"]');
+  await p.click('[data-z="fit"]');
+  await p.waitForTimeout(300);
+  check('the fit button goes back to the starting view', (await p.$eval('#mapBox .map-stage', (x) => x.style.transform)) === before);
+  await p.click('#settingsBtn');
+  await p.waitForSelector('[data-start-clear]');
+  await p.click('[data-start-clear]');
+  await p.click('#modal-root .btn.primary');
+  await p.waitForTimeout(800);
+  check('Whole map clears it', !(await map()).view);
+
   // Turning them off clears the stored keys.
   await p.click('#settingsBtn');
   await p.waitForSelector('#modal-root [name="fit"]');

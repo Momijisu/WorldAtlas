@@ -155,7 +155,7 @@ export function viewMaps(wid) {
   hydrateImages();
 }
 
-function mapDialog(wid, m, { onSetScale, onPreview } = {}) {
+function mapDialog(wid, m, { onSetScale, onPreview, currentView } = {}) {
   const isNew = !m;
   m = m ? { ...m } : { id: uid(), worldId: wid, name: '', image: null, pins: [], regions: [] };
   modal(isNew ? 'New map' : 'Map settings', `
@@ -183,6 +183,10 @@ function mapDialog(wid, m, { onSetScale, onPreview } = {}) {
         <label class="check"><input type="checkbox" name="bgGrid" ${m.bgGrid === false ? '' : 'checked'}> Grid behind the map</label>
         <label class="check"><input type="checkbox" name="frame" ${m.frame ? 'checked' : ''}> Frame</label>
       </div>
+      ${currentView ? `<div class="field-label">Starting view</div>
+      <div class="map-start-row"><span class="small muted" id="startViewNote">${m.view ? 'Opens where you set it.' : 'Opens showing the whole map.'}</span>
+        <button type="button" class="btn small" data-start-set>${icon('crosshair')} Use the current view</button>
+        <button type="button" class="btn small quiet" data-start-clear ${m.view ? '' : 'hidden'}>Whole map</button></div>` : ''}
       <div class="field-label">Grid over the map</div>
       <div class="map-grid-row"><div class="seg" id="gridKind">${[['none', 'None'], ['square', 'Squares'], ['hex', 'Hexes']].map(([k, l]) => `<button type="button" data-grid="${k}" class="${(m.grid?.kind || 'none') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         <label class="bg-scale" id="gridSizeRow" ${m.grid?.kind ? '' : 'hidden'}>Size<input type="range" name="gridSize" min="10" max="400" step="2" value="${m.grid?.size || 70}"><output>${m.grid?.size || 70}px</output></label></div>
@@ -199,6 +203,16 @@ function mapDialog(wid, m, { onSetScale, onPreview } = {}) {
       const showStyle = () => $$('[data-ps]', el).forEach((b) => b.classList.toggle('on', b.dataset.ps === pinStyle));
       $$('[data-ps]', el).forEach((b) => b.onclick = () => { pinStyle = b.dataset.ps; showStyle(); });
       showStyle();
+      // Starting view: where the map opens (and where the fit button goes back to).
+      let startView = m.view || null;
+      const showStart = () => {
+        $('#startViewNote', el).textContent = startView ? 'Opens at the current view.' : 'Opens showing the whole map.';
+        $('[data-start-clear]', el).hidden = !startView;
+      };
+      if (currentView) {
+        $('[data-start-set]', el).onclick = () => { startView = currentView(); showStart(); };
+        $('[data-start-clear]', el).onclick = () => { startView = null; showStart(); };
+      }
       // Display: previewed on the map behind the dialog; kept when saved.
       let gridKind = m.grid?.kind || 'none';
       const display = () => ({ fit: f.fit.checked, bgGrid: f.bgGrid.checked, frame: f.frame.checked, grid: gridKind === 'none' ? null : { kind: gridKind, size: +f.gridSize.value } });
@@ -241,6 +255,7 @@ function mapDialog(wid, m, { onSetScale, onPreview } = {}) {
           m.bgGrid = d.bgGrid ? undefined : false;
           m.frame = d.frame || undefined;
           m.grid = d.grid || undefined;
+          m.view = startView || undefined;
           await store.save('maps', m);
           close();
           if (isNew) location.hash = `#/w/${wid}/m/${m.id}`; else state.route();
@@ -290,7 +305,7 @@ export async function viewMap(wid, mid, q) {
       <div class="map-zoom">
         <button class="icon-btn" data-z="in" title="Zoom in">${icon('plus')}</button>
         <button class="icon-btn" data-z="out" title="Zoom out">${icon('minus')}</button>
-        <button class="icon-btn" data-z="fit" title="Fit map">${icon('corners-out')}</button>
+        <button class="icon-btn" data-z="fit" title="${m.view ? 'Back to the starting view' : 'Fit map'}">${icon('corners-out')}</button>
       </div>
       <div class="map-panel" id="layersPanel" hidden></div>
       <div class="map-panel" id="placesPanel" hidden>
@@ -368,6 +383,7 @@ export async function viewMap(wid, mid, q) {
     onZoom: (z) => { zoom = z; drawScaleBar(); },
     onMeasureChange: (points) => { mPts = points; showMeasure(); },
     onLoad: (size) => { imgSize = size; applyDisplay(); },
+    startView: () => cur().view,
     onRegionMenu: (r, cx, cy) => {
       const reg = (cur().regions || []).find((x) => x.id === r.id);
       if (reg && !reshaping) regionMenu(reg, cx, cy);
@@ -928,7 +944,7 @@ export async function viewMap(wid, mid, q) {
   for (const id of ['#layersPanel', '#placesPanel']) panelWatch.observe($(id), { attributes: true, attributeFilter: ['hidden', 'class'] });
   const prevCleanup = state.cleanup;
   state.cleanup = () => { prevCleanup?.(); removeEventListener('resize', onResize); panelWatch.disconnect(); };
-  $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true), onPreview: (d) => applyDisplay(d) });
+  $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true), onPreview: (d) => applyDisplay(d), currentView: () => ctl.view() });
 
   // ---- the scale bar (bottom right): a round length that's 80–200 px on screen at this zoom
   function drawScaleBar() {
@@ -1089,7 +1105,7 @@ export async function viewMap(wid, mid, q) {
       },
     }).then(() => { if (calibrating) setMeasuring(true); }); // closed without saving: back to measuring
   }
-  $$('[data-z]').forEach((b) => b.onclick = () => (b.dataset.z === 'fit' ? ctl.fit() : ctl.zoom(b.dataset.z === 'in' ? 1.5 : 1 / 1.5)));
+  $$('[data-z]').forEach((b) => b.onclick = () => (b.dataset.z === 'fit' ? ctl.home() : ctl.zoom(b.dataset.z === 'in' ? 1.5 : 1 / 1.5)));
 
   // ---- dialogs
   const mapOptions = (selected) => `<option value="">None</option>` + store.mapsOf(wid).filter((x) => x.id !== mid)

@@ -427,7 +427,6 @@ function renderSidebar(wid) {
     <div class="world-title"><a href="#/w/${wid}" title="${esc(w.name)}"><span class="world-name">${esc(w.name)}</span><span class="world-mono" aria-hidden="true">${esc((w.name[0] || '?').toUpperCase())}</span></a>
       <button class="icon-btn sm side-world" id="sideWorld" title="World settings" aria-label="World settings">${icon('gear-six')}</button></div>
     <div class="world-sub eyebrow">${store.isDemo(wid) ? 'Example · not synced' : `${arts.length} article${arts.length === 1 ? '' : 's'} · ${store.mapsOf(wid).length} map${store.mapsOf(wid).length === 1 ? '' : 's'}`}</div>
-    ${nav(`#/w/${wid}`, 'compass', 'Overview', '', 'class="nav-overview"')}
     ${conflictNav(wid)}
     ${nav(`#/w/${wid}/t/all`, 'books', 'All articles', arts.length)}
     ${promptsEnabled() ? nav(`#/w/${wid}/prompts`, 'feather', 'Writing prompts') : ''}

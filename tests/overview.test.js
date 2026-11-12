@@ -29,6 +29,19 @@ run('world overview: title page and contents', async ({ newPage }) => {
 
   // The contents grid stays below the intro, in its compact form.
   check('the contents grid follows the intro', await p.$eval('.index-grid', (g) => g.previousElementSibling.classList.contains('flourish')));
+  check('no Overview entry in the sidebar: the world’s name leads there', !(await p.$('#sidebar nav a[href$="/w/' + wid + '"]:not(.world-title a)')) && !!(await p.$(`#sidebar .world-title a[href="#/w/${wid}"]`)));
+  const rows = async (width) => {
+    await p.setViewportSize({ width, height: 900 });
+    await p.waitForTimeout(300);
+    return p.$$eval('.index-cell', (cs) => { const tops = new Map(); for (const c of cs) tops.set(c.offsetTop, (tops.get(c.offsetTop) || 0) + 1); return [...tops.values()]; });
+  };
+  const vp = p.viewportSize();
+  for (const width of [1900, 1500, 1100, 700, 390]) {
+    const r = await rows(width);
+    check(`at ${width}px the contents rows are even (the last no more than one short)`, r.slice(0, -1).every((n) => n === r[0]) && r[0] - r.at(-1) < r.length, r);
+  }
+  await p.setViewportSize(vp);
+  await p.waitForTimeout(200);
   check('its cells are compact', (await p.$eval('.index-cell', (c) => c.offsetHeight)) < 44, await p.$eval('.index-cell', (c) => c.offsetHeight));
 
   // Clearing both removes the keys.

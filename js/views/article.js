@@ -126,12 +126,12 @@ async function embedMap(wid, map) {
     if (linked) location.hash = `#/w/${wid}/a/${linked.id}`;
     else if (it.mapId && store.map(it.mapId)) location.hash = `#/w/${wid}/m/${it.mapId}`;
   };
-  const ctl = mountMap(box, { src, onPinClick: go, onRegionClick: go, embedded: true });
+  const ctl = mountMap(box, { src, onPinClick: go, onRegionClick: go, startView: () => map.view, embedded: true });
   const labelled = (list) => (list || []).map((it) => ({ ...it, label: itemTitle(it) }));
   ctl.setItems({ pins: labelled(map.pins), regions: labelled(map.regions) });
   box.parentElement.querySelector('.viz-zoom').onclick = (e) => {
     const z = e.target.closest('[data-z]')?.dataset.z;
-    if (z === 'in') ctl.zoom(1.4); else if (z === 'out') ctl.zoom(1 / 1.4); else if (z === 'fit') ctl.fit();
+    if (z === 'in') ctl.zoom(1.4); else if (z === 'out') ctl.zoom(1 / 1.4); else if (z === 'fit') ctl.home();
   };
   const prev = state.cleanup;
   state.cleanup = () => { prev?.(); ctl.destroy(); };

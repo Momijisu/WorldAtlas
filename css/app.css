@@ -341,7 +341,6 @@ body.nav-mini.update-ready .nav-settings::after { position: absolute; top: 2px; 
   body.nav-mini #sidebar .world-mono { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--rule-strong); border-radius: 50%; font-size: 1.3rem; color: var(--brass); }
   body.nav-mini #sidebar a.active { border-radius: var(--r); }
   /* Folded, the world's initial is the way to its overview. */
-  body.nav-mini #sidebar .nav-overview { display: none; }
   body.nav-mini #sidebar .world-title a.active .world-mono { border-color: var(--brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 18%, transparent); }
 }
 @media (max-width: 920px) { .side-fold { display: none; } }
