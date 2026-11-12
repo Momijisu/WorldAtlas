@@ -2,10 +2,10 @@
 
 ## 1.70.0
 
-- **The overview as a title page:** the world's name is centred in small capitals over a ruled line, with an optional **Subtitle** (new in World settings) beneath it. The overview's **Contents** now follow the description as a list with dotted leaders to the counts; with writing prompts turned off, **Read a random article** sits under them.
-- **Articles read like a book:** a running head across the top (Aerthal · Vael · Varenhold) replaces the breadcrumb, and titles are set in small capitals.
+- **The overview as a title page:** the world's name is centred in small capitals over a ruled line, with an optional **Subtitle** (new in World settings) beneath it. The contents grid below is tighter, so more of it fits on screen.
+- **Article titles in small capitals.**
 - **Infobox style, per world:** World settings → **Article infoboxes**: **Boxed** (as before) or **Margin**, which drops the box for a gilt rule down its left side.
-- **Map display, per map:** Map settings has a new **Display** section. **Fit the window to the map** sizes the map's window to the map's own shape; untick **Grid behind the map** for a plain background around it; **Frame** puts a gilt frame with corner ornaments round it; and **Grid over the map** lays squares or hexes over it, sized in the map's pixels. Changes preview on the map as you make them.
+- **Map display, per map:** Map settings has a new **Display** section. **Fit the window to the map** sizes the map's window to the map's own shape, with the key or Places panel beside it instead of over it; untick **Grid behind the map** for a plain background around it; **Frame** puts a gilt frame with corner ornaments round it; and **Grid over the map** lays squares or hexes over it, sized in the map's pixels. Changes preview on the map as you make them.
 - **Less explanation, more room:** helper text across Settings, World settings, the editor and dialogs is cut back to what you actually need: what happens to your data, and anything you couldn't guess.
 
 ## 1.69.0 · 11 November 2026

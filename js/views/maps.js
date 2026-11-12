@@ -879,12 +879,17 @@ export async function viewMap(wid, mid, q) {
     ctl.setGrid(d.grid);
     fitWindow(d.fit);
   }
-  // Fit the window: as big as the space allows, in the map's own shape.
+  // Fit the window: as big as the space allows, in the map's own shape. An open
+  // key or Places panel then sits beside the map, on its left, when there's room.
+  let fitOn = false;
   function fitWindow(on) {
     const wrap = $('#mapWrap');
+    if (!wrap) return;
+    fitOn = !!on;
     wrap.classList.toggle('fit', !!on && !!imgSize);
-    if (!on || !imgSize) { wrap.style.width = wrap.style.height = ''; return; }
-    wrap.style.width = wrap.style.height = '';
+    wrap.classList.remove('side-panel');
+    wrap.style.width = wrap.style.height = wrap.style.marginLeft = '';
+    if (!on || !imgSize) return;
     const page = wrap.parentElement, head = page.querySelector('.map-head');
     const cs = getComputedStyle(page);
     const availW = page.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -894,14 +899,25 @@ export async function viewMap(wid, mid, q) {
     const padX = parseFloat(ws.paddingLeft) + parseFloat(ws.paddingRight) + parseFloat(ws.borderLeftWidth) + parseFloat(ws.borderRightWidth);
     const padY = parseFloat(ws.paddingTop) + parseFloat(ws.paddingBottom) + parseFloat(ws.borderTopWidth) + parseFloat(ws.borderBottomWidth);
     const ar = imgSize.w / imgSize.h;
-    const inner = Math.max(200, Math.min(availW - padX, (availH - padY) * ar));
+    let side = 0;
+    const panel = ['#layersPanel', '#placesPanel'].map((id) => $(id)).find((x) => x && !x.hidden);
+    if (panel && !matchMedia('(max-width: 700px)').matches) {
+      wrap.classList.add('side-panel'); // gives the panel its beside-the-map width
+      side = panel.offsetWidth + 16;
+      if (availW - side < 320) { side = 0; wrap.classList.remove('side-panel'); }
+    }
+    const inner = Math.max(200, Math.min(availW - side - padX, (availH - padY) * ar));
     wrap.style.width = inner + padX + 'px';
     wrap.style.height = inner / ar + padY + 'px';
+    if (side) wrap.style.marginLeft = side + 'px'; // centres the map and its panel together
   }
-  const onResize = () => { if (cur()?.fit) fitWindow(true); };
+  const onResize = () => { if (fitOn) fitWindow(true); };
   addEventListener('resize', onResize);
+  // Opening, closing or widening a panel refits a fitted map around it.
+  const panelWatch = new MutationObserver(() => { if (fitOn) requestAnimationFrame(() => fitWindow(fitOn)); });
+  for (const id of ['#layersPanel', '#placesPanel']) panelWatch.observe($(id), { attributes: true, attributeFilter: ['hidden', 'class'] });
   const prevCleanup = state.cleanup;
-  state.cleanup = () => { prevCleanup?.(); removeEventListener('resize', onResize); };
+  state.cleanup = () => { prevCleanup?.(); removeEventListener('resize', onResize); panelWatch.disconnect(); };
   $('#settingsBtn').onclick = () => mapDialog(wid, cur(), { onSetScale: () => setMeasuring(true, true), onPreview: (d) => applyDisplay(d) });
 
   // ---- the scale bar (bottom right): a round length that's 80–200 px on screen at this zoom

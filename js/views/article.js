@@ -5,7 +5,7 @@ import { render, renderInline } from '../markdown.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { relationsOf, REL_TYPES, REL_GROUPS } from '../relations.js';
 import { $, esc, timeAgo } from '../util.js';
-import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish } from '../ui.js';
+import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
 import { promptsAnsweredBy } from '../prompts.js';
 import { posCSS, BANNER_POS, zoomCSS, zoomOf } from '../focus.js';
@@ -45,8 +45,8 @@ export function viewArticle(wid, id, { section } = {}) {
   view.innerHTML = `<article class="page article${w.infobox === 'margin' ? ' ib-margin' : ''}" data-edge="${edgeOf(wid)}">
     ${a.banner ? `<div class="article-hero edge-img${zoomOf(a.bannerZoom) > 1 ? ' zoomed' : ''}" data-bg="${a.banner}" style="background-position:${posCSS(a.bannerPos, BANNER_POS)};--zoom:${zoomOf(a.bannerZoom)};--zoom-at:${posCSS(a.bannerPos, BANNER_POS)}"></div>` : ''}
     <div class="page-head article-head${a.banner ? ' over-hero' : ''}">
-      <nav class="running-head" aria-label="Where this article sits"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` · <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')} · <b>${esc(a.title)}</b></nav>
       <div>
+        <div class="eyebrow"><a href="#/w/${wid}">${esc(w.name)}</a>${crumbs.map((c) => ` ${sep} <a href="#/w/${wid}/a/${c.id}">${esc(c.title)}</a>`).join('')}</div>
         <h1>${esc(a.title)}</h1>
         ${a.aliases?.length ? `<div class="aka">Also known as ${a.aliases.map((x) => `<b>${esc(x)}</b>`).join(', ')}</div>` : ''}
       </div>

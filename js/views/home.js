@@ -7,7 +7,7 @@ import { templateCounts, codexOf, navShown, NAV_SECTIONS } from '../templates.js
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
-import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon } from '../ui.js';
+import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
 import { posCSS, wireFocus, applyZoom, zoomOf } from '../focus.js';
@@ -335,8 +335,6 @@ export function viewWorld(wid) {
   setTitle(w.name);
   const arts = store.articlesOf(wid);
   const recent = [...arts].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
-  const prompts = promptsEnabled();
-  const randomBtn = arts.length ? `<button class="btn random-art" id="randomArt">${icon('shuffle')} Read a random article</button>` : '';
   const cell = (href, ic, label, num) =>
     `<a class="index-cell" href="${href}">${icon(ic)}<span class="label">${label}</span><span class="num">${num}</span></a>`;
   view.innerHTML = `<section class="page wide world-home" data-edge="${edgeOf(wid)}">
@@ -357,20 +355,20 @@ export function viewWorld(wid) {
         <button class="btn small" id="keepDemo">Keep this as my own</button>
         <button class="btn small quiet" id="removeDemo">Remove example</button>
       </div></div></div>` : ''}
-    <div class="world-intro${prompts ? ' two-col' : ''}">
-      <div class="intro-main">
-        ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
-        <h2 class="contents-head">Contents</h2>
-        <div class="index-grid">
-          ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
-          ${navShown(w, 'timeline') ? cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length) : ''}
-          ${navShown(w, 'calendar') ? cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '') : ''}
-          ${navShown(w, 'maps') ? cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length) : ''}
-          ${navShown(w, 'graph') ? cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '') : ''}
-        </div>
-        ${prompts ? '' : randomBtn}
+    <div class="world-intro${w.description ? ' two-col' : ''}">
+      ${w.description ? `<div class="prose world-desc">${render(w.description, wid)}</div>` : ''}
+      <div class="intro-side">
+        <div id="todayPrompt" class="today-prompt"></div>
+        ${arts.length ? `<button class="btn random-art" id="randomArt">${icon('shuffle')} Read a random article</button>` : ''}
       </div>
-      ${prompts ? `<div class="intro-side"><div id="todayPrompt" class="today-prompt"></div>${randomBtn}</div>` : ''}
+    </div>
+    ${flourish()}
+    <div class="index-grid">
+      ${codexOf(w, arts).map(([k, t, n]) => cell(`#/w/${wid}/t/${k}`, t.icon, t.plural, n)).join('')}
+      ${navShown(w, 'timeline') ? cell(`#/w/${wid}/timeline`, 'hourglass-medium', 'Timeline', arts.filter((a) => a.start != null).length) : ''}
+      ${navShown(w, 'calendar') ? cell(`#/w/${wid}/calendar`, 'calendar-blank', 'Calendar', '') : ''}
+      ${navShown(w, 'maps') ? cell(`#/w/${wid}/maps`, 'map-trifold', 'Maps', store.mapsOf(wid).length) : ''}
+      ${navShown(w, 'graph') ? cell(`#/w/${wid}/graph`, 'graph', 'Relationships', '') : ''}
     </div>
     <div class="section-head"><h2>Recently written</h2><a class="small" href="#/w/${wid}/t/all">All articles →</a></div>
     ${recent.length ? articleRows(recent, wid) : `<div class="empty-state small"><p>No articles yet. <a href="#" id="newArt2">Write the first one</a>.</p></div>`}
@@ -379,7 +377,7 @@ export function viewWorld(wid) {
     $('#todayPrompt').innerHTML = promptCard(wid, p, { eyebrow }) + `<a class="small more-prompts" href="#/w/${wid}/prompts">All writing prompts →</a>`;
     wirePromptCard(wid, $('#todayPrompt'), { onChange: (np) => showPrompt(np, 'Another prompt') });
   };
-  if (prompts) showPrompt(todaysPrompt(wid));
+  if (promptsEnabled()) showPrompt(todaysPrompt(wid));
   $('#editWorld').onclick = () => worldDialog(store.world(wid));
   // A different article each time; never the one just shown.
   $('#randomArt')?.addEventListener('click', () => {

@@ -421,20 +421,16 @@ html { scrollbar-color: var(--rule-strong) transparent; }
 :root[data-theme="light"] .world-card::after { background: linear-gradient(180deg, transparent 35%, rgba(20, 16, 12, .5) 62%, rgba(20, 16, 12, .88) 100%); }
 @media (prefers-color-scheme: light) { :root[data-theme="auto"] .world-card::after { background: linear-gradient(180deg, transparent 35%, rgba(20, 16, 12, .5) 62%, rgba(20, 16, 12, .88) 100%); } }
 
-.contents-head { display: flex; align-items: center; gap: .8rem; margin: 2rem 0 .7rem; font: 600 .78rem var(--sans); letter-spacing: .3em; text-transform: uppercase; color: var(--brass); }
-.contents-head::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
-.intro-main > .contents-head:first-child { margin-top: 1.6rem; }
-/* The contents: a column list with dotted leaders to the counts. */
-.index-grid { columns: 3 220px; column-gap: 3rem; }
+.index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
 .index-cell {
-  display: flex; align-items: baseline; gap: .5rem; padding: .35rem 0; break-inside: avoid;
-  color: var(--text); text-decoration: none !important; font: 500 1.12rem/1.25 var(--display);
+  display: flex; align-items: center; gap: .55rem; padding: .5rem .75rem;
+  border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  color: var(--text); text-decoration: none !important; transition: background .15s;
 }
-.index-cell .i { width: 1rem; height: 1rem; color: var(--brass); align-self: center; flex: none; }
-.index-cell::after { content: ""; order: 2; flex: 1; min-width: 1rem; border-bottom: 1px dotted color-mix(in srgb, var(--text) 35%, transparent); transform: translateY(-.25em); }
-.index-cell .num { order: 3; font: 500 1rem var(--display); color: var(--brass); font-variant-numeric: tabular-nums; }
-.index-cell:hover .label { color: var(--brass); }
-.intro-main > .random-art { margin-top: 1.4rem; max-width: 320px; }
+.index-cell:hover { background: var(--ink-2); }
+.index-cell .i { width: 1.15rem; height: 1.15rem; color: var(--brass); flex: none; }
+.index-cell .label { font: 600 1.02rem/1.1 var(--display); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.index-cell .num { margin-left: auto; font: 500 .78rem var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .rows { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--rule); }
 .row-link {
@@ -518,13 +514,6 @@ html { scrollbar-color: var(--rule-strong) transparent; }
 
 /* ---------- article ---------- */
 .article-head h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); font-variant: small-caps; letter-spacing: .03em; }
-/* The running head: where the article sits, as a book's page header. */
-.running-head { flex: 0 0 100%; margin-bottom: .6rem; padding: .5rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  font: 500 .72rem var(--sans); letter-spacing: .32em; text-transform: uppercase; color: var(--muted); text-align: center; overflow-wrap: anywhere; }
-.running-head a { color: inherit; }
-.running-head a:hover { color: var(--text); }
-.running-head b { color: var(--brass); font-weight: 600; }
-.article-head.over-hero .running-head { border-color: color-mix(in srgb, var(--text) 25%, transparent); }
 .article-head .type-line { display: flex; align-items: center; gap: .4rem; color: var(--brass); }
 .article-grid { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 2.6rem; align-items: start; }
 .lead { font: italic 500 1.35rem/1.45 var(--display); color: var(--text-2); margin: 0 0 1.4rem; }

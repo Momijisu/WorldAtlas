@@ -1,5 +1,6 @@
 // Map display, per map: fit the window to the map, the grid behind it, a frame,
-// and a grid over it (squares or hexes). Previewed live in map settings.
+// and a grid over it (squares or hexes). Previewed live in map settings. A
+// fitted map's key sits beside it.
 const { run, check, openExample, go, store, seedVillage } = require('./lib');
 
 run('maps: display options', async ({ newPage }) => {
@@ -51,6 +52,16 @@ run('maps: display options', async ({ newPage }) => {
   const box = await p.$eval('#mapBox', (b) => ({ w: b.offsetWidth, h: b.offsetHeight }));
   check('the fitted window has the map’s shape', Math.abs(box.w / box.h - 1500 / 1125) < 0.02, box);
   check('the corners show', await p.isVisible('.map-corner'));
+  // Fitted, the key sits beside the map (its left), not over it.
+  const isOpen = await p.isVisible('#layersPanel');
+  if (!isOpen) { await p.click('#layersBtn'); await p.waitForTimeout(300); }
+  const side = await p.evaluate(() => { const k = document.querySelector('#layersPanel').getBoundingClientRect(), m = document.querySelector('#mapWrap').getBoundingClientRect(); return { kr: k.right, ml: m.left, side: document.querySelector('#mapWrap').classList.contains('side-panel') }; });
+  check('fitted, the key sits outside the map, on its left', side.side && side.kr <= side.ml, side);
+  const box2 = await p.$eval('#mapBox', (b) => ({ w: b.offsetWidth, h: b.offsetHeight }));
+  check('and the map keeps its shape beside it', Math.abs(box2.w / box2.h - 1500 / 1125) < 0.02, box2);
+  await p.click('#layersBtn');
+  await p.waitForTimeout(300);
+  check('closing the key brings the map back to the middle', !(await p.$eval('#mapWrap', (w) => w.classList.contains('side-panel') || !!w.style.marginLeft)));
   check('the square grid is drawn in the map’s pixels', await p.$eval('#mapBox .map-grid pattern', (x) => x.getAttribute('width') === '120'));
 
   // Turning them off clears the stored keys.
