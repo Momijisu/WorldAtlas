@@ -59,6 +59,15 @@ run('maps: display options', async ({ newPage }) => {
   check('fitted, the key sits outside the map, on its left', side.side && side.kr <= side.ml, side);
   const box2 = await p.$eval('#mapBox', (b) => ({ w: b.offsetWidth, h: b.offsetHeight }));
   check('and the map keeps its shape beside it', Math.abs(box2.w / box2.h - 1500 / 1125) < 0.02, box2);
+  // In edit mode the key goes back over the map, which gets the room.
+  await p.click('#editBtn');
+  await p.waitForTimeout(400);
+  const ed = await p.evaluate(() => { const k = document.querySelector('#layersPanel').getBoundingClientRect(), w = document.querySelector('#mapWrap'), m = w.getBoundingClientRect(); return { kl: k.left, ml: m.left, mw: m.width, side: w.classList.contains('side-panel') }; });
+  check('in edit mode the key sits over the map, inside it', !ed.side && ed.kl >= ed.ml, ed);
+  check('and the map is bigger', ed.mw > box2.w + 100, [ed.mw, box2.w]);
+  await p.click('#editBtn');
+  await p.waitForTimeout(400);
+  check('Done puts the key back beside the map', await p.$eval('#mapWrap', (w) => w.classList.contains('side-panel')));
   await p.click('#layersBtn');
   await p.waitForTimeout(300);
   check('closing the key brings the map back to the middle', !(await p.$eval('#mapWrap', (w) => w.classList.contains('side-panel') || !!w.style.marginLeft)));

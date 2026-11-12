@@ -259,6 +259,7 @@ export async function viewMap(wid, mid, q) {
   setTitle(m.name);
   const trail = mapTrail(wid, mid);
   let editing = false;
+  let fitOn = false; // the window fitted to the map (map settings → Display)
   let tool = 'pin';         // 'pin' | 'region'
   let draft = null;         // region vertices being drawn (or reshaped)
   let reshaping = null;     // id of the region whose outline is being edited
@@ -534,6 +535,7 @@ export async function viewMap(wid, mid, q) {
     info.hidden = true;
     renderEditBar();
     renderLayers();
+    if (fitOn) fitWindow(true);
   }
   $('#editBtn').onclick = () => setEditing(!editing);
 
@@ -880,8 +882,8 @@ export async function viewMap(wid, mid, q) {
     fitWindow(d.fit);
   }
   // Fit the window: as big as the space allows, in the map's own shape. An open
-  // key or Places panel then sits beside the map, on its left, when there's room.
-  let fitOn = false;
+  // key or Places panel then sits beside the map, on its left, when there's room;
+  // in edit mode it goes back over the map, so the map has all the space.
   function fitWindow(on) {
     const wrap = $('#mapWrap');
     if (!wrap) return;
@@ -901,7 +903,7 @@ export async function viewMap(wid, mid, q) {
     const ar = imgSize.w / imgSize.h;
     let side = 0;
     const panel = ['#layersPanel', '#placesPanel'].map((id) => $(id)).find((x) => x && !x.hidden);
-    if (panel && !matchMedia('(max-width: 700px)').matches) {
+    if (panel && !editing && !matchMedia('(max-width: 700px)').matches) {
       wrap.classList.add('side-panel'); // gives the panel its beside-the-map width
       side = panel.offsetWidth + 16;
       if (availW - side < 320) { side = 0; wrap.classList.remove('side-panel'); }
