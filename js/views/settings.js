@@ -5,8 +5,8 @@ import * as sync from '../sync.js';
 import { whatsNewHTML } from '../updates.js';
 import { $, esc, toast, modal, confirmDialog, timeAgo, blobToDataURL, dataURLToBlob, download } from '../util.js';
 import { view, state, setTitle, pageHead, icon, rowPicturesOn } from '../ui.js';
-import { planImport, applyImport, isImportFormat, exportSimple } from '../importer.js';
-import { exportWorld, importWorld, isZip } from '../worldfile.js';
+import { planImport, applyImport, isImportFormat, exportSimple, importFromPackage } from '../importer.js';
+import { exportWorld, importWorld, isZip, unzip } from '../worldfile.js';
 import { TYPES } from '../store.js';
 import { promptsEnabled, setPromptsEnabled } from '../prompts.js';
 import { guidanceEnabled, setGuidanceEnabled } from '../guidance.js';
@@ -316,6 +316,12 @@ export async function openWorldFile(file) {
   try {
     // A JSON or text file picked by mistake: hand it to the text importer.
     if (!(await isZip(file))) return handleImportText(await file.text(), 'auto');
+    // An import package (import.json and its pictures), as an assistant makes it.
+    const pkg = importFromPackage(await unzip(file));
+    if (pkg) {
+      if (!isImportFormat(pkg)) throw new Error('its import.json has no articles.');
+      return previewImport(pkg, $('#importInto')?.value || 'auto');
+    }
     const r = await importWorld(file);
     toast(`${r.added ? 'Added' : 'Merged in'} “${r.name}”${r.clashes ? `. ${r.clashes} article${r.clashes === 1 ? ' was' : 's were'} changed in both places: see “Conflicts to resolve” in the sidebar` : ''}.`, r.clashes ? 8000 : 4000);
     location.hash = `#/w/${r.wid}`;
@@ -432,7 +438,7 @@ function aiInstructions() {
 Reply with only a JSON object shaped like this:
 {
   "format": "worldatlas-import", "version": 1,
-  "world": { "name": "...", "description": "...", "calendar": { "months": [{"name": "...", "days": 30}], "weekdays": ["..."], "eras": [{"name": "...", "abbr": "...", "start": 0}], "moons": [{"name": "...", "cycle": 30}], "currentYear": 1043 } },
+  "world": { "name": "...", "description": "...", "image": "images/cover.jpg", "calendar": { "months": [{"name": "...", "days": 30}], "weekdays": ["..."], "eras": [{"name": "...", "abbr": "...", "start": 0}], "moons": [{"name": "...", "cycle": 30}], "currentYear": 1043 } },
   "articles": [
     { "title": "...", "type": "character|species|culture|profession|title|location|settlement|building|organization|religion|event|conflict|plot|myth|spell|law|condition|technology|item|vehicle|material|tradition|language|lore|article",
       "aliases": ["other names it goes by"], "summary": "one or two lines", "body": "Markdown, with [[Other Article Title]] links",
@@ -440,8 +446,10 @@ Reply with only a JSON object shaped like this:
       "fields": { "Type": "what kind of thing it is, e.g. Ruin, Port town, Guild", "Occupation": "for characters" },
       "date": "12 Frostmoot 1042", "endDate": "1060",
       "relationships": [{ "type": "parent|child|spouse|sibling|partner|friend|ally|mentor|student|rival|enemy|member|leader|rules|serves|worships|created|owns|locatedIn|related", "target": "Other Article Title", "note": "optional" }],
-      "secrets": "GM-only notes" }
-  ]
+      "secrets": "GM-only notes",
+      "image": "images/portrait-or-picture.jpg", "headerImage": "images/wide-banner.jpg" }
+  ],
+  "maps": [{ "name": "...", "image": "images/map.jpg" }]
 }
 
 Rules:
@@ -456,6 +464,12 @@ Rules:
 - Fill the "Type" field (a character's "Occupation") with a short label; lists show it next to the title.
 - Put letters, notes and inscriptions in the body as a handwritten block: a line ":::cursive" (or ":::print"), the text, then a line ":::".
 - A place's position: use "locatedIn" relationships (e.g. a town locatedIn its province), or "parent" to file it under that article.
+
+Pictures (only if my material includes images; otherwise leave out "image", "headerImage" and "maps"):
+- If you can create files, make a .world file instead of replying with JSON: a zip archive with the JSON above saved as import.json at its top level, and the pictures in an images/ folder beside it. Refer to each picture by its path in the archive, e.g. "image": "images/varenhold.jpg". Name the archive after the world, e.g. Aerthal.world, and give it to me to download. I open it with Settings → Files → Open a file.
+- Use my image files unchanged (JPEG, PNG, WebP, GIF or SVG), with simple file names: lowercase, no spaces.
+- "image" is a world's cover, or an article's portrait or picture (shown in its infobox); "headerImage" is a wide banner across the top of an article; each entry in "maps" is a map with its name.
+- If you can't create files, leave the pictures out and reply with the JSON only; I can add them in the app.
 
 Here is my material:
 `;
@@ -527,6 +541,8 @@ function previewImport(json, into = 'auto') {
         const w = plan.warnings;
         const destName = target ? store.world(target).name : (plan.isNewWorld ? plan.world.name : name || 'Imported world');
         const n = plan.create + plan.update;
+        const pics = plan.entries.filter((e) => e.action !== 'same' && e.images).length + (plan.worldImage ? 1 : 0);
+        const what = [n ? `${n} article${n === 1 ? '' : 's'}` : '', plan.maps.length ? `${plan.maps.length} map${plan.maps.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ') || 'nothing';
         $('#ipv', el).innerHTML = `
           <div class="import-dest">${icon('globe-hemisphere-west')}<div>
             <div class="eyebrow">${target ? 'Importing into' : 'Importing into a new world'}</div>
@@ -543,13 +559,14 @@ function previewImport(json, into = 'auto') {
             <div><b>${plan.same}</b><span>unchanged</span></div>
           </div>
           <div class="chips">${Object.entries(plan.counts).map(([t, n]) => `<span class="chip">${icon(TYPES[t]?.icon)} ${n} ${esc((n === 1 ? TYPES[t]?.label : TYPES[t]?.plural) || t)}</span>`).join('')}</div>
+          ${pics || plan.maps.length ? `<p class="small muted">${icon('image')} ${[pics ? `${pics} picture${pics === 1 ? '' : 's'}` : '', plan.maps.length ? `${plan.maps.length} map${plan.maps.length === 1 ? '' : 's'}: ${plan.maps.map((m) => esc(m.name)).join(', ')}` : ''].filter(Boolean).join(' · ')}</p>` : ''}
           ${json.world?.calendar ? `<p class="small muted">${icon('calendar-blank')} ${plan.isNewWorld ? 'Includes a custom calendar.' : 'Replaces this world’s calendar.'}</p>` : ''}
           ${w.length ? `<details class="import-warnings" ${w.length <= 6 ? 'open' : ''}><summary>${icon('warning')} ${w.length} warning${w.length === 1 ? '' : 's'}</summary><ul>${w.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`
             : `<p class="small" style="color:var(--ok)">${icon('check')} No problems found.</p>`}
           <p class="small muted">Updates can be undone from each article’s History.</p>
           <div class="actions">
             <button class="btn quiet" data-cancel>Cancel</button>
-            <button class="btn primary" id="ipGo" ${n ? '' : 'disabled'}>${icon('check')} Import ${n} article${n === 1 ? '' : 's'} into ${esc(destName)}</button>
+            <button class="btn primary" id="ipGo" ${n || plan.maps.length ? '' : 'disabled'}>${icon('check')} Import ${what} into ${esc(destName)}</button>
           </div>`;
         $('#ipTarget', el).onchange = (e) => { target = e.target.value; draw(); };
         $('[data-cancel]', el).onclick = () => close();
@@ -566,9 +583,8 @@ function previewImport(json, into = 'auto') {
             return;
           }
           const { wid, failedImages } = result;
-          const n = plan.create + plan.update;
           close();
-          toast(failedImages.length ? `Imported. ${failedImages.length} image${failedImages.length === 1 ? '' : 's'} couldn’t be downloaded.` : `Imported ${n} article${n === 1 ? '' : 's'} into ${plan.world.name}`, 5000);
+          toast(failedImages.length ? `Imported. ${failedImages.length} picture${failedImages.length === 1 ? '' : 's'} couldn’t be added (${failedImages.slice(0, 3).join(', ')}${failedImages.length > 3 ? '…' : ''}).` : `Imported ${what} into ${plan.world.name}`, 6000);
           location.hash = `#/w/${wid}`;
         };
       };

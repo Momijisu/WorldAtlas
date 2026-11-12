@@ -257,9 +257,21 @@ export function planImport(json, targetWid = null) {
 
   const counts = {};
   for (const e of entries) counts[e.record.type] = (counts[e.record.type] || 0) + 1;
+  // Pictures beyond the articles': the world's cover (unless it has one) and
+  // maps, added by name (a map already in the world is left alone).
+  const worldImage = src.image && (!existing || !existing.image) ? src.image : null;
+  const haveMaps = new Set(existing ? store.mapsOf(existing.id).map((m) => m.name.trim().toLowerCase()) : []);
+  const maps = [];
+  for (const m of Array.isArray(json.maps) ? json.maps : []) {
+    const name = String(m?.name || '').trim() || 'Map';
+    if (!m?.image) { warn(`Map “${name}” has no image, so it was left out.`); continue; }
+    if (haveMaps.has(name.toLowerCase())) { warn(`A map called “${name}” is already in this world, so it was left out.`); continue; }
+    haveMaps.add(name.toLowerCase());
+    maps.push({ name, image: m.image });
+  }
   return {
     world, isNewWorld: !existing, calendarChanged: !!newCal && !!existing,
-    entries, counts, create, update, same, warnings,
+    entries, counts, create, update, same, warnings, worldImage, maps,
   };
 }
 
@@ -271,8 +283,14 @@ async function fetchImage(url) {
 
 export async function applyImport(plan) {
   const failedImages = [];
-  if (plan.isNewWorld || plan.calendarChanged || plan.world.description !== store.world(plan.world.id)?.description) {
+  if (plan.worldImage) {
+    try { plan.world.image = await fetchImage(plan.worldImage); } catch { failedImages.push('the world’s cover'); }
+  }
+  if (plan.isNewWorld || plan.calendarChanged || plan.world.image !== store.world(plan.world.id)?.image || plan.world.description !== store.world(plan.world.id)?.description) {
     await store.save('worlds', plan.world);
+  }
+  for (const m of plan.maps || []) {
+    try { await store.save('maps', { id: uid(), worldId: plan.world.id, name: m.name, image: await fetchImage(m.image), pins: [], regions: [] }); } catch { failedImages.push(m.name); }
   }
   for (const e of plan.entries) {
     if (e.action === 'same') continue;
@@ -283,6 +301,39 @@ export async function applyImport(plan) {
     await store.save('articles', e.record);
   }
   return { wid: plan.world.id, failedImages };
+}
+
+// --- import packages ---------------------------------------------------------------
+// A zip (usually named .world) holding import.json and the pictures it refers to
+// by path, e.g. "image": "images/varenhold.jpg". The paths become blob: URLs, which
+// applyImport reads like any other image address.
+const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml' };
+export function importFromPackage(files) {
+  // import.json at the top, or inside the one folder the archive was made from.
+  const main = [...files.keys()].filter((n) => /(^|\/)import\.json$/i.test(n) && !n.startsWith('__MACOSX/')).sort((a, b) => a.length - b.length)[0];
+  if (!main) return null;
+  const json = JSON.parse(new TextDecoder().decode(files.get(main)).replace(/^\uFEFF/, ''));
+  const base = main.slice(0, main.length - 'import.json'.length);
+  const urls = new Map();
+  const resolve = (ref) => {
+    if (typeof ref !== 'string' || !ref || /^(data:|blob:|https?:)/i.test(ref)) return ref;
+    const path = decodeURIComponent(ref.replace(/^\.?\//, ''));
+    const name = [base + path, path].find((n) => files.has(n)) || [...files.keys()].find((n) => n.toLowerCase() === (base + path).toLowerCase());
+    if (!name) return ref; // missing: reported as a picture that couldn't be added
+    if (!urls.has(name)) {
+      const type = IMAGE_TYPES[name.split('.').pop().toLowerCase()] || 'image/png';
+      urls.set(name, URL.createObjectURL(new Blob([files.get(name)], { type })));
+    }
+    return urls.get(name);
+  };
+  if (json.world) json.world.image = resolve(json.world.image);
+  for (const a of Array.isArray(json.articles) ? json.articles : []) {
+    if (!a) continue;
+    if (a.image) a.image = resolve(a.image);
+    if (a.headerImage) a.headerImage = resolve(a.headerImage);
+  }
+  for (const m of Array.isArray(json.maps) ? json.maps : []) if (m?.image) m.image = resolve(m.image);
+  return json;
 }
 
 // --- export ----------------------------------------------------------------------

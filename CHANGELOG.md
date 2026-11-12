@@ -2,6 +2,7 @@
 
 ## 1.70.0
 
+- **AI imports with pictures:** the assistant instructions (Settings → AI assistant → Copy instructions) now explain how to include pictures: the assistant packs its reply and your images into a **.world** file (`import.json` plus an `images/` folder) that you open with **Open a file**. It can set the world's cover, article pictures and banners, and add maps. See the format guide's *With pictures* section.
 - **A starting view for each map:** pan and zoom to the part you want, then Map settings → **Starting view** → **Use the current view**. The map opens there, in articles too, and the fit button goes back to it. **Whole map** goes back to showing all of it.
 - **Overview:** the contents grid evens out its rows (21 entries make three rows of 7, not 8, 8 and 5). The sidebar's **Overview** entry is gone: the world's name above it goes to the overview.
 - **The overview as a title page:** the world's name is centred in small capitals over a ruled line, with an optional **Subtitle** (new in World settings) beneath it. The contents grid below is tighter, so more of it fits on screen.

@@ -4,6 +4,8 @@ A JSON format for adding a world to [WorldAtlas](https://momijisu.github.io/Worl
 
 To import, open **Settings → AI assistant** and choose **Paste reply**, or open an import file with **Settings → Files → Open a file**. A preview lists what will change and anything that didn't match.
 
+With pictures, the JSON goes in a zip archive alongside them: see [With pictures](#with-pictures-a-world-file).
+
 ---
 
 ## Quick example
@@ -73,6 +75,7 @@ To import, open **Settings → AI assistant** and choose **Paste reply**, or ope
 | `name` | The world's name. An existing world with the same name is offered as the merge target. |
 | `description` | Markdown, shown on the world's overview. |
 | `calendar` | Optional. Defaults to an Earth-like calendar. |
+| `image` | Optional cover picture: a path in a [.world file](#with-pictures-a-world-file), a `data:` URL or a web address. Ignored if the world already has a cover. |
 
 ### Calendar
 
@@ -107,7 +110,7 @@ Only `title` is required.
 | `endDate` | When it ended. Alias: `end`. |
 | `dateText` | Optional text shown instead of the date. |
 | `relationships` | `{ "type", "target", "note" }`, see below. A `target` with no article of that title (or alias) is kept as a name and links up once one is written. |
-| `image`, `headerImage` | Optional `data:` URL or web address. Some sites block downloads; images can be added in the app instead. |
+| `image`, `headerImage` | Optional pictures: `image` is the portrait or picture in the infobox, `headerImage` a wide banner across the top. A path in a [.world file](#with-pictures-a-world-file), a `data:` URL or a web address. Some sites block downloads; images can be added in the app instead. |
 
 ### Dates
 
@@ -135,6 +138,38 @@ Phrases like "father", "married to", "member of" and "founded by" also work.
 
 ---
 
+## Maps
+
+Optional, at the top level beside `articles`:
+
+```json
+"maps": [{ "name": "Vael", "image": "images/vael.jpg" }]
+```
+
+Each becomes a map in the world, without pins (add those in the app). A map whose name the world already has is skipped.
+
+---
+
+## With pictures: a .world file
+
+Pictures travel with the JSON in a zip archive, named `<World>.world` (`.zip` works too):
+
+```
+Aerthal.world
+├── import.json        the import JSON, as above
+└── images/
+    ├── cover.jpg
+    ├── varenhold.jpg
+    ├── varenhold-banner.jpg
+    └── vael.jpg
+```
+
+In `import.json`, refer to each picture by its path in the archive: `"image": "images/varenhold.jpg"`. JPEG, PNG, WebP, GIF, AVIF and SVG work. If the archive holds a single folder with everything inside, that works too.
+
+Open it with **Settings → Files → Open a file**. The same preview shows, with a count of the pictures and maps.
+
+---
+
 ## Importing again
 
 Importing into an existing world matches articles by title. New titles are created. Existing articles change only in the keys you include, so leaving out `body` keeps the current text. Updates go into revision history and can be undone.
@@ -154,3 +189,4 @@ To extend a world with an assistant, copy it with **Settings → AI assistant �
 7. Use the most specific type: towns and cities are `settlement`, castles, ruins and temples are `building`, wars and battles are `conflict`.
 8. Write letters, notes and inscriptions as `:::cursive` … `:::` blocks in the body.
 9. Say where places are with `locatedIn` relationships, or file them under a `parent`.
+10. If the material includes pictures and you can create files, make a [.world file](#with-pictures-a-world-file): `import.json` plus an `images/` folder, with `image`, `headerImage` and `maps` pointing at paths inside it. Otherwise leave pictures out.
