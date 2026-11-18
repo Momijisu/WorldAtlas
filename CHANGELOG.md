@@ -1,6 +1,6 @@
 # What's new
 
-## 1.71.1
+## 1.71.1 · 18 November 2026
 
 - **Put relationships in your own order.** In the editor, drag a relationship by its grip (or focus the grip and use the arrow keys). The article lists them in that order within each kind, and its family tree and organisation chart follow it, e.g. the order of children or members. That includes relationships added on the other article.
 - **Links in infobox fields:** typing `[[` in an infobox field suggests articles, as in the article text.
