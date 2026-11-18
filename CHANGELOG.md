@@ -1,6 +1,6 @@
 # What's new
 
-## 1.71.0
+## 1.71.0 · 18 November 2026
 
 - **New relationship: Inventor of / Invented by.** Under Affiliation, next to Creator of / Created by. Imports understand "invented by", "inventor of", "devised by" and "designed by".
 
