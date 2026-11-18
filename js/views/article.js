@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import { TYPES, sectionsOf } from '../store.js';
 import { render, renderInline } from '../markdown.js';
 import { calendarOf, articleDateText } from '../calendar.js';
-import { relationsOf, REL_TYPES, REL_GROUPS } from '../relations.js';
+import { relationsOf, REL_TYPES, REL_GROUPS, fieldsWithRelations } from '../relations.js';
 import { $, esc, timeAgo } from '../util.js';
 import { view, state, setTitle, hydrateImages, articleRows, icon, typeIcon, flourish, sep } from '../ui.js';
 import { newArticleDialog } from './home.js';
@@ -24,10 +24,12 @@ export function viewArticle(wid, id, { section } = {}) {
   const children = store.articlesOf(wid).filter((c) => c.parentId === a.id).sort((x, y) => x.title.localeCompare(y.title));
   const back = store.backlinks(a).sort((x, y) => x.title.localeCompare(y.title));
   const onMaps = store.mapsOf(wid).filter((m) => [...(m.pins || []), ...(m.regions || [])].some((it) => linkedArticle(wid, it)?.id === a.id));
-  const sections = sectionsOf(a.type, a.fields || {});
+  const rels = relationsOf(a, { named: true });
+  // Empty fields a relationship answers (an organization's Leader, say) show it.
+  const { fields: shownFields, fromRel } = fieldsWithRelations(t.fields, a.fields || {}, rels);
+  const sections = sectionsOf(a.type, shownFields);
   const fieldCount = sections.reduce((n, sec) => n + sec.entries.length, 0);
   const date = articleDateText(cal, a);
-  const rels = relationsOf(a, { named: true });
   const versions = store.historyOf(a.id).length;
   const map = a.mapId && store.map(a.mapId)?.worldId === wid ? store.map(a.mapId) : null;
   const treeKind = articleTreeKind(a); // a family tree for people, a chart for organisations
@@ -85,7 +87,7 @@ export function viewArticle(wid, id, { section } = {}) {
         <div class="infobox-type"><a href="#/w/${wid}/t/${a.type}">${t.label}</a></div>
         ${fieldCount || date || crumbs.length || onMaps.length ? `<dl>
           ${date ? `<dt>Date</dt><dd>${esc(date)}</dd>` : ''}
-          ${sections.map((sec) => `${sections.length > 1 ? `<div class="ib-sec">${esc(sec.name)}</div>` : ''}${sec.entries.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${renderInline(v, wid)}</dd>`).join('')}`).join('')}
+          ${sections.map((sec) => `${sections.length > 1 ? `<div class="ib-sec">${esc(sec.name)}</div>` : ''}${sec.entries.map(([k, v]) => `<dt>${esc(k)}</dt><dd${fromRel.has(k) ? ' class="from-rel" title="From this article’s relationships. Type a value in the editor to show something else."' : ''}>${renderInline(v, wid)}</dd>`).join('')}`).join('')}
           ${crumbs.length ? `<dt>Part of</dt><dd><a href="#/w/${wid}/a/${crumbs.at(-1).id}">${esc(crumbs.at(-1).title)}</a></dd>` : ''}
           ${onMaps.length ? `<dt>Maps</dt><dd>${onMaps.map((m) => `<a href="#/w/${wid}/m/${m.id}?pin=${a.id}">${esc(m.name)}</a>`).join(', ')}</dd>` : ''}
         </dl>` : ''}

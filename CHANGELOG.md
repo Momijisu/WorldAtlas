@@ -1,5 +1,9 @@
 # What's new
 
+## 1.71.1
+
+- **Infoboxes fill in from relationships.** An empty field that a relationship answers now shows it, linked: an organization's **Leader** and **Members**, a place's **Ruler**, an item's **Owner** and **Creator**, a technology's **Inventor**, a building's **Location**, a religion's **Deity**, and so on. It works whichever article the relationship was set on. Anything you type into the field still takes its place, and the editor shows the relationship as the empty field's placeholder.
+
 ## 1.71.0 · 18 November 2026
 
 - **New relationship: Inventor of / Invented by.** Under Affiliation, next to Creator of / Created by. Imports understand "invented by", "inventor of", "devised by" and "designed by".

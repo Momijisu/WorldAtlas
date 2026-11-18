@@ -40,6 +40,27 @@ export const REL_GROUPS = {
   family: 'Family', bond: 'Bonds', conflict: 'Conflict', affiliation: 'Affiliation', other: 'Other',
 };
 
+// Infobox fields that a relationship can fill: an empty "Leader" on an
+// organization shows who it's led by, and so on. A value typed into the field wins.
+export const FIELD_RELATIONS = {
+  Leader: ['ledBy'], Ruler: ['ruledBy'], Owner: ['ownedBy'], Creator: ['createdBy'], Builder: ['createdBy'],
+  Inventor: ['inventedBy'], Members: ['hasMember'], Affiliation: ['member'], Deity: ['worships'], Followers: ['worshippedBy'],
+  Location: ['locatedIn'], Region: ['locatedIn'], Headquarters: ['locatedIn'], Allies: ['ally'], Rivals: ['rival', 'enemy'],
+};
+// The article's fields with those gaps filled from `rels` (from relationsOf).
+// Returns { fields, fromRel: Set of the field names filled that way }.
+export function fieldsWithRelations(fieldNames, fields = {}, rels = []) {
+  const out = { ...fields };
+  const fromRel = new Set();
+  for (const f of fieldNames) {
+    const types = FIELD_RELATIONS[f];
+    if (!types || String(out[f] ?? '').trim()) continue;
+    const names = rels.filter((r) => types.includes(r.type)).map((r) => `[[${r.other ? r.other.title : r.name}]]`);
+    if (names.length) { out[f] = [...new Set(names)].join(', '); fromRel.add(f); }
+  }
+  return { fields: out, fromRel };
+}
+
 // A relationship points at an article (target), or just names one that may
 // not be written yet (name): it links up once an article has that title or
 // alias, like a [[link]] to a page that doesn't exist yet.
