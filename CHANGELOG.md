@@ -2,6 +2,8 @@
 
 ## 1.71.1
 
+- **Put relationships in your own order.** In the editor, drag a relationship by its grip (or focus the grip and use the arrow keys). The article lists them in that order within each kind, and its family tree and organisation chart follow it, e.g. the order of children or members. That includes relationships added on the other article.
+- **Links in infobox fields:** typing `[[` in an infobox field suggests articles, as in the article text.
 - **Infoboxes fill in from relationships.** An empty field that a relationship answers now shows it, linked: an organization's **Leader** and **Members**, a place's **Ruler**, an item's **Owner** and **Creator**, a technology's **Inventor**, a building's **Location**, a religion's **Deity**, and so on. It works whichever article the relationship was set on. Anything you type into the field still takes its place, and the editor shows the relationship as the empty field's placeholder.
 
 ## 1.71.0 · 18 November 2026

@@ -66,6 +66,10 @@ export function fieldsWithRelations(fieldNames, fields = {}, rels = []) {
 // alias, like a [[link]] to a page that doesn't exist yet.
 export const relTarget = (wid, r) => store.article(r.target) || (r.name ? store.byName(wid, r.name) : null);
 
+// A relationship's place in an article's own order (a.relOrder, set by dragging
+// in the editor): its type from that article's side and who it's with.
+export const relKey = (type, other, name) => type + ':' + (other ? other.id : 'name:' + String(name || '').toLowerCase());
+
 // All relationships touching article `a`, from both directions, deduplicated.
 // Each item: { type, other, note, source } where type is from a's perspective.
 // named: also list a's relationships to names with no article yet, as
@@ -93,6 +97,12 @@ export function relationsOf(a, { named = false } = {}) {
     for (const r of o.relations || []) {
       if (relTarget(a.worldId, r)?.id === a.id) add(REL_TYPES[r.type]?.inverse, o, r.note, o.id);
     }
+  }
+  // In the order set in the editor; any added since then follow.
+  if (a.relOrder?.length) {
+    const at = new Map(a.relOrder.map((k, i) => [k, i]));
+    const pos = (r) => at.get(relKey(r.type, r.other, r.name)) ?? Infinity;
+    out.sort((x, y) => pos(x) - pos(y)); // stable: unlisted keep their order
   }
   return out;
 }

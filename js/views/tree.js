@@ -196,7 +196,7 @@ function drawOrg(stage, wid, focus, { editing = false } = {}) {
     for (const p of [...s.leaders, ...members]) placed.add(p.a.id);
     const rest = [
       ...belowHTML,
-      ...(members.length ? [`<li>${membersCard(wid, members, editing ? org : null)}</li>`] : []),
+      ...(members.length ? [`<li>${membersCard(wid, members, editing ? org : null, !!org.relOrder?.length)}</li>`] : []),
     ];
     const restHTML = rest.length ? `<ul>${rest.join('')}</ul>` : '';
     // Leaders sit between the organisation and everything under it.
@@ -218,9 +218,10 @@ function drawOrg(stage, wid, focus, { editing = false } = {}) {
   return { width: chart.offsetWidth, height: chart.offsetHeight };
 }
 
-function membersCard(wid, members, editOrg = null) {
-  // Members with a role (a note on the relationship) first.
-  members = [...members].sort((x, y) => (!x.note - !y.note) || x.a.title.localeCompare(y.a.title));
+function membersCard(wid, members, editOrg = null, ordered = false) {
+  // In the organisation's own order if it has one (set in its editor); else
+  // members with a role (a note on the relationship) first, then by name.
+  if (!ordered) members = [...members].sort((x, y) => (!x.note - !y.note) || x.a.title.localeCompare(y.a.title));
   const shown = members.slice(0, MEMBERS_SHOWN);
   return `<div class="tree-node org-node org-members">
       <span class="tn-text"><span class="tn-rel">${members.length} member${members.length === 1 ? '' : 's'}</span>

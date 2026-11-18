@@ -3,7 +3,7 @@ import * as store from '../store.js';
 import { TYPES, GROUPS } from '../store.js';
 import { render, headingsOf, CALLOUTS } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
-import { REL_TYPES, REL_GROUPS, relTarget, relationsOf, fieldsWithRelations } from '../relations.js';
+import { REL_TYPES, REL_GROUPS, relTarget, relationsOf, fieldsWithRelations, relKey } from '../relations.js';
 import { resolvePrompt, recordAnswer } from '../prompts.js';
 import { guidanceFor, guidanceEnabled, headingsIn } from '../guidance.js';
 import { $, $$, esc, uid, toast, confirmDialog, prepareImage } from '../util.js';
@@ -197,12 +197,12 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     row.className = 'rel-row';
     row.dataset.id = r.id;
     if (from) row.dataset.from = from;
-    row.innerHTML = `<div class="top"><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
+    row.innerHTML = `<div class="top"><button type="button" class="grip" data-grip aria-label="Move this relationship" title="Drag to reorder, or use the arrow keys">${icon('dots-six-vertical')}</button><select class="rt" aria-label="Relationship">${relTypeOptions(r.type)}</select>
         <button type="button" class="icon-btn" title="Remove">${icon('x')}</button></div>
       ${pickerHTML({ cls: 'rtarget', value: relTarget(wid, r)?.id || r.target || '', nameCls: 'rname', named: r.name || '', placeholder: 'Type a name or find an article', label: 'Related article' })}
       <input class="rnote" placeholder="Note (optional)" value="${esc(r.note || '')}">
       ${from ? `<small class="muted rel-from">Added on ${esc(store.article(from)?.title || 'another article')}</small>` : ''}`;
-    row.querySelector('button').onclick = () => { row.remove(); dirty = true; };
+    row.querySelector('.top .icon-btn').onclick = () => { row.remove(); dirty = true; };
     relsEl.appendChild(row);
     // A new article made from here starts as the template the relationship suggests.
     wirePickers(row, wid, { exclude: new Set([a.id]), createType: () => REL_NEW_TYPE[row.querySelector('.rt').value] || 'character' });
@@ -216,12 +216,57 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     .flatMap((o) => (o.relations || []).filter((r) => REL_TYPES[r.type] && relTarget(wid, r)?.id === a.id).map((rel) => ({ from: o.id, rel })))
     .filter(({ from, rel }) => !own.has(REL_TYPES[rel.type].inverse + from));
   incoming.forEach(({ from, rel }) => addRel({ id: rel.id, type: REL_TYPES[rel.type].inverse, target: from, note: rel.note }, from));
+  // The order they're listed in, as the article shows them (and its family tree
+  // or organisation chart): set by dragging the grips, or the arrow keys on one.
+  const rowKey = (row) => {
+    const target = row.querySelector('.rtarget').value, name = row.querySelector('.rname')?.value.trim();
+    return relKey(row.querySelector('.rt').value, target ? { id: target } : null, name);
+  };
+  let reordered = false;
+  if (a.relOrder?.length) {
+    const at = new Map(a.relOrder.map((k, i) => [k, i]));
+    [...relsEl.children].map((row, i) => ({ row, p: at.get(rowKey(row)) ?? Infinity, i }))
+      .sort((x, y) => x.p - y.p || x.i - y.i).forEach(({ row }) => relsEl.appendChild(row));
+  }
+  const moved = () => { reordered = true; dirty = true; };
+  relsEl.addEventListener('keydown', (e) => {
+    const grip = e.target.closest('[data-grip]');
+    if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const row = grip.closest('.rel-row');
+    const sib = e.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling;
+    if (!sib) return;
+    if (e.key === 'ArrowUp') relsEl.insertBefore(row, sib); else relsEl.insertBefore(sib, row);
+    grip.focus();
+    moved();
+  });
+  relsEl.addEventListener('pointerdown', (e) => {
+    const grip = e.target.closest('[data-grip]');
+    if (!grip || e.button !== 0) return;
+    e.preventDefault();
+    const row = grip.closest('.rel-row');
+    row.classList.add('dragging');
+    // Listened for on the page: moving the row would drop a pointer capture.
+    const move = (ev) => {
+      const over = [...relsEl.children].find((r) => r !== row && ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+      if (over !== row.nextElementSibling) { relsEl.insertBefore(row, over || null); moved(); }
+    };
+    const up = () => {
+      row.classList.remove('dragging');
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
+  });
   $('#addRel').onclick = () => addRel().querySelector('.apick-q').focus();
   wirePickers($('#ed'), wid, { exclude: excluded });
 
   // Infobox fields, grouped by the template's sections; extra fields go under "Other".
   const fieldsEl = $('#fields');
-  const customRow = (k = '', v = '') => `<div class="kv"><input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="Value" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove" data-rm>${icon('x')}</button></div>`;
+  const customRow = (k = '', v = '') => `<div class="kv"><input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="Value, or [[Article]]" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove" data-rm>${icon('x')}</button></div>`;
   const readFields = () => $$('.kv', fieldsEl).map((row) => [row.querySelector('.k').value.trim(), row.querySelector('.v').value]).filter(([k]) => k);
   // Empty fields that a saved relationship fills (an organization's Leader) say so.
   const savedRels = a.id && store.article(a.id) ? relationsOf(store.article(a.id), { named: true }) : [];
@@ -241,6 +286,8 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     html += `<div class="kv-sec" id="otherSec" ${extra.length || !t.sections.length ? '' : 'hidden'}>${t.sections.length ? 'Other' : 'Fields'}</div>`;
     html += extra.map(([k, v]) => customRow(k, v)).join('');
     fieldsEl.innerHTML = html;
+    // Values can link to articles: typing [[ suggests titles, as in the text.
+    $$('.kv .v', fieldsEl).forEach((input) => attachAutocomplete(input, wid));
   }
   fieldsEl.addEventListener('click', (e) => {
     const rm = e.target.closest('[data-rm]');
@@ -250,6 +297,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   $('#addField').onclick = () => {
     $('#otherSec').hidden = false;
     fieldsEl.insertAdjacentHTML('beforeend', customRow());
+    attachAutocomplete($$('.kv .v', fieldsEl).at(-1), wid);
     $$('.kv .k', fieldsEl).at(-1).focus();
   };
   const tplHint = () => { $('#tplHint').textContent = TYPES[f.type.value]?.hint || ''; };
@@ -487,6 +535,9 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
       if (inc && r.target === inc.from && r.type === REL_TYPES[inc.rel.type].inverse) { onSource.set(r.id, r.note); continue; }
       relations.push(inc ? { ...r, id: uid() } : r); // changed: now stored here
     }
+    // The order, once it's been set: kept with the article (incoming ones too).
+    const order = [...new Set($$('.rel-row', relsEl).map(rowKey))];
+    if (reordered || a.relOrder?.length) a.relOrder = order;
     const s = readDate('start');
     const en = s ? readDate('end') : null;
     Object.assign(a, {
@@ -605,6 +656,7 @@ function mdCommand(ta, cmd) {
 
 // Suggest article titles while typing inside [[ … ]].
 function attachAutocomplete(ta, wid) {
+  if (ta.parentNode.classList?.contains('ac-wrap')) return; // already wired
   const wrap = document.createElement('div');
   wrap.className = 'ac-wrap';
   ta.parentNode.insertBefore(wrap, ta);

@@ -650,7 +650,13 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 .kv-sec:first-child { margin-top: 0; }
 .tpl-hint { margin: -.4rem 0 .9rem; font-size: .88rem; color: var(--muted); font-style: italic; }
 .rel-row { display: grid; grid-template-columns: 1fr; gap: .3rem; padding: .55rem 0; border-bottom: 1px solid var(--rule); }
-.rel-row .top { display: grid; grid-template-columns: 1fr auto; gap: .35rem; }
+.rel-row .top { display: grid; grid-template-columns: auto 1fr auto; gap: .35rem; align-items: center; }
+.rel-row .grip { all: unset; display: grid; place-items: center; width: 22px; height: 36px; color: var(--text-2); cursor: grab; touch-action: none; border-radius: var(--r); }
+.rel-row .grip:hover, .rel-row .grip:focus-visible { color: var(--brass); background: var(--ink-2); }
+.rel-row .grip:focus-visible { outline: 2px solid var(--brass); }
+.rel-row .grip .i { width: 1.1rem; height: 1.1rem; }
+.rel-row.dragging { opacity: .6; background: var(--ink-2); }
+.rel-row.dragging .grip { cursor: grabbing; }
 .rel-row select, .rel-row input { min-height: 36px; padding: .3em .5em; }
 .image-field { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .6rem; }
 /* Drop zones (js/dropzone.js): a dashed area that takes a dropped, pasted or chosen image. */
@@ -674,6 +680,9 @@ textarea.md { border-radius: 0 0 var(--r) var(--r); font: 1rem/1.65 var(--serif)
 .date-preview { font: italic 500 1.05rem var(--display); color: var(--brass); min-height: 1.4em; margin: .2rem 0 .7rem; }
 
 .ac-wrap { position: relative; }
+.kv .ac-wrap { min-width: 0; }
+.kv .ac-wrap > input { width: 100%; }
+.kv .ac-pop { left: auto !important; right: 0; top: 100% !important; width: max(240px, 100%); }
 .ac-pop {
   position: absolute; left: 0; top: 100%; width: min(340px, 100%); z-index: 20; margin: 0; padding: 3px; list-style: none;
   background: var(--ink-2); border: 1px solid var(--brass); border-radius: var(--r); box-shadow: var(--shadow); max-height: 280px; overflow-y: auto;
