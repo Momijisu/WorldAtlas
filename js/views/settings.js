@@ -447,7 +447,7 @@ Reply with only a JSON object shaped like this:
       "parent": "Title of the article this belongs to", "tags": ["..."],
       "fields": { "Type": "what kind of thing it is, e.g. Ruin, Port town, Guild", "Occupation": "for characters" },
       "date": "12 Frostmoot 1042", "endDate": "1060",
-      "relationships": [{ "type": "parent|child|spouse|sibling|partner|friend|ally|mentor|student|rival|enemy|member|leader|rules|serves|worships|created|owns|locatedIn|related", "target": "Other Article Title", "note": "optional" }],
+      "relationships": [{ "type": "parent|child|spouse|sibling|partner|friend|ally|mentor|student|rival|enemy|member|leader|rules|serves|worships|created|invented|owns|locatedIn|related", "target": "Other Article Title", "note": "optional" }],
       "secrets": "GM-only notes",
       "image": "images/portrait-or-picture.jpg", "headerImage": "images/wide-banner.jpg" }
   ],

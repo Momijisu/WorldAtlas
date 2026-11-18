@@ -66,6 +66,7 @@ const REL_ALIASES = {
   serves: ['serves', 'servant of', 'vassal of'], servedBy: ['served by'],
   worships: ['worships', 'follower of', 'devotee of'], worshippedBy: ['worshipped by', 'worshiped by'],
   created: ['created', 'creator', 'creator of', 'made', 'founded', 'founder of'], createdBy: ['created by', 'made by', 'founded by'],
+  invented: ['invented', 'inventor', 'inventor of', 'devised', 'designed'], inventedBy: ['invented by', 'devised by', 'designed by'],
   owns: ['owns', 'owner', 'owner of'], ownedBy: ['owned by'],
   locatedIn: ['located in', 'located', 'lies in', 'situated in', 'found in', 'within'],
   locationOf: ['location of', 'contains', 'home to', 'site of'],

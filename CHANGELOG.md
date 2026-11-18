@@ -1,5 +1,9 @@
 # What's new
 
+## 1.71.0
+
+- **New relationship: Inventor of / Invented by.** Under Affiliation, next to Creator of / Created by. Imports understand "invented by", "inventor of", "devised by" and "designed by".
+
 ## 1.70.1 · 12 November 2026
 
 - **Open .world on the worlds page:** beside **New world** (and **Create a world** on a first visit), for an exported world or an assistant's import with pictures.

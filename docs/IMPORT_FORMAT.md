@@ -131,10 +131,10 @@ Relationships read from the article's side: on *Queen Ysolde*, `{ "type": "child
 | Family | `parent`, `child`, `spouse`, `sibling`, `partner` |
 | Bonds | `friend`, `ally`, `mentor`, `student` |
 | Conflict | `rival`, `enemy` |
-| Affiliation | `member`, `hasMember`, `leader`, `ledBy`, `rules`, `ruledBy`, `serves`, `servedBy`, `worships`, `worshippedBy`, `created`, `createdBy`, `owns`, `ownedBy` |
+| Affiliation | `member`, `hasMember`, `leader`, `ledBy`, `rules`, `ruledBy`, `serves`, `servedBy`, `worships`, `worshippedBy`, `created`, `createdBy`, `invented`, `inventedBy`, `owns`, `ownedBy` |
 | Other | `locatedIn`, `locationOf`, `related` |
 
-Phrases like "father", "married to", "member of" and "founded by" also work.
+Phrases like "father", "married to", "member of", "founded by" and "invented by" also work.
 
 ---
 

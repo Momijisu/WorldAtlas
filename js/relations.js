@@ -27,6 +27,8 @@ export const REL_TYPES = {
   worshippedBy: { label: 'Worshipped by',  inverse: 'worships',   group: 'affiliation' },
   created:    { label: 'Creator of',       inverse: 'createdBy',  group: 'affiliation' },
   createdBy:  { label: 'Created by',       inverse: 'created',    group: 'affiliation' },
+  invented:   { label: 'Inventor of',      inverse: 'inventedBy', group: 'affiliation' },
+  inventedBy: { label: 'Invented by',      inverse: 'invented',   group: 'affiliation' },
   owns:       { label: 'Owner of',         inverse: 'ownedBy',    group: 'affiliation' },
   ownedBy:    { label: 'Owned by',         inverse: 'owns',       group: 'affiliation' },
   locatedIn:  { label: 'Located in',       inverse: 'locationOf', group: 'other' },
