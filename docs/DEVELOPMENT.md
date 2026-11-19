@@ -30,7 +30,8 @@ js/picker.js          type-to-search article fields
 js/prompts.js         writing prompts
 js/guidance.js        writing guide questions
 js/backgrounds.js     background patterns and wallpaper
-js/templates.js       article templates and their infobox sections
+js/templates.js       article templates, their infobox sections, and a world's own templates and outlines
+js/views/tpleditor.js the template editor (from the New article window)
 js/importer.js        import/export format (text, for AI assistants)
 js/worldfile.js       .world files: a whole world in one zip archive
 js/mapview.js         map pan/zoom, pins, regions and measuring
@@ -72,9 +73,18 @@ What they cover:
 - .world files: exporting, opening on another device, merging with clashes (`worldfile`);
 - pictures: zooming a portrait or header, saving or copying one, and opening one large (`images`);
 - arranging the codex, and the world cover's zoom (`codex`);
+- the world overview's title and subtitle, and the article infobox style (`overview`);
+- map display: fitting the window, the grid behind and over the map, the frame, the key beside a fitted map, and the starting view (`maps-display`);
+- relationships: their order (`relations-order`), Inventor of (`relations-invented`), deputies on organisation charts (`relations-deputy`), and infobox fields filled from them (`infobox-relations`);
+- templates of your own, changes to built-in ones, and outlines (`templates-custom`);
+- an assistant's import with pictures, opened as a .world file (`import-package`);
 - the right-click menu (`contextmenu`).
 
 The tests draw their own test map (`tests/lib.js`).
+
+## Branches
+
+Work happens on `staging`; `main` is what's live, and only moves when a release is made. See [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Releasing
 

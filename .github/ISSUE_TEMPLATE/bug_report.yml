@@ -1,0 +1,58 @@
+name: Bug report
+description: Something in WorldAtlas doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it! Please don't attach your worlds or backups here: issues are public. For a security problem, use the Security tab's **Report a vulnerability** instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        1. Opened a map and clicked Edit
+        2. Dragged a pin
+        3. Expected it to move; instead…
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: From Settings → About this app.
+      placeholder: e.g. 1.72.0
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Windows 11, Edge; iPhone 15, Safari
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How do you use it?
+      options:
+        - Installed app
+        - In a browser tab
+        - My own hosted copy
+    validations:
+      required: true
+  - type: dropdown
+    id: sync
+    attributes:
+      label: Sync
+      options:
+        - Not syncing
+        - OneDrive
+        - Custom folder
+        - Not sure
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, or anything in the browser console (F12) when it happens.

@@ -11,6 +11,8 @@ Write about your world's people, places and history, link it all together and pi
 
 **Write**
 - Articles from 25 templates (characters, settlements, organisations, spells, conflicts, plots and more), each with an infobox, a portrait and a header image
+- Templates of your own, with their own icon, category and infobox fields, and changes to the built-in ones for each world
+- Outlines: new articles of a template can start with your headings and subheadings, with prompts to answer as you write
 - An editor that shows Markdown formatted as you type
 - Callouts for notes, tips and warnings, and GM notes that stay folded away while you read
 - A writing guide for each template and 353 writing prompts, some about your own articles
@@ -20,7 +22,8 @@ Write about your world's people, places and history, link it all together and pi
 - `[[Links]]` between articles, with suggestions as you type, previews on hover and backlinks, which update when you rename an article
 - Other names for an article ("The Iron Queen"), so links to any of them land in the right place
 - Excerpts: show part of one article inside another, kept up to date
-- Relationships between articles, drawn as a relationship web, family trees and organisation charts
+- Relationships between articles, in the order you choose, drawn as a relationship web, family trees and organisation charts with leaders, deputies and members
+- Infoboxes that fill themselves in from relationships: an organisation's Leader, a town's Ruler, an item's Owner
 - A tidy-up page that finds duplicate articles and merges them
 - Tables in any article that readers can sort, search and roll on: random encounters, price lists, rosters, checklists
 - Statblocks for creatures and characters, laid out like the books, with rolls you can click
@@ -29,6 +32,7 @@ Write about your world's people, places and history, link it all together and pi
 - Maps with pins, regions, layers and maps nested inside maps
 - Numbered pins with a map key you can arrange into groups, in several marker styles
 - Distances and travel times on foot, on horseback or by ship, and a scale bar
+- A starting view for each map, a frame, a square or hex grid over it, and a window that fits the map's shape
 
 **Keep track of time**
 - Your own calendars with eras and moons, a calendar view and a timeline
@@ -37,7 +41,8 @@ Write about your world's people, places and history, link it all together and pi
 - Version history for every article, and recovery of deleted ones
 - Optional sync between your devices through your own OneDrive, or through a folder on your PC kept in step by any cloud storage you like
 - Export a whole world, pictures and all, as one **.world** file to keep, share or open on another device
-- Import from a simple format (handy for turning existing notes into a world with an AI assistant) and full backups to a single file
+- Import from a simple format: give an AI assistant your notes (and pictures) and it can turn them into a world, maps and portraits included
+- Full backups to a single file
 
 | | | |
 |---|---|---|
@@ -105,6 +110,10 @@ Ideas being considered, not promises:
 - [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
 - [Development](docs/DEVELOPMENT.md): project layout, tests and releasing
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to report a problem, suggest a feature or send a change; please follow the [code of conduct](CODE_OF_CONDUCT.md). Found a security problem? Please report it privately, as the [security policy](SECURITY.md) describes.
 
 ## License
 

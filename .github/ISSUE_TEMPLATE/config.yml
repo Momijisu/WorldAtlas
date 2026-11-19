@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Open WorldAtlas
+    url: https://momijisu.github.io/WorldAtlas/
+    about: The app itself, with an example world to explore.
+  - name: Guides
+    url: https://github.com/Momijisu/WorldAtlas#more
+    about: Tables, statblocks, the import format, sync and development.
+  - name: Report a security problem
+    url: https://github.com/Momijisu/WorldAtlas/security/policy
+    about: Please report vulnerabilities privately, not in an issue.
