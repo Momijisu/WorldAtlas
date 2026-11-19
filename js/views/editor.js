@@ -266,25 +266,26 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
 
   // Infobox fields, grouped by the template's sections; extra fields go under "Other".
   const fieldsEl = $('#fields');
-  const customRow = (k = '', v = '') => `<div class="kv"><input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="Value, or [[Article]]" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove" data-rm>${icon('x')}</button></div>`;
+  const fromRelHint = (txt) => esc('From relationships: ' + txt.replace(/\[\[|\]\]/g, ''));
+  const customRow = (k = '', v = '', auto = '') => `<div class="kv"><input class="k" placeholder="Field" value="${esc(k)}"><input class="v" placeholder="${auto ? fromRelHint(auto) : 'Value, or [[Article]]'}" value="${esc(v)}"><button type="button" class="icon-btn" title="Remove" data-rm>${icon('x')}</button></div>`;
   const readFields = () => $$('.kv', fieldsEl).map((row) => [row.querySelector('.k').value.trim(), row.querySelector('.v').value]).filter(([k]) => k);
   // Empty fields that a saved relationship fills (an organization's Leader) say so.
   const savedRels = a.id && store.article(a.id) ? relationsOf(store.article(a.id), { named: true }) : [];
   function drawFields(values, type) {
     const t = TYPES[type] || TYPES.article;
     const map = new Map(values);
-    const auto = fieldsWithRelations(t.fields, {}, savedRels).fields;
+    const auto = fieldsWithRelations([...t.fields, ...values.map(([k]) => k)], {}, savedRels).fields;
     const inTemplate = new Set(t.fields);
     let html = '';
     for (const sec of t.sections) {
       html += `<div class="kv-sec">${esc(sec.name)}</div>`;
       for (const k of sec.fields) {
-        html += `<div class="kv tpl"><input class="k" type="hidden" value="${esc(k)}"><label class="k-lab" for="fv-${esc(k)}">${esc(k)}</label><input class="v" id="fv-${esc(k)}" value="${esc(map.get(k) ?? '')}"${auto[k] ? ` placeholder="${esc('From relationships: ' + auto[k].replace(/\[\[|\]\]/g, ''))}"` : ''}></div>`;
+        html += `<div class="kv tpl"><input class="k" type="hidden" value="${esc(k)}"><label class="k-lab" for="fv-${esc(k)}">${esc(k)}</label><input class="v" id="fv-${esc(k)}" value="${esc(map.get(k) ?? '')}"${auto[k] ? ` placeholder="${fromRelHint(auto[k])}"` : ''}></div>`;
       }
     }
     const extra = values.filter(([k]) => !inTemplate.has(k));
     html += `<div class="kv-sec" id="otherSec" ${extra.length || !t.sections.length ? '' : 'hidden'}>${t.sections.length ? 'Other' : 'Fields'}</div>`;
-    html += extra.map(([k, v]) => customRow(k, v)).join('');
+    html += extra.map(([k, v]) => customRow(k, v, auto[k])).join('');
     fieldsEl.innerHTML = html;
     // Values can link to articles: typing [[ suggests titles, as in the text.
     $$('.kv .v', fieldsEl).forEach((input) => attachAutocomplete(input, wid));

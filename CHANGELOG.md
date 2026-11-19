@@ -2,6 +2,8 @@
 
 ## 1.72.0
 
+- **More infobox fields fill in from relationships:** a "Leader of" relationship now fills a town's or country's **Ruler** (and "Rules" fills an organization's **Leader**), and a person's **Affiliation** shows what they lead, deputise for or serve, not only what they're a member of.
+- **Your own infobox fields fill in too,** when they're named after a relationship as it reads from that article: an empty field called **Leader of**, **Member of**, **Owned by**, **Spouse of** and so on shows the matching relationships.
 - **New relationship: Deputy of / Has deputy**, for a second-in-command or sub-leader. Organisation charts show deputies in their own row between the leaders and the members, and have a **+ Deputy** button when editing; a person on the chart can be switched between Leader, Deputy and Member. Organisations get a **Deputy** infobox field, filled in from the relationship. Imports understand "deputy", "second in command", "sub-leader" and "lieutenant".
 
 ## 1.71.1 · 18 November 2026

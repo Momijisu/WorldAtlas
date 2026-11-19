@@ -45,17 +45,23 @@ export const REL_GROUPS = {
 // Infobox fields that a relationship can fill: an empty "Leader" on an
 // organization shows who it's led by, and so on. A value typed into the field wins.
 export const FIELD_RELATIONS = {
-  Leader: ['ledBy'], Deputy: ['hasDeputy'], Ruler: ['ruledBy'], Owner: ['ownedBy'], Creator: ['createdBy'], Builder: ['createdBy'],
-  Inventor: ['inventedBy'], Members: ['hasMember'], Affiliation: ['member'], Deity: ['worships'], Followers: ['worshippedBy'],
+  // "Leader of" and "Rules" both answer Leader and Ruler: people use either for a
+  // town or a guild. A person's Affiliation is whatever they belong to, lead or serve.
+  Leader: ['ledBy', 'ruledBy'], Deputy: ['hasDeputy'], Ruler: ['ruledBy', 'ledBy'], Owner: ['ownedBy'], Creator: ['createdBy'], Builder: ['createdBy'],
+  Inventor: ['inventedBy'], Members: ['hasMember', 'servedBy'], Affiliation: ['member', 'leader', 'deputy', 'serves'], Deity: ['worships'], Followers: ['worshippedBy'],
   Location: ['locatedIn'], Region: ['locatedIn'], Headquarters: ['locatedIn'], Allies: ['ally'], Rivals: ['rival', 'enemy'],
 };
 // The article's fields with those gaps filled from `rels` (from relationsOf).
 // Returns { fields, fromRel: Set of the field names filled that way }.
+// Fields you add yourself work too when named after a relationship, as it reads
+// from this article: "Leader of", "Member of", "Owned by", "Spouse of"…
+const BY_LABEL = new Map(Object.entries(REL_TYPES).map(([k, t]) => [t.label.toLowerCase(), k]));
+const typesFor = (f) => FIELD_RELATIONS[f] || (BY_LABEL.has(f.trim().toLowerCase()) ? [BY_LABEL.get(f.trim().toLowerCase())] : null);
 export function fieldsWithRelations(fieldNames, fields = {}, rels = []) {
   const out = { ...fields };
   const fromRel = new Set();
-  for (const f of fieldNames) {
-    const types = FIELD_RELATIONS[f];
+  for (const f of new Set([...fieldNames, ...Object.keys(fields)])) {
+    const types = typesFor(f);
     if (!types || String(out[f] ?? '').trim()) continue;
     const names = rels.filter((r) => types.includes(r.type)).map((r) => `[[${r.other ? r.other.title : r.name}]]`);
     if (names.length) { out[f] = [...new Set(names)].join(', '); fromRel.add(f); }

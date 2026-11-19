@@ -13,6 +13,9 @@ run('infobox: fields filled from relationships', async ({ newPage }) => {
       { title: 'Cole Marsh', type: 'character', relationships: [{ type: 'leader', target: 'The Lamplighters' }] },
       { title: 'The Lamplighters', type: 'organization', relationships: [{ type: 'locatedIn', target: 'Brightwater' }] },
       { title: 'Lantern Engine', type: 'technology', fields: { Inventor: 'Unknown' }, relationships: [{ type: 'inventedBy', target: 'Ada Wren' }] },
+      // "Leader of" a town (rather than "Rules"), set on the person.
+      { title: 'Brightwater', type: 'settlement' },
+      { title: 'Fen Rook', type: 'character', fields: { 'Leader of': '' }, relationships: [{ type: 'leader of', target: 'Brightwater' }] },
     ] });
     return (await applyImport(plan)).wid;
   });
@@ -25,6 +28,16 @@ run('infobox: fields filled from relationships', async ({ newPage }) => {
   check('Members shows its members', (await field('Members'))?.text === 'Ada Wren');
   const hq = await field('Headquarters');
   check('a place it’s in fills Headquarters, even before that article exists', hq?.text === 'Brightwater', hq);
+
+  await open('Brightwater');
+  check('“Leader of” a town fills its Ruler', (await field('Ruler'))?.text === 'Fen Rook');
+  const fenId = await open('Fen Rook');
+  const lo = await field('Leader of');
+  check('a field you added, named after a relationship (“Leader of”), fills from it', lo?.text === 'Brightwater' && lo.auto, lo);
+  await go(p, `#/w/${wid}/a/${fenId}/edit`, 800);
+  check('and the editor says so in it', (await p.$$eval('#fields .kv:not(.tpl) .v', (l) => l.map((x) => x.placeholder))).includes('From relationships: Brightwater'));
+  await open('Ada Wren');
+  check('a leader’s own Affiliation shows what they lead', (await field('Affiliation'))?.text === 'The Lamplighters', await field('Affiliation'));
 
   await open('Lantern Engine');
   const inv = await field('Inventor');
