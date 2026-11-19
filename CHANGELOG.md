@@ -1,6 +1,6 @@
 # What's new
 
-## 1.72.0
+## 1.72.0 · 19 November 2026
 
 - **Templates of your own.** The New article window has **New template**, and a pencil on each template to change it. A template of your own has a name, icon, **category** (where it's listed; **Other** if you don't pick one), an optional **Based on** template whose charts and writing guide it borrows (a Noble House based on Organization gets an organisation chart), a description, and its own **infobox fields** in sections. For each field you can say which relationship **fills it in**. Templates are saved with the world, so they sync and travel in .world files, and imports can name them.
 - **Change the built-in templates for a world:** add, remove, rename or reorder a built-in template's infobox fields and what fills them; **Reset to the usual fields** puts them back. A renamed field keeps its values on existing articles.
