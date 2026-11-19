@@ -2,7 +2,7 @@ import * as store from './store.js';
 import * as auth from './auth.js';
 import * as sync from './sync.js';
 import { TYPES } from './store.js';
-import { codexOf, navShown } from './templates.js';
+import { codexOf, navShown, applyTemplates } from './templates.js';
 import { $, $$, esc, toast, timeAgo, confirmDialog } from './util.js';
 import { state, icon } from './ui.js';
 import { viewWorlds, viewWorld, newArticleDialog, worldDialog, arrangeCodex } from './views/home.js';
@@ -302,10 +302,11 @@ export function route({ keepScroll = false } = {}) {
 
   const opts = { keepScroll: keepScroll && raw === lastRendered };
   lastRendered = raw;
-  if (p[0] === 'settings') return show(null, viewSettings, opts);
-  if (p[0] !== 'w' || !p[1]) return show(null, viewWorlds, opts);
+  if (p[0] === 'settings') { applyTemplates(null); return show(null, viewSettings, opts); }
+  if (p[0] !== 'w' || !p[1]) { applyTemplates(null); return show(null, viewWorlds, opts); }
   const wid = p[1];
   if (!store.world(wid)) { toast('That world no longer exists'); return show(null, viewWorlds, opts); }
+  applyTemplates(store.world(wid)); // its own templates, and its changes to the built-in ones
   localStorage.setItem('wa.lastWorld', wid);
   const [sec, id, sub] = p.slice(2);
   const routes = {

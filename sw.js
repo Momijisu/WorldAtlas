@@ -12,7 +12,7 @@ const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/features.css', 'css/graph.css',
   'css/maps.css', 'js/app.js', 'js/auth.js', 'js/backgrounds.js', 'js/preview.js', 'js/contextmenu.js', 'js/picker.js', 'js/duplicates.js', 'js/views/duplicates.js', 'js/focus.js', 'js/scripts.js', 'js/dropzone.js', 'js/calendar.js', 'js/config.js', 'js/db.js', 'js/example.js',
   'js/guidance.js', 'js/icons.js', 'js/importer.js', 'js/mapview.js', 'js/markdown.js', 'js/prompts.js', 'js/relations.js', 'js/store.js', 'js/sync.js', 'js/syncfolder.js', 'js/worldfile.js', 'js/lightbox.js', 'js/templates.js',
-  'js/ui.js', 'js/util.js', 'js/version.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/conflict.js', 'js/views/editor.js',
+  'js/ui.js', 'js/util.js', 'js/version.js', 'js/views/article.js', 'js/views/calendar.js', 'js/views/conflict.js', 'js/views/editor.js', 'js/views/tpleditor.js',
   'js/views/graph.js', 'js/views/history.js', 'js/views/home.js', 'js/views/list.js', 'js/views/maps.js', 'js/views/prompts.js',
   'js/views/settings.js', 'js/views/timeline.js', 'js/views/tree.js', 'vendor/marked.min.js',
   'vendor/purify.min.js', 'vendor/live-editor.js', 'fonts/alegreya-latin-400-italic.woff2', 'fonts/alegreya-latin-400-normal.woff2',

@@ -7,6 +7,7 @@ import { templateCounts, codexOf, navShown, NAV_SECTIONS } from '../templates.js
 import { render, plain } from '../markdown.js';
 import { exampleWorld } from '../example.js';
 import { $, $$, esc, uid, toast, modal, confirmDialog, prepareImage } from '../util.js';
+import { templateDialog } from './tpleditor.js';
 import { view, state, setTitle, hydrateImages, articleRows, pageHead, icon, flourish } from '../ui.js';
 import { todaysPrompt, promptsEnabled } from '../prompts.js';
 import { pickerHTML, wirePicker, applyBackground, applyNoise, NOISE_DEFAULT } from '../backgrounds.js';
@@ -432,11 +433,29 @@ export function newArticleDialog(wid, extra = '', { title } = {}) {
   if (!store.world(wid)) wid = store.worlds()[0]?.id;
   if (!wid) return worldDialog();
   if (title) extra += (extra ? '&' : '?') + 'title=' + encodeURIComponent(title);
-  modal(title ? `Create “${title}”` : 'New article', `<p class="muted" style="margin-top:0">${title ? 'Pick a template to start from.' : 'Pick a template. You can change it later.'}</p>
+  // Templates are made and changed from here too: New template, or a template's pencil.
+  const editTemplate = async (type, close) => {
+    close();
+    const id = await templateDialog(wid, type);
+    if (state.wid === wid) state.route({ keepScroll: true }); // the sidebar and page follow the change
+    if (id && !type) location.hash = `#/w/${wid}/new/${id}${extra}`; // a new template: start its first article
+    else newArticleDialog(wid, extra.replace(/[?&]title=[^&]*/, '').replace(/^&/, '?'), { title });
+  };
+  modal(title ? `Create “${title}”` : 'New article', `<div class="tpl-head"><p class="muted">${title ? 'Pick a template to start from.' : 'Pick a template. You can change it later.'}</p>
+      <button type="button" class="btn small" data-new-tpl>${icon('plus')} New template</button></div>
     ${Object.entries(GROUPS).map(([g, gl]) => {
       const items = Object.entries(TYPES).filter(([, t]) => t.group === g);
-      return `<div class="type-group">${esc(gl)}</div><div class="type-grid">${items.map(([k, t]) =>
-        `<a class="type-choice" href="#/w/${wid}/new/${k}${extra}" data-go title="${esc(t.hint)}">${icon(t.icon)}<span><b>${t.label}</b><small>${esc(t.hint)}</small></span></a>`).join('')}</div>`;
+      const tiles = items.map(([k, t]) =>
+        `<a class="type-choice" href="#/w/${wid}/new/${k}${extra}" data-go title="${esc(t.hint)}">${icon(t.icon)}<span><b>${esc(t.label)}${t.custom ? '<span class="tag-custom">Custom</span>' : ''}</b><small>${esc(t.hint)}</small></span>
+          <button type="button" class="tpl-pencil" data-edit-tpl="${k}" title="Edit template" aria-label="Edit the ${esc(t.label)} template">${icon('pencil-simple')}</button></a>`).join('')
+        + (g === 'other' ? `<button type="button" class="type-choice new-tpl" data-new-tpl>${icon('plus-circle')}<span><b>New template</b><small>Your own: a name, icon, category, infobox fields and outline.</small></span></button>` : '');
+      return tiles ? `<div class="type-group">${esc(gl)}</div><div class="type-grid">${tiles}</div>` : '';
     }).join('')}`,
-  { onMount: (m, close) => $$('[data-go]', m).forEach((a) => a.addEventListener('click', () => close())) });
+  {
+    onMount: (m, close) => {
+      $$('[data-go]', m).forEach((a) => a.addEventListener('click', (e) => { if (!e.target.closest('[data-edit-tpl]')) close(); }));
+      $$('[data-edit-tpl]', m).forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); editTemplate(b.dataset.editTpl, close); }));
+      $$('[data-new-tpl]', m).forEach((b) => b.addEventListener('click', () => editTemplate(null, close)));
+    },
+  });
 }

@@ -435,6 +435,9 @@ async function wireAbout() {
 const DOCS_URL = 'https://github.com/Momijisu/WorldAtlas/blob/main/docs/IMPORT_FORMAT.md';
 
 function aiInstructions() {
+  // Templates people made for their worlds can be used as types, by name.
+  const own = [...new Set(store.worlds().flatMap((w) => Object.values(w.templates || {}).filter((d) => d?.custom && d.label).map((d) => d.label)))];
+  const ownLine = own.length ? `\n- My worlds also have their own templates; use one's name as the "type" when it fits: ${own.join(', ')}.` : '';
   return `Convert my worldbuilding material into the WorldAtlas import format: ${DOCS_URL}
 
 Reply with only a JSON object shaped like this:
@@ -465,7 +468,7 @@ Rules:
 - Use the most specific type: settlement (towns, cities) and building (castles, ruins, temples) are kinds of location; conflict (wars, battles, feuds) is a kind of event.
 - Fill the "Type" field (a character's "Occupation") with a short label; lists show it next to the title.
 - Put letters, notes and inscriptions in the body as a handwritten block: a line ":::cursive" (or ":::print"), the text, then a line ":::".
-- A place's position: use "locatedIn" relationships (e.g. a town locatedIn its province), or "parent" to file it under that article.
+- A place's position: use "locatedIn" relationships (e.g. a town locatedIn its province), or "parent" to file it under that article.${ownLine}
 
 Pictures (only if my material includes images; otherwise leave out "image", "headerImage" and "maps"):
 - If you can create files, make a .world file instead of replying with JSON: a zip archive with the JSON above saved as import.json at its top level, and the pictures in an images/ folder beside it. Refer to each picture by its path in the archive, e.g. "image": "images/varenhold.jpg". Name the archive after the world, e.g. Aerthal.world, and give it to me to download. I open it with Settings → Files → Open a file.

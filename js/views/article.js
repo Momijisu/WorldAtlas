@@ -26,7 +26,7 @@ export function viewArticle(wid, id, { section } = {}) {
   const onMaps = store.mapsOf(wid).filter((m) => [...(m.pins || []), ...(m.regions || [])].some((it) => linkedArticle(wid, it)?.id === a.id));
   const rels = relationsOf(a, { named: true });
   // Empty fields a relationship answers (an organization's Leader, say) show it.
-  const { fields: shownFields, fromRel } = fieldsWithRelations(t.fields, a.fields || {}, rels);
+  const { fields: shownFields, fromRel } = fieldsWithRelations(t.fields, a.fields || {}, rels, t.fill);
   const sections = sectionsOf(a.type, shownFields);
   const fieldCount = sections.reduce((n, sec) => n + sec.entries.length, 0);
   const date = articleDateText(cal, a);

@@ -56,12 +56,16 @@ export const FIELD_RELATIONS = {
 // Fields you add yourself work too when named after a relationship, as it reads
 // from this article: "Leader of", "Member of", "Owned by", "Spouse of"…
 const BY_LABEL = new Map(Object.entries(REL_TYPES).map(([k, t]) => [t.label.toLowerCase(), k]));
-const typesFor = (f) => FIELD_RELATIONS[f] || (BY_LABEL.has(f.trim().toLowerCase()) ? [BY_LABEL.get(f.trim().toLowerCase())] : null);
-export function fieldsWithRelations(fieldNames, fields = {}, rels = []) {
+// A template can say what fills a field (fill[field]: a type, or null for nothing);
+// otherwise the usual matches above apply.
+export const fieldRelations = (f, fill) => (fill && Object.hasOwn(fill, f)
+  ? (fill[f] && REL_TYPES[fill[f]] ? [fill[f]] : null)
+  : FIELD_RELATIONS[f] || (BY_LABEL.has(f.trim().toLowerCase()) ? [BY_LABEL.get(f.trim().toLowerCase())] : null));
+export function fieldsWithRelations(fieldNames, fields = {}, rels = [], fill = null) {
   const out = { ...fields };
   const fromRel = new Set();
   for (const f of new Set([...fieldNames, ...Object.keys(fields)])) {
-    const types = typesFor(f);
+    const types = fieldRelations(f, fill);
     if (!types || String(out[f] ?? '').trim()) continue;
     const names = rels.filter((r) => types.includes(r.type)).map((r) => `[[${r.other ? r.other.title : r.name}]]`);
     if (names.length) { out[f] = [...new Set(names)].join(', '); fromRel.add(f); }

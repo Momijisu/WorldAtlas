@@ -168,6 +168,75 @@ export const TYPES = {
 const PARENTS = { settlement: 'location', building: 'location', conflict: 'event' };
 for (const [k, p] of Object.entries(PARENTS)) TYPES[k].parent = p;
 
+// ---- a world's own templates (world.templates, edited in the New article window)
+//
+// world.templates[id] is either
+//   a custom template: { custom: true, label, plural, icon, group, base, hint, sections, fill, outline }
+//   or changes to a built-in one: { sections, fill, outline } (only what differs).
+// sections: [{ name, fields: [names] }]. fill: { field: relationship type, or null for none }.
+// outline: Markdown that new articles start with; "> [!prompt] …" lines are
+// prompts, shown while writing and never saved (see stripPrompts).
+// applyTemplates() puts the open world's templates into TYPES, so everything
+// that reads TYPES (the sidebar, lists, the editor, infoboxes) follows them.
+const BUILT_IN = Object.fromEntries(Object.entries(TYPES).map(([k, t]) => [k, { sections: t.sections, fields: t.fields }]));
+export const isBuiltIn = (type) => !!BUILT_IN[type];
+export const builtInSections = (type) => BUILT_IN[type]?.sections || [];
+const cleanSections = (secs) => (Array.isArray(secs) ? secs : [])
+  .map((s) => ({ name: String(s?.name || '').trim(), fields: [...new Set((s?.fields || []).map((f) => String(f).trim()).filter(Boolean))] }))
+  .filter((s) => s.fields.length || s.name);
+const setSections = (t, secs) => { t.sections = secs; t.fields = secs.flatMap((s) => s.fields); };
+
+let appliedKey = null;
+export function applyTemplates(world) {
+  const key = world ? world.id + ':' + world.updatedAt : '';
+  if (key === appliedKey) return;
+  appliedKey = key;
+  for (const k of Object.keys(TYPES)) if (!BUILT_IN[k]) delete TYPES[k];
+  for (const [k, d] of Object.entries(BUILT_IN)) { setSections(TYPES[k], d.sections); delete TYPES[k].fill; delete TYPES[k].outline; }
+  for (const [k, d] of Object.entries(world?.templates || {})) {
+    if (!d || typeof d !== 'object') continue;
+    if (BUILT_IN[k]) {
+      if (d.sections) setSections(TYPES[k], cleanSections(d.sections));
+      if (d.fill) TYPES[k].fill = d.fill;
+      if (d.outline) TYPES[k].outline = String(d.outline);
+    } else if (d.custom && String(d.label || '').trim()) {
+      const label = String(d.label).trim();
+      TYPES[k] = {
+        custom: true, label, plural: String(d.plural || '').trim() || label + 's',
+        icon: d.icon || 'file-text', group: GROUPS[d.group] ? d.group : 'other', hint: String(d.hint || ''),
+        base: BUILT_IN[d.base] && d.base !== 'article' ? d.base : undefined,
+        sections: [], fields: [], fill: d.fill || undefined, outline: d.outline ? String(d.outline) : undefined,
+      };
+      setSections(TYPES[k], cleanSections(d.sections));
+    }
+  }
+}
+
+// The built-in template a custom one works like ("based on"), for its charts
+// and other behaviour; a built-in template is its own.
+export const behavesAs = (type) => (TYPES[type]?.base ? TYPES[type].base : type);
+
+// What a new article of this template starts with, and the outline's headings.
+export const outlineOf = (type) => TYPES[type]?.outline || '';
+export const PROMPT_LINE = /^ {0,3}> ?\[!prompt\][ \t]*([^\n]*)$/gim;
+export const stripPrompts = (md) => String(md || '').replace(PROMPT_LINE, '').replace(/\n{3,}/g, '\n\n').trim();
+export function outlineHeadings(md) {
+  const out = [];
+  for (const line of String(md || '').split('\n')) {
+    const h = line.match(/^(#{2,3})\s+(.+?)\s*#*\s*$/);
+    const p = line.match(/^ {0,3}> ?\[!prompt\][ \t]*(.*)$/i);
+    if (h) out.push({ level: h[1].length, text: h[2], prompt: '' });
+    else if (p && out.length && !out.at(-1).prompt) out.at(-1).prompt = p[1].trim();
+  }
+  return out;
+}
+
+// Icons offered for custom templates.
+export const TEMPLATE_ICONS = ['file-text', 'user', 'users-three', 'crown', 'crown-simple', 'shield', 'castle-turret', 'house-line', 'buildings', 'church', 'tent', 'ruins',
+  'cave', 'mountains', 'tree-evergreen', 'compass', 'map-pin', 'anchor', 'boat', 'flag-banner', 'sword', 'skull', 'heart', 'handshake', 'scroll', 'book-open-text',
+  'feather', 'magic-wand', 'sparkle', 'flame', 'moon-stars', 'sun-horizon', 'star', 'atom', 'gear', 'hammer', 'cube', 'scales', 'paw-print', 'mask-happy',
+  'hourglass-medium', 'calendar-blank', 'dice-five', 'confetti', 'translate', 'diamond'];
+
 export const parentOf = (type) => TYPES[type]?.parent || type;
 export const childrenOf = (type) => Object.keys(TYPES).filter((k) => TYPES[k].parent === type);
 export const familyOf = (type) => [type, ...childrenOf(type)];
@@ -213,7 +282,7 @@ const KIND_FIELDS = {
 };
 
 export function kindOf(a) {
-  for (const f of KIND_FIELDS[a.type] || []) {
+  for (const f of KIND_FIELDS[a.type] || KIND_FIELDS[behavesAs(a.type)] || ['Type']) {
     const v = String(a.fields?.[f] ?? '').replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (_, t, l) => l || t).replace(/[*_`#>]/g, '').trim();
     if (v) return v.length > 40 ? v.slice(0, 39) + '…' : v;
   }

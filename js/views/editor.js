@@ -1,6 +1,7 @@
 // Article editor: content, infobox fields, calendar dates, relationships.
 import * as store from '../store.js';
 import { TYPES, GROUPS } from '../store.js';
+import { outlineOf, outlineHeadings } from '../templates.js';
 import { render, headingsOf, CALLOUTS } from '../markdown.js';
 import { calendarOf, formatDate } from '../calendar.js';
 import { REL_TYPES, REL_GROUPS, relTarget, relationsOf, fieldsWithRelations, relKey } from '../relations.js';
@@ -65,7 +66,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
         </div>
         <p class="tpl-hint" id="tplHint"></p>
         <label>Summary<textarea name="summary" rows="2" class="ac-target">${esc(a.summary)}</textarea></label>
-        ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><ol class="guide-list"></ol></details>' : ''}
+        ${guidanceEnabled() ? '<details class="guide" id="guide"><summary></summary><div class="guide-outline"></div><ol class="guide-list"></ol></details>' : ''}
         <div class="field-label">Content <small>type <code>[[</code> to link</small></div>
         <div class="md-toolbar">
           <button type="button" data-md="bold" title="Bold">${icon('text-b')}</button>
@@ -274,7 +275,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   function drawFields(values, type) {
     const t = TYPES[type] || TYPES.article;
     const map = new Map(values);
-    const auto = fieldsWithRelations([...t.fields, ...values.map(([k]) => k)], {}, savedRels).fields;
+    const auto = fieldsWithRelations([...t.fields, ...values.map(([k]) => k)], {}, savedRels, t.fill).fields;
     const inTemplate = new Set(t.fields);
     let html = '';
     for (const sec of t.sections) {
@@ -303,7 +304,12 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   };
   const tplHint = () => { $('#tplHint').textContent = TYPES[f.type.value]?.hint || ''; };
   tplHint();
+  let shownType = f.type.value;
   f.type.onchange = () => {
+    // A new article still showing its template's outline (or nothing) takes the new one's.
+    const before = f.body.value.trim();
+    if (isNew && (!before || before === outlineOf(shownType).trim())) setBody(outlineOf(f.type.value));
+    shownType = f.type.value;
     const next = new Set(TYPES[f.type.value].fields);
     // Keep anything filled in, plus fields of the new template; drop empty leftovers.
     drawFields(readFields().filter(([k, v]) => v.trim() || next.has(k)), f.type.value);
@@ -311,6 +317,13 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     drawGuide();
   };
 
+  // Replace the article text from code (an outline), in whichever view is showing.
+  function setBody(text) {
+    f.body.value = text;
+    f.body.dispatchEvent(new Event('input', { bubbles: true }));
+    if (mode === 'live') live.setValue(text, text.length, text.length);
+    dirty = true;
+  }
   // Writing guide: questions for this template; choosing one adds its heading to the article.
   const guide = $('#guide');
   function drawGuide() {
@@ -318,6 +331,9 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
     const items = guidanceFor(f.type.value);
     const have = headingsIn(f.body.value);
     const done = items.filter((g) => have.has(g.h.toLowerCase())).length;
+    const missing = outlineHeadings(outlineOf(f.type.value)).filter((o) => !have.has(o.text.toLowerCase()));
+    guide.dataset.outline = missing.length;
+    $('.guide-outline', guide).innerHTML = missing.length ? `<button type="button" class="btn small" data-outline>${icon('text-h-two')} Add the ${esc((TYPES[f.type.value]?.label || 'Article').toLowerCase())} outline <span class="muted">· ${missing.length} heading${missing.length === 1 ? '' : 's'}</span></button>` : '';
     $('summary', guide).innerHTML = `${icon('compass')} Writing guide <span class="muted">· ${esc(TYPES[f.type.value]?.label || 'Article')} · ${done} of ${items.length} covered</span>`;
     $('.guide-list', guide).innerHTML = items.map((g, i) => `
       <li class="${have.has(g.h.toLowerCase()) ? 'done' : ''}"><button type="button" data-g="${i}">
@@ -328,6 +344,25 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   if (guide) {
     try { guide.open = localStorage.getItem('wa.guideOpen') !== '0' && (isNew || !a.body); } catch { guide.open = isNew; }
     guide.addEventListener('toggle', () => { try { localStorage.setItem('wa.guideOpen', guide.open ? '1' : '0'); } catch { /* ignore */ } });
+    // The template's outline, for an article written before it had one: the
+    // headings it doesn't have yet go at the end (prompts are never saved).
+    $('.guide-outline', guide).onclick = async (e) => {
+      if (!e.target.closest('[data-outline]')) return;
+      if (mode === 'preview') await setMode(lastEditMode);
+      const have = headingsIn(f.body.value);
+      const lines = String(outlineOf(f.type.value)).split('\n');
+      const keep = [];
+      let skip = false;
+      for (const line of lines) {
+        const h = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
+        if (h) skip = have.has(h[1].toLowerCase());
+        if (!skip) keep.push(line);
+      }
+      const add = keep.join('\n').trim();
+      if (!add) return;
+      const cur = f.body.value.replace(/\s+$/, '');
+      setBody(cur ? `${cur}\n\n${add}\n` : `${add}\n`);
+    };
     $('.guide-list', guide).onclick = async (e) => {
       const b = e.target.closest('[data-g]');
       if (!b) return;

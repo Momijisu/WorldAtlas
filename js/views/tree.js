@@ -7,14 +7,14 @@
 import * as store from '../store.js';
 import { posCSS } from '../focus.js';
 import { family, relationsOf, setRelation, removeRelation } from '../relations.js';
-import { parentOf } from '../templates.js';
+import { parentOf, behavesAs } from '../templates.js';
 import { calendarOf, articleDateText } from '../calendar.js';
 import { view, state, setTitle, pageHead, icon, typeIcon, hydrateImages, worldCrumb, sep } from '../ui.js';
 import { esc, $, $$, modal, toast, confirmDialog } from '../util.js';
 
 const W = 176, H = 66, GAP = 28, COUPLE_GAP = 22, ROW = 124, DEPTH = 3;
 
-const isOrg = (a) => parentOf(a?.type) === 'organization' || a?.type === 'religion';
+const isOrg = (a) => { const t = behavesAs(a?.type); return parentOf(t) === 'organization' || t === 'religion'; };
 
 export function viewTree(wid, aid) {
   const focus = store.article(aid);
@@ -518,7 +518,7 @@ function addDialog(wid, org, kind, done) {
   const wantOrg = kind === 'group';
   const label = { leader: 'Add a leader', deputy: 'Add a deputy', member: 'Add a member', group: 'Add a group' }[kind];
   const pool = () => store.articlesOf(wid).filter((x) => x.id !== org.id && (wantOrg ? isOrg(x) : !isOrg(x)));
-  const rank = (x) => (wantOrg || parentOf(x.type) === 'character' ? 0 : 1); // people first
+  const rank = (x) => (wantOrg || parentOf(behavesAs(x.type)) === 'character' ? 0 : 1); // people first
   modal(`${label} to ${org.title}`, `<form class="form" id="chartAdd">
       <label>${wantOrg ? 'Organisation' : 'Person'}<input name="q" autocomplete="off" placeholder="Find an article, or type a new name"></label>
       <ul class="pick-list" id="pickList"></ul>

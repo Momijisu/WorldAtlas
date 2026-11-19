@@ -1,7 +1,7 @@
 import * as db from './db.js';
 import { uid } from './util.js';
 
-import { TYPES } from './templates.js';
+import { TYPES, outlineOf, stripPrompts, PROMPT_LINE } from './templates.js';
 export { TYPES, GROUPS, sectionsOf } from './templates.js';
 
 export const data = { worlds: new Map(), articles: new Map(), maps: new Map(), history: new Map() };
@@ -37,6 +37,8 @@ export const isDirty = () => meta.localRev > meta.syncedRev;
 export async function save(store, obj) {
   // Never older than the version it replaces, so a device with a slow clock
   // can't produce an edit that loses to the text it was based on.
+  // An outline's prompts guide the writing; they're never kept.
+  if (store === 'articles' && typeof obj.body === 'string' && (PROMPT_LINE.lastIndex = 0, PROMPT_LINE.test(obj.body))) obj.body = stripPrompts(obj.body);
   obj.updatedAt = Math.max(Date.now(), (data[store].get(obj.id)?.updatedAt || 0) + 1);
   obj.createdAt ??= obj.updatedAt;
   data[store].set(obj.id, obj);
@@ -362,7 +364,7 @@ export async function keepDemo(wid) {
 
 export function newArticle(worldId, type = 'article', extra = {}) {
   return {
-    id: uid(), worldId, type, title: '', parentId: null, tags: [], summary: '', body: '',
+    id: uid(), worldId, type, title: '', parentId: null, tags: [], summary: '', body: outlineOf(type), // its template's outline
     fields: Object.fromEntries((TYPES[type]?.fields || []).map((f) => [f, ''])),
     gmNotes: '', image: null, banner: null, mapId: null, start: null, startM: null, startD: null, end: null, endM: null, endD: null,
     dateLabel: '', relations: [], aliases: [], ...extra,

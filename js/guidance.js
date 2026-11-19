@@ -2,6 +2,7 @@
 // Each entry is a section heading plus the questions that section might answer.
 // Choosing one inserts the heading into the article so the writer can fill it in.
 import { spaceHeadings } from './markdown.js';
+import { behavesAs } from './templates.js';
 
 const G = (h, q) => ({ h, q });
 
@@ -226,7 +227,7 @@ export const GUIDANCE = {
   ],
 };
 
-export const guidanceFor = (type) => GUIDANCE[type] || GUIDANCE.article;
+export const guidanceFor = (type) => GUIDANCE[type] || GUIDANCE[behavesAs(type)] || GUIDANCE.article;
 
 export function guidanceEnabled() {
   try { return localStorage.getItem('wa.hideGuidance') !== '1'; } catch { return true; }

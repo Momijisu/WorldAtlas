@@ -29,6 +29,8 @@ marked.use({ extensions: [{
     if (!m) return undefined;
     const raw = m[0];
     const kind = m[1].toLowerCase();
+    // An outline's prompt: a faint line while writing, never saved.
+    if (kind === 'prompt') return { type: 'callout', raw: m[0].split('\n')[0] + (m[0].includes('\n') ? '\n' : ''), kind: 'prompt', title: m[3].trim(), tokens: [] };
     const type = CALLOUTS[kind] ? kind : CALLOUT_ALIAS[kind] || 'note';
     const body = m[4].split('\n').map((l) => l.replace(/^ {0,3}> ?/, '')).join('\n').trim();
     const token = { type: 'callout', raw, kind: type, fold: m[2], title: m[3].trim(), tokens: [] };
@@ -36,6 +38,7 @@ marked.use({ extensions: [{
     return token;
   },
   renderer(t) {
+    if (t.kind === 'prompt') return `<p class="md-prompt">${esc(t.title)}</p>\n`;
     const c = CALLOUTS[t.kind];
     const title = `${icon(c.icon)}<span>${t.title ? this.parser.parseInline(marked.Lexer.lexInline(t.title)) : c.label}</span>`;
     const inner = `<div class="callout-body">${this.parser.parse(t.tokens)}</div>`;

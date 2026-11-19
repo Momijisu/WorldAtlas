@@ -2,6 +2,7 @@
 // (horizontal bars for lifespans, reigns, wars…), both on the world's calendar.
 import * as store from '../store.js';
 import { TYPES } from '../store.js';
+import { behavesAs } from '../templates.js';
 import { plain } from '../markdown.js';
 import {
   calendarOf, articleStart, articleEnd, articleDateText, dayNumber, yearLength, eraFor, formatYear,
@@ -20,7 +21,7 @@ export function viewTimeline(wid) {
       const endD = articleEnd(a);
       let e = endD ? dayNumber(cal, endD) + (endD.m == null ? ylen - 1 : endD.d == null ? (cal.months[endD.m]?.days ?? 1) - 1 : 0) : null;
       if (e != null && e < s) e = null;
-      return { a, s, e, open: e == null && a.type === 'character' && cal.currentYear != null && cal.currentYear >= articleStart(a).y };
+      return { a, s, e, open: e == null && behavesAs(a.type) === 'character' && cal.currentYear != null && cal.currentYear >= articleStart(a).y };
     })
     .sort((x, y) => x.s - y.s || (x.e ?? x.s) - (y.e ?? y.s) || x.a.title.localeCompare(y.a.title));
   const types = [...new Set(dated.map((d) => d.a.type))];

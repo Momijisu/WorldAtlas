@@ -28,7 +28,7 @@ export function toast(msg, ms = 2600) {
 
 // Simple promise-based modal. `body` is an HTML string; `onMount(el, close)`
 // lets the caller wire up inputs. Resolves with whatever close() is given.
-export function modal(title, body, { onMount, wide } = {}) {
+export function modal(title, body, { onMount, wide, sticky } = {}) {
   return new Promise((resolve) => {
     const root = document.getElementById('modal-root');
     const wrap = document.createElement('div');
@@ -40,7 +40,7 @@ export function modal(title, body, { onMount, wide } = {}) {
     const close = (v) => { wrap.remove(); document.removeEventListener('keydown', onKey); opener?.focus?.(); resolve(v); };
     // Only the topmost dialog answers Escape.
     const onKey = (e) => { if (e.key === 'Escape' && root.lastElementChild === wrap) { e.stopImmediatePropagation(); close(null); } };
-    wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(null); });
+    if (!sticky) wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(null); });
     wrap.querySelector('[data-close]').onclick = () => close(null);
     document.addEventListener('keydown', onKey);
     root.appendChild(wrap);

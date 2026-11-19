@@ -45,9 +45,10 @@ const TYPE_ALIASES = {
 };
 const typeLookup = new Map(Object.entries(TYPE_ALIASES).flatMap(([t, names]) => names.map((n) => [n, t])));
 
-function resolveType(raw, warn, title) {
+// custom: the target world's own templates, by name, plural or id.
+function resolveType(raw, warn, title, custom = new Map()) {
   if (raw == null || raw === '') return 'article';
-  const t = typeLookup.get(norm(raw));
+  const t = custom.get(norm(raw)) || typeLookup.get(norm(raw));
   if (!t) warn(`“${title}”: unknown template “${raw}”, imported as a generic article.`);
   return t || 'article';
 }
@@ -173,6 +174,9 @@ export function planImport(json, targetWid = null) {
     ? { ...existing, ...(src.description != null ? { description: String(src.description) } : {}), ...(newCal ? { calendar: newCal } : {}) }
     : { id: uid(), name: worldName, description: String(src.description || ''), image: null, calendar: newCal || presetCalendar('standard') };
   const cal = calendarOf(world);
+  // The world's own templates can be named in "type" too.
+  const customTypes = new Map(Object.entries(world.templates || {}).filter(([, d]) => d?.custom && d.label)
+    .flatMap(([k, d]) => [[norm(k), k], [norm(d.label), k], ...(d.plural ? [[norm(d.plural), k]] : [])]));
 
   // Pass 1: one entry per title.
   const entries = [];
@@ -194,9 +198,9 @@ export function planImport(json, targetWid = null) {
     const r = e.raw;
     const label = `“${e.title}”`;
     const has = (k) => r[k] !== undefined;
-    const base = e.prior ? structuredClone(e.prior) : store.newArticle(world.id, 'article');
+    const base = e.prior ? structuredClone(e.prior) : store.newArticle(world.id, 'article', { body: '' });
     const rec = { ...base, title: e.title, worldId: world.id, id: e.id };
-    if (has('type') || !e.prior) rec.type = resolveType(r.type ?? r.template ?? r.category, warn, e.title);
+    if (has('type') || !e.prior) rec.type = resolveType(r.type ?? r.template ?? r.category, warn, e.title, customTypes);
     if (has('aliases') || has('alsoKnownAs')) {
       const list = r.aliases ?? r.alsoKnownAs;
       rec.aliases = [...new Set((Array.isArray(list) ? list : String(list || '').split(',')).map((x) => String(x).trim()).filter((x) => x && x.toLowerCase() !== e.title.toLowerCase()))];
@@ -371,7 +375,7 @@ export function exportSimple(wid) {
     articles: store.articlesOf(wid).sort((a, b) => a.title.localeCompare(b.title)).map((a) => {
       const fields = Object.fromEntries(Object.entries(a.fields || {}).filter(([, v]) => String(v).trim()));
       const out = {
-        title: a.title, type: a.type,
+        title: a.title, type: w.templates?.[a.type]?.custom ? w.templates[a.type].label : a.type,
         parent: title(a.parentId),
         summary: a.summary || undefined,
         tags: a.tags?.length ? a.tags : undefined,
