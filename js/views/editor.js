@@ -187,7 +187,7 @@ export function viewEditor(wid, a, isNew, { prompt: promptKey } = {}) {
   // Relationships
   const relsEl = $('#rels');
   const REL_NEW_TYPE = { member: 'organization', leader: 'organization', serves: 'organization', rules: 'location', locatedIn: 'location', locationOf: 'building',
-    worships: 'religion', owns: 'item', created: 'item', hasMember: 'character', ledBy: 'character', ruledBy: 'character', servedBy: 'character' };
+    worships: 'religion', owns: 'item', created: 'item', hasMember: 'character', ledBy: 'character', deputy: 'organization', hasDeputy: 'character', ruledBy: 'character', servedBy: 'character' };
   const relTypeOptions = (sel) => Object.entries(REL_GROUPS).map(([g, gl]) =>
     `<optgroup label="${gl}">${Object.entries(REL_TYPES).filter(([, t]) => t.group === g)
       .map(([k, t]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${t.label}</option>`).join('')}</optgroup>`).join('');

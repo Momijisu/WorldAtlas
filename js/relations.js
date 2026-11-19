@@ -19,6 +19,8 @@ export const REL_TYPES = {
   hasMember:  { label: 'Has member',       inverse: 'member',     group: 'affiliation' },
   leader:     { label: 'Leader of',        inverse: 'ledBy',      group: 'affiliation' },
   ledBy:      { label: 'Led by',           inverse: 'leader',     group: 'affiliation' },
+  deputy:     { label: 'Deputy of',        inverse: 'hasDeputy',  group: 'affiliation' },
+  hasDeputy:  { label: 'Has deputy',       inverse: 'deputy',     group: 'affiliation' },
   rules:      { label: 'Rules',            inverse: 'ruledBy',    group: 'affiliation' },
   ruledBy:    { label: 'Ruled by',         inverse: 'rules',      group: 'affiliation' },
   serves:     { label: 'Serves',           inverse: 'servedBy',   group: 'affiliation' },
@@ -43,7 +45,7 @@ export const REL_GROUPS = {
 // Infobox fields that a relationship can fill: an empty "Leader" on an
 // organization shows who it's led by, and so on. A value typed into the field wins.
 export const FIELD_RELATIONS = {
-  Leader: ['ledBy'], Ruler: ['ruledBy'], Owner: ['ownedBy'], Creator: ['createdBy'], Builder: ['createdBy'],
+  Leader: ['ledBy'], Deputy: ['hasDeputy'], Ruler: ['ruledBy'], Owner: ['ownedBy'], Creator: ['createdBy'], Builder: ['createdBy'],
   Inventor: ['inventedBy'], Members: ['hasMember'], Affiliation: ['member'], Deity: ['worships'], Followers: ['worshippedBy'],
   Location: ['locatedIn'], Region: ['locatedIn'], Headquarters: ['locatedIn'], Allies: ['ally'], Rivals: ['rival', 'enemy'],
 };

@@ -1,5 +1,9 @@
 # What's new
 
+## 1.72.0
+
+- **New relationship: Deputy of / Has deputy**, for a second-in-command or sub-leader. Organisation charts show deputies in their own row between the leaders and the members, and have a **+ Deputy** button when editing; a person on the chart can be switched between Leader, Deputy and Member. Organisations get a **Deputy** infobox field, filled in from the relationship. Imports understand "deputy", "second in command", "sub-leader" and "lieutenant".
+
 ## 1.71.1 · 18 November 2026
 
 - **Put relationships in your own order.** In the editor, drag a relationship by its grip (or focus the grip and use the arrow keys). The article lists them in that order within each kind, and its family tree and organisation chart follow it, e.g. the order of children or members. That includes relationships added on the other article.

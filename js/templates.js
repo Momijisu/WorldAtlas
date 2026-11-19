@@ -73,7 +73,7 @@ export const TYPES = {
   organization: T('Organization', 'Organizations', 'shield', 'groups',
     'A faction, guild, noble house, army, company or government.', [
       ['Overview', ['Type', 'Founded', 'Headquarters', 'Motto']],
-      ['Leadership', ['Leader', 'Structure', 'Members']],
+      ['Leadership', ['Leader', 'Deputy', 'Structure', 'Members']],
       ['Influence', ['Territory', 'Allies', 'Rivals', 'Assets']],
     ]),
   religion: T('Religion', 'Religions & deities', 'sun-horizon', 'groups',

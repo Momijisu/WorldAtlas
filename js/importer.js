@@ -62,6 +62,8 @@ const REL_ALIASES = {
   rival: ['rival'], enemy: ['enemy', 'nemesis', 'foe', 'at war with'],
   member: ['member', 'member of', 'belongs to', 'part of'], hasMember: ['has member', 'includes'],
   leader: ['leader', 'leads', 'leader of', 'head of'], ledBy: ['led by'],
+  deputy: ['deputy', 'deputy to', 'deputy leader', 'sub-leader', 'sub leader', 'subleader', 'second in command', 'second-in-command', 'lieutenant', 'lieutenant of', 'vice', 'vice-leader'],
+  hasDeputy: ['has deputy', 'deputised by', 'deputized by', 'seconded by'],
   rules: ['rules', 'ruler', 'ruler of', 'governs'], ruledBy: ['ruled by', 'governed by'],
   serves: ['serves', 'servant of', 'vassal of'], servedBy: ['served by'],
   worships: ['worships', 'follower of', 'devotee of'], worshippedBy: ['worshipped by', 'worshiped by'],
