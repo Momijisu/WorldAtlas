@@ -1,5 +1,9 @@
 # What's new
 
+## 1.73.0
+
+- **Hide a place or region on the map:** for maps whose picture already shows a name, tick **Hide on the map** when editing a pin or region. Nothing is drawn over the picture, but the place is still there: hover for its name and outline, click for its card and its article, and it stays in the key and the Places list. While editing, hidden ones show as usual, their markers ringed with a dashed line.
+
 ## 1.72.0 · 19 November 2026
 
 - **Templates of your own.** The New article window has **New template**, and a pencil on each template to change it. A template of your own has a name, icon, **category** (where it's listed; **Other** if you don't pick one), an optional **Based on** template whose charts and writing guide it borrows (a Noble House based on Organization gets an organisation chart), a description, and its own **infobox fields** in sections. For each field you can say which relationship **fills it in**. Templates are saved with the world, so they sync and travel in .world files, and imports can name them.

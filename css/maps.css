@@ -453,3 +453,18 @@
 .map-start-row #startViewNote { flex: 1 1 100%; }
 .map-grid-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem; margin-bottom: .6rem; }
 .map-grid-row .bg-scale { flex: 1 1 220px; margin: 0; }
+
+/* Hidden on the map (the map image already shows it): nothing drawn, but still
+   there to hover and click (its card links to its article). Hovering, or picking
+   it in the key, shows its name. */
+.pin.hide-mark .pin-badge, .pin.hide-mark .pin-label { opacity: 0; transition: opacity .12s; }
+.pin.hide-mark .pin-label { pointer-events: none; }
+.pin.hide-mark:is(:hover, :focus-visible) .pin-badge { opacity: .55; }
+.pin.hide-mark:is(:hover, :focus-visible, .lit) .pin-label, .pin.hide-mark.lit .pin-badge { opacity: 1; }
+/* While editing they show as usual, the marker ringed to say it's hidden on the map. */
+.map-box.editing .pin.hide-mark .pin-badge { opacity: .6; outline: 1.5px dashed var(--brass); outline-offset: 3px; }
+.map-box.editing .pin.hide-mark:not(.numbered) .pin-label { opacity: 1; }
+.region-label.hide-mark { visibility: hidden; pointer-events: none; } /* still measured, so its place avoids pins */
+.region-label.hide-mark.show, .map-box.editing .region-label.hide-mark { visibility: visible; }
+.hide-on-map { flex-wrap: wrap; row-gap: 0; }
+.hide-on-map small { flex-basis: 100%; color: var(--muted); margin-left: 1.75rem; }

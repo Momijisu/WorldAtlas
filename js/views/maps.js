@@ -1223,6 +1223,7 @@ export async function viewMap(wid, mid, q) {
         <div class="field-label">Marker</div>
         <div class="icon-picker">${PIN_ICONS.map((n) => `<button type="button" data-icon="${n}" class="${(pin.icon || 'map-pin') === n ? 'on' : ''}" title="${PIN_NAMES[n] || n.replace(/-/g, ' ')}" aria-label="${PIN_NAMES[n] || n.replace(/-/g, ' ')}">${icon(n)}</button>`).join('')}</div>
         ${colourField(pin.color)}
+        <label class="check hide-on-map"><input type="checkbox" name="hide" ${pin.hide ? 'checked' : ''}> Hide on the map <small>when the map image already shows it; it stays clickable</small></label>
         <div class="actions">
           ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')}</button><button type="button" class="btn" data-move>Move</button><span class="spacer"></span>`}
           <button class="btn primary">${isNew ? 'Add place' : 'Save'}</button>
@@ -1246,7 +1247,7 @@ export async function viewMap(wid, mid, q) {
           e.preventDefault();
           if (!f.articleId.value && !f.mapId.value && !f.label.value.trim()) return toast('Give the place a name, or link a map');
           const next = { ...pin, ...readName(f), mapId: f.mapId.value,
-            layer: readLayer(f), icon: chosen, color: f.color.value };
+            layer: readLayer(f), icon: chosen, color: f.color.value, hide: f.hide.checked || undefined };
           const pins = cur().pins || [];
           await persist({ pins: isNew ? [...pins, next] : pins.map((p) => (p.id === pin.id ? next : p)) });
           close();
@@ -1264,6 +1265,7 @@ export async function viewMap(wid, mid, q) {
         <div class="field-label">Style</div>
         <div class="seg region-fill">${Object.entries(REGION_FILLS).map(([k, l]) => `<button type="button" data-fill="${k}" class="${(reg.fill || 'solid') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
         ${colourField(reg.color || SWATCHES[3])}
+        <label class="check hide-on-map"><input type="checkbox" name="hide" ${reg.hide ? 'checked' : ''}> Hide on the map <small>when the map image already shows it; it stays clickable</small></label>
         <div class="actions">
           ${isNew ? '' : `<button type="button" class="btn danger" data-del>${icon('trash')} Delete</button><button type="button" class="btn" data-shape>${icon('polygon')} Edit shape</button><span class="spacer"></span>`}
           <button class="btn primary">${isNew ? 'Add region' : 'Save'}</button>
@@ -1283,7 +1285,7 @@ export async function viewMap(wid, mid, q) {
         f.onsubmit = async (e) => {
           e.preventDefault();
           const next = { ...reg, ...readName(f), mapId: f.mapId.value,
-            layer: readLayer(f), color: f.color.value, fill };
+            layer: readLayer(f), color: f.color.value, fill, hide: f.hide.checked || undefined };
           const regions = cur().regions || [];
           await persist({ regions: isNew ? [...regions, next] : regions.map((r) => (r.id === reg.id ? next : r)) });
           close();

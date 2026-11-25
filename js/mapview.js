@@ -113,7 +113,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
     placedAt = s;
     if (!labels.length) return;
     const k = s * w, kh = s * h; // image fraction -> screen px
-    const pins = [...pinLayer.querySelectorAll('.pin')].map((el) => {
+    const pins = [...pinLayer.querySelectorAll('.pin:not(.hide-mark)')].map((el) => {
       const px = parseFloat(el.style.left) / 100 * k, py = parseFloat(el.style.top) / 100 * kh;
       // A numbered pin's name only shows on hover, so only its badge counts.
       const pw = el.classList.contains('numbered') ? 26 : el.offsetWidth, ph = el.classList.contains('numbered') ? 34 : el.offsetHeight;
@@ -169,15 +169,23 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       if (!visible(r) || !r.points || r.points.length < 3) continue;
       const poly = document.createElementNS(SVG, 'polygon');
       poly.setAttribute('points', r.points.map(([px, py]) => `${px * w},${py * h}`).join(' '));
-      const fill = ['outline', 'hidden'].includes(r.fill) ? r.fill : 'solid';
-      poly.setAttribute('class', `region region-${fill}`);
+      // Hidden on the map (the map image already shows it): drawn transparent,
+      // still there to hover and click, its name only in edit mode.
+      const fill = r.hide ? 'hidden' : ['outline', 'hidden'].includes(r.fill) ? r.fill : 'solid';
+      poly.setAttribute('class', `region region-${fill}${r.hide ? ' hide-mark' : ''}`);
       poly.dataset.region = r.id;
       poly.style.setProperty('--rc', r.color || '#c4a46a');
       svg.appendChild(poly);
       if (r.label) {
         const [cx, cy] = centroid(r.points);
         const el = document.createElement('div');
-        el.className = 'region-label';
+        el.className = r.hide ? 'region-label hide-mark' : 'region-label';
+        // A hidden region's name shows while it's hovered, like a hidden pin's.
+        if (r.hide) {
+          poly.addEventListener('pointerenter', () => el.classList.add('show'));
+          poly.addEventListener('pointerleave', () => el.classList.remove('show'));
+          new MutationObserver(() => el.classList.toggle('show', poly.classList.contains('lit'))).observe(poly, { attributes: true, attributeFilter: ['class'] });
+        }
         el.style.left = cx * 100 + '%';
         el.style.top = cy * 100 + '%';
         el.textContent = r.label;
@@ -208,7 +216,7 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       if (!visible(p)) continue;
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = p.num ? 'pin numbered' : 'pin';
+      el.className = `pin${p.num ? ' numbered' : ''}${p.hide ? ' hide-mark' : ''}`; // hide-mark: hidden on the map, still clickable
       el.dataset.pin = p.id;
       el.style.left = p.x * 100 + '%';
       el.style.top = p.y * 100 + '%';
