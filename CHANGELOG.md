@@ -1,6 +1,6 @@
 # What's new
 
-## 1.73.1
+## 1.73.1 · 25 November 2026
 
 - **A hidden region's name stays hidden,** even when you hover over it or pick it in the key, so it isn't shown twice over the name on the map image. Hovering still outlines it, and clicking still opens its card. Hidden pins still show their name on hover.
 
