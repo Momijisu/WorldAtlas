@@ -58,9 +58,8 @@ run('maps: hiding a pin or region on the map', async ({ newPage }) => {
   const regionName = () => p.$$eval('.region-label', (l, n) => l.some((x) => x.textContent === n && getComputedStyle(x).visibility !== 'hidden'), name);
   await p.mouse.move(0, 0);
   await p.evaluate(() => document.querySelector('[data-region="vr1"]').dispatchEvent(new PointerEvent('pointerenter')));
-  check('hovering a hidden region shows its name', await regionName());
+  check('hovering a hidden region doesn’t show its name (the map image has it)', !(await regionName()));
   await p.evaluate(() => document.querySelector('[data-region="vr1"]').dispatchEvent(new PointerEvent('pointerleave')));
-  check('and leaving hides it again', !(await regionName()));
 
   // Edit mode: names shown as usual.
   await p.click('#editBtn');

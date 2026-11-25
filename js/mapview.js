@@ -179,13 +179,8 @@ export function mountMap(container, { src, onPinClick, onRegionClick, onRegionMe
       if (r.label) {
         const [cx, cy] = centroid(r.points);
         const el = document.createElement('div');
+        // A hidden region's name is on the map image already: only shown while editing.
         el.className = r.hide ? 'region-label hide-mark' : 'region-label';
-        // A hidden region's name shows while it's hovered, like a hidden pin's.
-        if (r.hide) {
-          poly.addEventListener('pointerenter', () => el.classList.add('show'));
-          poly.addEventListener('pointerleave', () => el.classList.remove('show'));
-          new MutationObserver(() => el.classList.toggle('show', poly.classList.contains('lit'))).observe(poly, { attributes: true, attributeFilter: ['class'] });
-        }
         el.style.left = cx * 100 + '%';
         el.style.top = cy * 100 + '%';
         el.textContent = r.label;

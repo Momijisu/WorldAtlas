@@ -1,5 +1,9 @@
 # What's new
 
+## 1.73.1
+
+- **A hidden region's name stays hidden,** even when you hover over it or pick it in the key, so it isn't shown twice over the name on the map image. Hovering still outlines it, and clicking still opens its card. Hidden pins still show their name on hover.
+
 ## 1.73.0 · 25 November 2026
 
 - **Hide a place or region on the map:** for maps whose picture already shows a name, tick **Hide on the map** when editing a pin or region. Nothing is drawn over the picture, but the place is still there: hover for its name and outline, click for its card and its article, and it stays in the key and the Places list. While editing, hidden ones show as usual, their markers ringed with a dashed line.
