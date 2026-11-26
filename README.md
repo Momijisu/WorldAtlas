@@ -108,6 +108,7 @@ Ideas being considered, not promises:
 - [Tables](docs/TABLES.md): adding tables to articles, dice, checkboxes and rolling
 - [Statblocks](docs/STATBLOCKS.md): adding a creature's or character's game statistics to an article
 - [Import format](docs/IMPORT_FORMAT.md): bring an existing world in, or have an AI assistant convert your notes
+- [The .world format](docs/WORLD_FORMAT.md): for tools that read worlds out of WorldAtlas, such as a virtual tabletop module
 - [Syncing in detail](docs/SYNC.md): setting up OneDrive for your own copy, and how syncing works
 - [Development](docs/DEVELOPMENT.md): project layout, tests and releasing
 

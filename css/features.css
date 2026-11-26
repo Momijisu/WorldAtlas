@@ -699,3 +699,10 @@ button.type-choice.new-tpl small { display: block; color: var(--muted); font-siz
 /* …and in the editor's Live view: the same faint line, without the callout's label or bar. */
 .live-editor .cm-line.cm-callout[data-callout="Prompt"] { font: italic 400 .95rem/1.7 var(--serif); color: var(--muted); border-left: 0; padding-left: 0 !important; background: none; }
 .live-editor .cm-callout-named[data-callout="Prompt"]::before { content: none; }
+
+/* The lab's share link test (#/lab/share). */
+.lab-log { list-style: none; padding: 0; margin: 1rem 0 0; max-width: 820px; }
+.lab-log li { padding: .45rem .1rem; border-bottom: 1px solid var(--rule); }
+.lab-log li.ok b { color: var(--ok, #6fae7c); }
+.lab-log li.bad b { color: var(--rubric); }
+.lab-log .small { overflow-wrap: anywhere; }

@@ -303,6 +303,8 @@ export function route({ keepScroll = false } = {}) {
   const opts = { keepScroll: keepScroll && raw === lastRendered };
   lastRendered = raw;
   if (p[0] === 'settings') { applyTemplates(null); return show(null, viewSettings, opts); }
+  // A test page for player share links, not linked from anywhere (js/views/sharetest.js).
+  if (p[0] === 'lab' && p[1] === 'share') return show(null, () => import('./views/sharetest.js').then((m) => m.viewShareTest(q)), opts);
   if (p[0] !== 'w' || !p[1]) { applyTemplates(null); return show(null, viewWorlds, opts); }
   const wid = p[1];
   if (!store.world(wid)) { toast('That world no longer exists'); return show(null, viewWorlds, opts); }
